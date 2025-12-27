@@ -38,11 +38,7 @@
         .bill-pill { font-size: 9px; padding: 3px 6px; border-radius: 6px; background: #eff6ff; color: #1e40af; font-weight: 700; border-left: 2px solid #3b82f6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .bill-pill.adjusted { border-left-color: #f59e0b; background: #fff7ed; color: #9a3412; }
         
-        /* NEW: Privacy Blur Class */
         .privacy-blur { filter: blur(8px); transition: filter 0.3s ease; user-select: none; }
-        .reveal { filter: blur(0); transition: filter 0.3s ease; }
-        
-        /* NEW: Floating Action Button */
         .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: #4f46e5; color: white; border-radius: 50%; box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5); display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; z-index: 40; }
         .fab:active { transform: scale(0.9); }
     </style>
@@ -104,21 +100,20 @@
             
             <div id="view-dashboard" class="view-section fade-in">
                 
-                <div class="card p-6 mb-8 bg-white border border-slate-100 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition">
-                        <button onclick="editAnnualIncome()" class="text-xs bg-slate-50 text-slate-400 hover:text-indigo-600 px-3 py-1 rounded-full border border-slate-200 font-bold flex items-center gap-1 transition"><i class="fas fa-pencil-alt"></i> Edit</button>
-                    </div>
-                    <div class="flex flex-col md:flex-row justify-between md:items-end gap-4 relative z-10">
-                        <div>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1" id="currentYearLabel">2025 Progress</p>
-                            <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-baseline gap-2">
-                                <span class="privacy-target" id="ytdIncomeDisplay">£0.00</span>
-                                <span class="text-sm font-medium text-slate-400">/ <span class="privacy-target" id="annualGoalDisplay">£0</span> Goal</span>
-                            </h2>
+                <div class="card p-6 mb-8 bg-white border border-slate-100">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                        <div class="flex-1">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Earned in <span id="currentYearLabel">2025</span></p>
+                            <h2 class="text-4xl font-extrabold text-emerald-600 tracking-tight privacy-target" id="ytdIncomeDisplay">£0.00</h2>
                         </div>
-                        <div class="w-full md:w-1/2">
-                            <div class="flex justify-between text-xs font-bold text-slate-500 mb-2"><span>Year to Date</span><span id="annualProgressText">0%</span></div>
-                            <div class="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner"><div id="annualProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
+                        
+                        <div class="hidden md:block w-px h-16 bg-slate-100"></div>
+                        
+                        <div class="flex-1 md:text-right group cursor-pointer" onclick="editAnnualIncome()">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex items-center md:justify-end gap-2">
+                                Annual Salary <span class="bg-slate-100 text-slate-400 p-1 rounded-md text-[10px] group-hover:text-indigo-600 transition"><i class="fas fa-pen"></i></span>
+                            </p>
+                            <h2 class="text-4xl font-extrabold text-slate-800 tracking-tight privacy-target hover:text-indigo-600 transition" id="annualSalaryDisplay">£0.00</h2>
                         </div>
                     </div>
                 </div>
@@ -194,11 +189,11 @@
         function updateCloudUI() { if(cloudUrl) { document.getElementById('cloudUrlInput').value = cloudUrl; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-cloud text-emerald-500"></i> Cloud Active'; document.getElementById('cloudMsg').classList.remove('hidden'); document.getElementById('manualSyncBtn').classList.remove('hidden'); if(document.getElementById('mobileSyncBtn')) document.getElementById('mobileSyncBtn').classList.remove('hidden'); loadFromCloud(); } else { document.getElementById('cloudUrlInput').value = ''; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-hdd text-slate-500"></i> Local Mode'; document.getElementById('cloudMsg').classList.add('hidden'); document.getElementById('manualSyncBtn').classList.add('hidden'); if(document.getElementById('mobileSyncBtn')) document.getElementById('mobileSyncBtn').classList.add('hidden'); } }
         updateCloudUI();
 
-        // --- NEW: PRIVACY & ANIMATION LOGIC ---
+        // --- PRIVACY & ANIMATION ---
         let privacyMode = false;
         function togglePrivacy() {
             privacyMode = !privacyMode;
-            const targets = document.querySelectorAll('.privacy-target, [id^="kpi"], [id^="val"], #ytdIncomeDisplay, #annualGoalDisplay');
+            const targets = document.querySelectorAll('.privacy-target');
             targets.forEach(el => {
                 if(privacyMode) el.classList.add('privacy-blur');
                 else el.classList.remove('privacy-blur');
@@ -210,7 +205,7 @@
         }
 
         function animateValue(obj, start, end, duration) {
-            if(privacyMode) { obj.innerText = `£${fmt(end)}`; return; } // No anim in privacy mode
+            if(privacyMode) { obj.innerText = `£${fmt(end)}`; return; }
             let startTimestamp = null;
             const step = (timestamp) => {
                 if (!startTimestamp) startTimestamp = timestamp;
@@ -247,28 +242,18 @@
 
         function renderDashboard() {
             const key = monthPicker.value; const data = db.transactions[key] || []; let inc = 0, exp = 0; const cats = {}; data.forEach(tx => { if (tx.type === 'income') inc += parseFloat(tx.amount); else { exp += parseFloat(tx.amount); cats[tx.category] = (cats[tx.category] || 0) + parseFloat(tx.amount); } }); 
-            
-            // Animation triggers
             animateValue(document.getElementById('kpiIncome'), 0, inc, 1000);
             animateValue(document.getElementById('kpiExpense'), 0, exp, 1000);
             animateValue(document.getElementById('kpiBalance'), 0, inc - exp, 1000);
-            
-            let topCat = "None"; let topVal = 0; for(const [c, v] of Object.entries(cats)) { if(v > topVal) { topVal = v; topCat = c; } } document.getElementById('kpiTopCat').innerText = topCat; 
-            animateValue(document.getElementById('kpiTopCatVal'), 0, topVal, 1000);
-
+            let topCat = "None"; let topVal = 0; for(const [c, v] of Object.entries(cats)) { if(v > topVal) { topVal = v; topCat = c; } } document.getElementById('kpiTopCat').innerText = topCat; animateValue(document.getElementById('kpiTopCatVal'), 0, topVal, 1000);
             const budgetCont = document.getElementById('budgetContainer'); budgetCont.innerHTML = ''; Object.keys(db.budgets).forEach(cat => { const limit = db.budgets[cat]; const spent = cats[cat] || 0; const pct = Math.min((spent / limit) * 100, 100); let color = 'bg-emerald-500'; if(pct > 75) color = 'bg-yellow-400'; if(pct > 95) color = 'bg-rose-500'; budgetCont.innerHTML += `<div><div class="flex justify-between text-xs font-bold mb-1.5 text-slate-500"><span>${cat}</span><span>£${fmt(spent)} / £${fmt(limit)}</span></div><div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${pct}%"></div></div></div>`; }); if(Object.keys(db.budgets).length === 0) budgetCont.innerHTML = '<p class="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">No budgets set.</p>'; const goalList = document.getElementById('goalList'); goalList.innerHTML = ''; db.goals.forEach((g, i) => { const pct = Math.min((g.current / g.target) * 100, 100); goalList.innerHTML += `<div class="bg-slate-50 p-4 rounded-2xl relative group border border-slate-100 transition hover:shadow-sm"><div class="flex justify-between text-xs font-bold mb-2 text-slate-600"><span>${g.name}</span><span>£${fmt(g.current)} / £${fmt(g.target)}</span></div><div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${pct}%"></div></div><button onclick="deleteGoal(${i})" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 hidden group-hover:block transition"><i class="fas fa-times"></i></button></div>`; }); if(db.goals.length === 0) goalList.innerHTML = '<p class="text-sm text-slate-400 text-center bg-slate-50 py-4 rounded-2xl border border-dashed border-slate-200">No goals set.</p>'; const tbody = document.getElementById('txTableBody'); tbody.innerHTML = ''; if (data.length === 0) document.getElementById('listEmptyState').classList.remove('hidden'); else { document.getElementById('listEmptyState').classList.add('hidden'); data.slice().reverse().forEach((tx, i) => { const realIndex = data.length - 1 - i; const autoBadge = tx.isAuto ? `<span class="badge-auto"><i class="fas fa-robot"></i> Auto</span>` : ''; const syncBadge = tx.isSync ? `<span class="badge-sync"><i class="fas fa-sync"></i> Asset</span>` : ''; tbody.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50 transition"><td class="py-4 pl-2"><div class="font-bold text-slate-700 flex items-center gap-2">${tx.desc} ${autoBadge} ${syncBadge}</div><div class="text-xs text-slate-400 font-medium mt-0.5">${tx.category}</div></td><td class="py-4 text-right font-bold ${tx.type === 'income' ? 'text-emerald-500' : 'text-slate-700'} privacy-target">${tx.type === 'income' ? '+' : '-'}£${fmt(tx.amount)}</td><td class="py-4 text-right"><button onclick="editTx(${realIndex})" class="text-indigo-400 hover:text-indigo-600 transition px-2 btn-press"><i class="fas fa-pen"></i></button><button onclick="deleteTx(${realIndex})" class="text-slate-300 hover:text-rose-500 transition px-2 btn-press"><i class="fas fa-trash-alt"></i></button></td></tr>`; }); }
             
-            // ANNUAL INCOME LOGIC
             const currentYear = new Date().getFullYear();
             let ytdIncome = 0;
             Object.keys(db.transactions).forEach(monthKey => { if(monthKey.startsWith(currentYear)) { db.transactions[monthKey].forEach(tx => { if(tx.type === 'income') ytdIncome += parseFloat(tx.amount); }); } });
             document.getElementById('currentYearLabel').innerText = `${currentYear} Progress`;
             animateValue(document.getElementById('ytdIncomeDisplay'), 0, ytdIncome, 1500);
-            document.getElementById('annualGoalDisplay').innerText = `£${fmt(db.annualIncome)}`;
-            let annualPct = 0;
-            if(db.annualIncome > 0) { annualPct = Math.min((ytdIncome / db.annualIncome) * 100, 100); }
-            document.getElementById('annualProgressBar').style.width = `${annualPct}%`;
-            document.getElementById('annualProgressText').innerText = `${annualPct.toFixed(1)}%`;
+            animateValue(document.getElementById('annualSalaryDisplay'), 0, db.annualIncome, 1000);
             updateTrendChart(); updateSpendingChart(cats);
         }
 
