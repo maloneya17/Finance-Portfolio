@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Portfolio">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    
     <title>Finance Portfolio</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,85 +19,32 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- NATIVE FEEL CSS --- */
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f8fafc; 
-            color: #1e293b;
-            /* iOS Safe Areas */
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
-            -webkit-tap-highlight-color: transparent; /* Removes blue tap box */
-        }
-
-        /* Glassmorphism Header */
-        .glass-header {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-        }
-
-        /* Soft Cards */
-        .card { 
-            background: #ffffff; 
-            border-radius: 24px; /* More rounded */
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); /* Softer shadow */
-            border: 1px solid #f1f5f9;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        /* Interactive Elements */
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); -webkit-tap-highlight-color: transparent; }
+        .mobile-header-fix { padding-top: max(1rem, env(safe-area-inset-top)); }
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.6); }
+        .card { background: #ffffff; border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); border: 1px solid #f1f5f9; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .btn-press:active { transform: scale(0.96); opacity: 0.9; }
-        
-        .nav-item { 
-            padding: 14px 18px; 
-            border-radius: 16px; 
-            font-weight: 600; 
-            color: #94a3b8; 
-            display: flex; align-items: center; gap: 14px; 
-            transition: all 0.2s ease; cursor: pointer; 
-        }
+        .nav-item { padding: 14px 18px; border-radius: 16px; font-weight: 600; color: #94a3b8; display: flex; align-items: center; gap: 14px; transition: all 0.2s ease; cursor: pointer; }
         .nav-item.active { background-color: #4f46e5; color: white; box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.4); }
-        
-        .input-box { 
-            width: 100%; padding: 14px; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 16px; /* iOS rounded inputs */
-            outline: none; transition: 0.2s; 
-            background: #f8fafc; font-size: 15px; font-weight: 500;
-        }
+        .input-box { width: 100%; padding: 14px; border: 1px solid #e2e8f0; border-radius: 16px; outline: none; transition: 0.2s; background: #f8fafc; font-size: 15px; font-weight: 500; }
         .input-box:focus { border-color: #4f46e5; background: white; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
-
-        /* Animations */
-        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Custom Scrollbar hide */
-        .no-scroll::-webkit-scrollbar { display: none; }
-        .no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Sync Loader */
-        #cloudLoader { 
-            position: fixed; top: calc(env(safe-area-inset-top) + 10px); right: 20px; z-index: 100; 
-            display: flex; align-items: center; gap: 8px; 
-            background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
-            padding: 8px 16px; border-radius: 50px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
-            font-size: 12px; font-weight: 700; color: #4f46e5; 
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            transform: translateY(-200%); opacity: 0;
-        }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scroll::-webkit-scrollbar { display: none; } .no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        #cloudLoader { position: fixed; top: calc(env(safe-area-inset-top) + 10px); right: 20px; z-index: 100; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); font-size: 12px; font-weight: 700; color: #4f46e5; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(-200%); opacity: 0; }
         #cloudLoader.show { transform: translateY(0); opacity: 1; }
-        
-        /* Grid helpers */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
         .cal-day { min-height: 80px; border-radius: 12px; background: white; border: 1px solid #f1f5f9; padding: 4px; display: flex; flex-direction: column; gap: 2px; }
         .cal-day.today { border: 2px solid #f59e0b; background-color: #fffbeb; }
         .bill-pill { font-size: 9px; padding: 3px 6px; border-radius: 6px; background: #eff6ff; color: #1e40af; font-weight: 700; border-left: 2px solid #3b82f6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .bill-pill.adjusted { border-left-color: #f59e0b; background: #fff7ed; color: #9a3412; }
+        
+        /* NEW: Privacy Blur Class */
+        .privacy-blur { filter: blur(8px); transition: filter 0.3s ease; user-select: none; }
+        .reveal { filter: blur(0); transition: filter 0.3s ease; }
+        
+        /* NEW: Floating Action Button */
+        .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: #4f46e5; color: white; border-radius: 50%; box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5); display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; z-index: 40; }
+        .fab:active { transform: scale(0.9); }
     </style>
 </head>
 <body class="h-screen flex flex-col md:flex-row overflow-hidden bg-[#f8fafc]">
@@ -100,24 +53,17 @@
 
     <div id="sidebar" class="w-full md:w-80 bg-[#0f172a] flex flex-col justify-between z-20 hidden md:flex h-full fixed md:relative shadow-2xl">
         <div class="p-8">
-            <div class="flex items-center gap-4 mb-12">
-                <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-600/30">
-                    <i class="fas fa-briefcase"></i>
+            <div class="flex items-center justify-between mb-12">
+                <div class="flex items-center gap-4">
+                    <img src="icon.png" class="w-14 h-14 rounded-2xl shadow-lg shadow-indigo-600/30 object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    <div class="w-14 h-14 bg-indigo-600 rounded-2xl hidden items-center justify-center text-white text-2xl shadow-lg shadow-indigo-600/30"><i class="fas fa-briefcase"></i></div>
+                    <div><h1 class="font-bold text-xl text-white tracking-tight leading-tight">Finance<br>Portfolio</h1></div>
                 </div>
-                <div>
-                    <h1 class="font-bold text-xl text-white tracking-tight leading-tight">Finance<br>Portfolio</h1>
-                </div>
-                <button onclick="toggleMobileMenu()" class="md:hidden ml-auto text-slate-400"><i class="fas fa-times text-xl"></i></button>
             </div>
-
             <div class="mb-10">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block pl-1">Timeline</label>
-                <div class="relative">
-                    <input type="month" id="monthPicker" class="w-full p-4 bg-slate-800/50 border border-slate-700 rounded-2xl font-bold text-white focus:border-indigo-500 cursor-pointer outline-none transition hover:bg-slate-800">
-                    <div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-calendar-alt"></i></div>
-                </div>
+                <div class="relative"><input type="month" id="monthPicker" class="w-full p-4 bg-slate-800/50 border border-slate-700 rounded-2xl font-bold text-white focus:border-indigo-500 cursor-pointer outline-none transition hover:bg-slate-800"><div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-calendar-alt"></i></div></div>
             </div>
-
             <nav class="space-y-3">
                 <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item active"><i class="fas fa-chart-pie w-5"></i> Dashboard</div>
                 <div onclick="switchView('reports')" id="nav-reports" class="nav-item"><i class="fas fa-chart-line w-5"></i> Reports</div>
@@ -126,22 +72,13 @@
                 <div onclick="switchView('settings')" id="nav-settings" class="nav-item"><i class="fas fa-sliders w-5"></i> Settings</div>
             </nav>
         </div>
-        
         <div class="p-6 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 space-y-3">
-            <div id="cloudStatus" class="text-[10px] font-bold text-slate-500 flex items-center gap-2 mb-2 uppercase tracking-wide pl-1">
-                <i class="fas fa-hdd"></i> Local Mode
-            </div>
-            <button onclick="manualSync()" id="manualSyncBtn" class="btn-press text-xs text-white bg-indigo-600 font-bold flex items-center justify-center gap-2 w-full p-3 rounded-xl hover:bg-indigo-500 transition hidden shadow-lg shadow-indigo-900/20">
-                <i class="fas fa-sync"></i> Sync Now
-            </button>
+            <button onclick="togglePrivacy()" class="btn-press text-xs text-slate-400 hover:text-white font-bold flex items-center gap-2 mb-2 w-full p-2 rounded hover:bg-slate-800 transition"><i id="privacyIconDesktop" class="fas fa-eye"></i> Toggle Privacy Mode</button>
+            <div id="cloudStatus" class="text-[10px] font-bold text-slate-500 flex items-center gap-2 mb-2 uppercase tracking-wide pl-1"><i class="fas fa-hdd"></i> Local Mode</div>
+            <button onclick="manualSync()" id="manualSyncBtn" class="btn-press text-xs text-white bg-indigo-600 font-bold flex items-center justify-center gap-2 w-full p-3 rounded-xl hover:bg-indigo-500 transition hidden shadow-lg shadow-indigo-900/20"><i class="fas fa-sync"></i> Sync Now</button>
             <div class="flex gap-2">
-                <button onclick="exportData()" class="btn-press text-xs text-slate-400 hover:text-white font-medium flex items-center justify-center gap-2 flex-1 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition">
-                    <i class="fas fa-download"></i> Backup
-                </button>
-                <label class="btn-press text-xs text-slate-400 hover:text-white font-medium flex items-center justify-center gap-2 flex-1 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition cursor-pointer">
-                    <i class="fas fa-upload"></i> Restore
-                    <input type="file" class="hidden" onchange="importData(this)">
-                </label>
+                <button onclick="exportData()" class="btn-press text-xs text-slate-400 hover:text-white font-medium flex items-center justify-center gap-2 flex-1 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition"><i class="fas fa-download"></i> Backup</button>
+                <label class="btn-press text-xs text-slate-400 hover:text-white font-medium flex items-center justify-center gap-2 flex-1 p-3 rounded-xl bg-slate-800 hover:bg-slate-700 transition cursor-pointer"><i class="fas fa-upload"></i> Restore<input type="file" class="hidden" onchange="importData(this)"></label>
             </div>
         </div>
     </div>
@@ -150,311 +87,100 @@
         
         <div class="md:hidden glass-header px-5 py-4 sticky top-0 z-30 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-sm shadow-md shadow-indigo-200">
-                    <i class="fas fa-briefcase"></i>
-                </div>
+                <img src="icon.png" class="w-10 h-10 rounded-xl shadow-md shadow-indigo-200 object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl hidden items-center justify-center text-white text-sm shadow-md shadow-indigo-200"><i class="fas fa-briefcase"></i></div>
                 <h1 class="font-bold text-lg text-slate-800 tracking-tight">Portfolio</h1>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="manualSync()" class="w-9 h-9 bg-slate-100 text-indigo-600 rounded-full flex items-center justify-center hidden active:scale-90 transition" id="mobileSyncBtn">
-                    <i class="fas fa-sync text-sm"></i>
-                </button>
-                <button onclick="toggleMobileMenu()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition">
-                    <i class="fas fa-bars text-sm"></i>
-                </button>
+                <button onclick="togglePrivacy()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i id="privacyIconMobile" class="fas fa-eye text-sm"></i></button>
+                <button onclick="manualSync()" class="w-9 h-9 bg-slate-100 text-indigo-600 rounded-full flex items-center justify-center hidden active:scale-90 transition" id="mobileSyncBtn"><i class="fas fa-sync text-sm"></i></button>
+                <button onclick="toggleMobileMenu()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i class="fas fa-bars text-sm"></i></button>
             </div>
         </div>
+
+        <button onclick="document.getElementById('txFormCard').scrollIntoView({behavior:'smooth'});" class="fab md:hidden shadow-xl shadow-indigo-500/40"><i class="fas fa-plus"></i></button>
 
         <div class="flex-1 overflow-y-auto no-scroll p-5 md:p-12 pb-32">
             
             <div id="view-dashboard" class="view-section fade-in">
+                
+                <div class="card p-6 mb-8 bg-white border border-slate-100 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-50 group-hover:opacity-100 transition">
+                        <button onclick="editAnnualIncome()" class="text-xs bg-slate-50 text-slate-400 hover:text-indigo-600 px-3 py-1 rounded-full border border-slate-200 font-bold flex items-center gap-1 transition"><i class="fas fa-pencil-alt"></i> Edit</button>
+                    </div>
+                    <div class="flex flex-col md:flex-row justify-between md:items-end gap-4 relative z-10">
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1" id="currentYearLabel">2025 Progress</p>
+                            <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-baseline gap-2">
+                                <span class="privacy-target" id="ytdIncomeDisplay">£0.00</span>
+                                <span class="text-sm font-medium text-slate-400">/ <span class="privacy-target" id="annualGoalDisplay">£0</span> Goal</span>
+                            </h2>
+                        </div>
+                        <div class="w-full md:w-1/2">
+                            <div class="flex justify-between text-xs font-bold text-slate-500 mb-2"><span>Year to Date</span><span id="annualProgressText">0%</span></div>
+                            <div class="h-3 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner"><div id="annualProgressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-1000" style="width: 0%"></div></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="notificationArea" class="space-y-3 mb-8">
-                    <div id="autoPayNotification" class="hidden p-4 bg-white border-l-4 border-indigo-500 rounded-2xl flex items-center gap-4 shadow-sm">
-                        <div class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600"><i class="fas fa-robot"></i></div>
-                        <div><h4 class="font-bold text-slate-800 text-sm">Auto-Pilot</h4><p class="text-xs text-slate-500" id="autoPayText">Bills logged.</p></div>
-                    </div>
-                    <div id="assetSyncNotification" class="hidden p-4 bg-white border-l-4 border-emerald-500 rounded-2xl flex items-center gap-4 shadow-sm">
-                        <div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600"><i class="fas fa-sync"></i></div>
-                        <div><h4 class="font-bold text-slate-800 text-sm">Asset Synced</h4><p class="text-xs text-slate-500" id="assetSyncText">Value updated.</p></div>
-                    </div>
+                    <div id="autoPayNotification" class="hidden p-4 bg-white border-l-4 border-indigo-500 rounded-2xl flex items-center gap-4 shadow-sm"><div class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600"><i class="fas fa-robot"></i></div><div><h4 class="font-bold text-slate-800 text-sm">Auto-Pilot</h4><p class="text-xs text-slate-500" id="autoPayText">Bills logged.</p></div></div>
+                    <div id="assetSyncNotification" class="hidden p-4 bg-white border-l-4 border-emerald-500 rounded-2xl flex items-center gap-4 shadow-sm"><div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600"><i class="fas fa-sync"></i></div><div><h4 class="font-bold text-slate-800 text-sm">Asset Synced</h4><p class="text-xs text-slate-500" id="assetSyncText">Value updated.</p></div></div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="card p-6 border-b-4 border-emerald-500 md:border-b-0 md:border-l-4">
-                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Income</p>
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight" id="kpiIncome">£0.00</h2>
-                    </div>
-                    <div class="card p-6 border-b-4 border-rose-500 md:border-b-0 md:border-l-4">
-                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Expenses</p>
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight" id="kpiExpense">£0.00</h2>
-                    </div>
-                    <div class="card p-6 border-b-4 border-indigo-500 md:border-b-0 md:border-l-4">
-                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Net Flow</p>
-                        <h2 class="text-3xl font-bold text-slate-800 tracking-tight" id="kpiBalance">£0.00</h2>
-                    </div>
-                    <div class="card p-6 bg-gradient-to-br from-indigo-600 to-violet-600 text-white border-none shadow-lg shadow-indigo-200">
-                        <p class="text-xs text-indigo-100 font-bold uppercase tracking-wider mb-1">Top Spend</p>
-                        <h2 class="text-2xl font-bold mt-1 truncate" id="kpiTopCat">None</h2>
-                        <p class="text-sm text-indigo-100 font-medium opacity-80" id="kpiTopCatVal">£0.00</p>
-                    </div>
+                    <div class="card p-6 border-b-4 border-emerald-500 md:border-b-0 md:border-l-4"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Income</p><h2 class="text-3xl font-bold text-slate-800 tracking-tight privacy-target" id="kpiIncome">£0.00</h2></div>
+                    <div class="card p-6 border-b-4 border-rose-500 md:border-b-0 md:border-l-4"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Expenses</p><h2 class="text-3xl font-bold text-slate-800 tracking-tight privacy-target" id="kpiExpense">£0.00</h2></div>
+                    <div class="card p-6 border-b-4 border-indigo-500 md:border-b-0 md:border-l-4"><p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Net Flow</p><h2 class="text-3xl font-bold text-slate-800 tracking-tight privacy-target" id="kpiBalance">£0.00</h2></div>
+                    <div class="card p-6 bg-gradient-to-br from-indigo-600 to-violet-600 text-white border-none shadow-lg shadow-indigo-200"><p class="text-xs text-indigo-100 font-bold uppercase tracking-wider mb-1">Top Spend</p><h2 class="text-2xl font-bold mt-1 truncate" id="kpiTopCat">None</h2><p class="text-sm text-indigo-100 font-medium opacity-80 privacy-target" id="kpiTopCatVal">£0.00</p></div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    <div class="card p-6">
-                        <div class="mb-6">
-                            <div class="flex justify-between items-center">
-                                <h3 class="font-bold text-lg text-slate-800">Analytics</h3>
-                                <span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-500">6 Months</span>
-                            </div>
-                            <div class="flex gap-6 mt-3">
-                                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Total In</p><p class="text-sm font-bold text-emerald-600" id="trendTotalIncome">£0</p></div>
-                                <div><p class="text-[10px] text-slate-400 font-bold uppercase">Total Out</p><p class="text-sm font-bold text-rose-600" id="trendTotalExpense">£0</p></div>
-                            </div>
-                        </div>
-                        <div class="h-64 w-full"><canvas id="trendChart"></canvas></div>
-                    </div>
-                    <div class="card p-6 flex flex-col items-center justify-center">
-                        <h3 class="font-bold text-lg text-slate-800 mb-6 w-full text-left">Breakdown</h3>
-                        <div class="h-64 w-full flex justify-center"><canvas id="spendingChart"></canvas></div>
-                    </div>
+                    <div class="card p-6"><div class="mb-6"><div class="flex justify-between items-center"><h3 class="font-bold text-lg text-slate-800">Analytics</h3><span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-500">6 Months</span></div><div class="flex gap-6 mt-3"><div><p class="text-[10px] text-slate-400 font-bold uppercase">Total In</p><p class="text-sm font-bold text-emerald-600 privacy-target" id="trendTotalIncome">£0</p></div><div><p class="text-[10px] text-slate-400 font-bold uppercase">Total Out</p><p class="text-sm font-bold text-rose-600 privacy-target" id="trendTotalExpense">£0</p></div></div></div><div class="h-64 w-full"><canvas id="trendChart"></canvas></div></div>
+                    <div class="card p-6 flex flex-col items-center justify-center"><h3 class="font-bold text-lg text-slate-800 mb-6 w-full text-left">Breakdown</h3><div class="h-64 w-full flex justify-center"><canvas id="spendingChart"></canvas></div></div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    <div class="card p-6 col-span-1 lg:col-span-2">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="font-bold text-lg text-slate-800">Budgets</h3>
-                            <button onclick="switchView('settings')" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-4 py-2 rounded-full hover:bg-indigo-100 transition">Edit</button>
-                        </div>
-                        <div id="budgetContainer" class="space-y-6"></div>
-                    </div>
-                    <div class="card p-6">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="font-bold text-lg text-slate-800">Goals</h3>
-                            <button onclick="openGoalModal()" class="w-8 h-8 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-md shadow-indigo-200"><i class="fas fa-plus text-xs"></i></button>
-                        </div>
-                        <ul id="goalList" class="space-y-4 max-h-64 overflow-y-auto no-scroll pr-2"></ul>
-                    </div>
+                    <div class="card p-6 col-span-1 lg:col-span-2"><div class="flex justify-between items-center mb-6"><h3 class="font-bold text-lg text-slate-800">Budgets</h3><button onclick="switchView('settings')" class="text-xs bg-indigo-50 text-indigo-600 font-bold px-4 py-2 rounded-full hover:bg-indigo-100 transition">Edit</button></div><div id="budgetContainer" class="space-y-6"></div></div>
+                    <div class="card p-6"><div class="flex justify-between items-center mb-6"><h3 class="font-bold text-lg text-slate-800">Goals</h3><button onclick="openGoalModal()" class="w-8 h-8 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-md shadow-indigo-200"><i class="fas fa-plus text-xs"></i></button></div><ul id="goalList" class="space-y-4 max-h-64 overflow-y-auto no-scroll pr-2"></ul></div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="card p-6 h-fit" id="txFormCard">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="font-bold text-lg text-slate-800" id="txFormTitle">Log Item</h3>
-                            <button id="cancelEditTxBtn" onclick="cancelTxEdit()" class="hidden text-xs text-rose-500 font-bold">Cancel</button>
-                        </div>
+                        <div class="flex justify-between items-center mb-6"><h3 class="font-bold text-lg text-slate-800" id="txFormTitle">Log Item</h3><button id="cancelEditTxBtn" onclick="cancelTxEdit()" class="hidden text-xs text-rose-500 font-bold">Cancel</button></div>
                         <form id="txForm" class="space-y-5">
-                            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
-                                <button type="button" onclick="setTxType('expense')" id="btn-expense" class="btn-press py-3 rounded-xl text-sm font-bold bg-white text-rose-600 shadow-sm transition-all">Expense</button>
-                                <button type="button" onclick="setTxType('income')" id="btn-income" class="btn-press py-3 rounded-xl text-sm font-bold text-slate-400 transition-all">Income</button>
-                            </div>
-                            <input type="hidden" id="txType" value="expense">
-                            <input type="text" id="txDesc" placeholder="Description" class="input-box" required>
-                            <div class="flex gap-3">
-                                <input type="number" id="txAmount" placeholder="0.00" step="0.01" class="input-box w-1/2" required>
-                                <div class="relative w-1/2">
-                                    <select id="txCategory" class="input-box w-full appearance-none bg-white cursor-pointer"></select>
-                                    <div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></div>
-                                </div>
-                            </div>
-                            
+                            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl"><button type="button" onclick="setTxType('expense')" id="btn-expense" class="btn-press py-3 rounded-xl text-sm font-bold bg-white text-rose-600 shadow-sm transition-all">Expense</button><button type="button" onclick="setTxType('income')" id="btn-income" class="btn-press py-3 rounded-xl text-sm font-bold text-slate-400 transition-all">Income</button></div>
+                            <input type="hidden" id="txType" value="expense"><input type="text" id="txDesc" placeholder="Description" class="input-box" required>
+                            <div class="flex gap-3"><input type="number" id="txAmount" placeholder="0.00" step="0.01" class="input-box w-1/2" required><div class="relative w-1/2"><select id="txCategory" class="input-box w-full appearance-none bg-white cursor-pointer"></select><div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></div></div></div>
                             <div class="space-y-3 pt-1">
-                                <div id="debtLinkContainer" class="hidden bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                    <label class="flex items-center gap-3 cursor-pointer">
-                                        <input type="checkbox" id="isDebtPayment" class="w-5 h-5 text-indigo-600 rounded-md border-slate-300 focus:ring-indigo-500">
-                                        <span class="text-sm font-bold text-slate-700">Is this a Debt Payment?</span>
-                                    </label>
-                                    <div id="debtSelector" class="hidden mt-3">
-                                        <select id="linkedDebtId" class="input-box bg-white"><option value="">Select Liability...</option></select>
-                                    </div>
-                                </div>
-
-                                <div id="roundUpContainer" class="hidden bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                    <label class="flex items-center gap-3 cursor-pointer">
-                                        <input type="checkbox" id="isRoundUp" class="w-5 h-5 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500">
-                                        <div><span class="text-sm font-bold text-slate-700 block">Auto Round-Up</span><span class="text-xs text-slate-400">Save the change</span></div>
-                                    </label>
-                                    <div id="roundUpSelector" class="hidden mt-3">
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide ml-1">Send to Asset</label>
-                                        <select id="roundUpTarget" class="input-box bg-white mt-1"></select>
-                                    </div>
-                                </div>
+                                <div id="debtLinkContainer" class="hidden bg-slate-50 p-3 rounded-2xl border border-slate-100"><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="isDebtPayment" class="w-5 h-5 text-indigo-600 rounded-md border-slate-300 focus:ring-indigo-500"><span class="text-sm font-bold text-slate-700">Is this a Debt Payment?</span></label><div id="debtSelector" class="hidden mt-3"><select id="linkedDebtId" class="input-box bg-white"><option value="">Select Liability...</option></select></div></div>
+                                <div id="roundUpContainer" class="hidden bg-slate-50 p-3 rounded-2xl border border-slate-100"><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="isRoundUp" class="w-5 h-5 text-emerald-600 rounded-md border-slate-300 focus:ring-emerald-500"><div><span class="text-sm font-bold text-slate-700 block">Auto Round-Up</span><span class="text-xs text-slate-400">Save the change</span></div></label><div id="roundUpSelector" class="hidden mt-3"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide ml-1">Send to Asset</label><select id="roundUpTarget" class="input-box bg-white mt-1"></select></div></div>
                             </div>
-
-                            <button type="submit" id="submitBtn" class="btn-press w-full py-4 rounded-2xl font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all text-base">
-                                Log Expense
-                            </button>
+                            <button type="submit" id="submitBtn" class="btn-press w-full py-4 rounded-2xl font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all text-base">Log Expense</button>
                         </form>
                     </div>
-                    
-                    <div class="lg:col-span-2">
-                        <div class="card p-6 min-h-[400px]">
-                            <h3 class="font-bold text-lg text-slate-800 mb-6">History</h3>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse">
-                                    <thead class="text-xs font-bold text-slate-400 uppercase border-b border-slate-100">
-                                        <tr><th class="pb-3 pl-2">Item</th><th class="pb-3 text-right">Value</th><th class="pb-3 text-right pr-2">Edit</th></tr>
-                                    </thead>
-                                    <tbody id="txTableBody" class="text-sm font-medium"></tbody>
-                                </table>
-                                <div id="listEmptyState" class="hidden py-12 text-center text-slate-400 text-sm font-medium">No transactions this month.</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="lg:col-span-2"><div class="card p-6 min-h-[400px]"><h3 class="font-bold text-lg text-slate-800 mb-6">History</h3><div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead class="text-xs font-bold text-slate-400 uppercase border-b border-slate-100"><tr><th class="pb-3 pl-2">Item</th><th class="pb-3 text-right">Value</th><th class="pb-3 text-right pr-2">Edit</th></tr></thead><tbody id="txTableBody" class="text-sm font-medium"></tbody></table><div id="listEmptyState" class="hidden py-12 text-center text-slate-400 text-sm font-medium">No transactions this month.</div></div></div></div>
                 </div>
             </div>
 
             <div id="view-settings" class="view-section hidden fade-in">
                 <div class="card p-8 max-w-2xl mx-auto space-y-10">
                     <div><h2 class="text-2xl font-bold text-slate-800">Settings</h2></div>
-                    
-                    <div class="bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100">
-                        <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-cloud text-indigo-600"></i> Cloud Sync</h3>
-                        <p class="text-xs text-slate-500 mb-4">Link Google Apps Script to sync iPhone & Laptop.</p>
-                        <div class="flex gap-2">
-                            <form id="cloudForm" class="flex-1 flex gap-2">
-                                <input type="text" id="cloudUrlInput" placeholder="https://script.google.com/..." class="input-box bg-white" required>
-                                <button type="submit" class="btn-press px-6 bg-indigo-600 text-white rounded-2xl font-bold shadow-md shadow-indigo-200">Link</button>
-                            </form>
-                            <button onclick="disconnectCloud()" class="btn-press px-4 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold hover:bg-rose-50 transition" title="Disconnect"><i class="fas fa-unlink"></i></button>
-                        </div>
-                        <div id="cloudMsg" class="mt-3 text-xs font-bold text-emerald-600 flex items-center gap-2 hidden"><i class="fas fa-check-circle"></i> Sync Active</div>
-                    </div>
-
-                    <div class="border-b border-slate-100 pb-8">
-                        <button onclick="debugData()" class="text-indigo-600 font-bold text-sm flex items-center gap-2 hover:underline"><i class="fas fa-wrench"></i> Debug / Recover Data</button>
-                    </div>
-
-                    <div>
-                        <h3 class="font-bold text-slate-800 mb-4">Budgets</h3>
-                        <form id="budgetForm" class="flex gap-3 mb-4">
-                            <select id="budgetCat" class="input-box w-1/2"></select>
-                            <input type="number" id="budgetLimit" placeholder="Limit" class="input-box w-1/3" step="0.01" required>
-                            <button type="submit" class="btn-press w-14 bg-emerald-500 text-white rounded-2xl hover:bg-emerald-600 shadow-md shadow-emerald-200"><i class="fas fa-plus"></i></button>
-                        </form>
-                        <ul id="budgetSettingsList" class="space-y-3"></ul>
-                    </div>
-
-                    <div class="border-t border-slate-100 pt-8" id="billFormContainer">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-slate-800">Recurring Bills</h3>
-                            <button onclick="cancelBillEdit()" id="cancelBillEditBtn" class="hidden text-xs text-rose-500 font-bold">Cancel</button>
-                        </div>
-                        <form id="billForm" class="flex gap-3 mb-4">
-                            <input type="number" id="billDay" placeholder="Day" class="input-box w-20 text-center" min="1" max="31" required>
-                            <input type="text" id="billDesc" placeholder="Bill Name" class="input-box flex-1" required>
-                            <input type="number" id="billAmount" placeholder="£" class="input-box w-24" step="0.01" required>
-                            <button type="submit" id="billSubmitBtn" class="btn-press w-14 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-md shadow-indigo-200"><i class="fas fa-plus"></i></button>
-                        </form>
-                        <ul id="billList" class="space-y-3"></ul>
-                    </div>
-
-                    <div class="border-t border-slate-100 pt-8">
-                        <h3 class="font-bold text-slate-800 mb-4">Categories</h3>
-                        <form id="catForm" class="flex gap-3 mb-6">
-                            <input type="text" id="newCatName" placeholder="New Category Name" class="input-box" required>
-                            <button type="submit" class="btn-press px-6 bg-slate-800 text-white rounded-2xl font-bold">Add</button>
-                        </form>
-                        <div class="flex flex-wrap gap-2" id="settingsCatList"></div>
-                    </div>
-
-                    <div class="border-t border-slate-100 pt-8">
-                        <button onclick="hardReset()" class="text-rose-500 font-bold text-sm hover:bg-rose-50 px-4 py-2 rounded-xl transition w-full text-center">Reset All App Data</button>
-                    </div>
+                    <div class="bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100"><h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-cloud text-indigo-600"></i> Cloud Sync</h3><p class="text-xs text-slate-500 mb-4">Link Google Apps Script to sync iPhone & Laptop.</p><div class="flex gap-2"><form id="cloudForm" class="flex-1 flex gap-2"><input type="text" id="cloudUrlInput" placeholder="https://script.google.com/..." class="input-box bg-white" required><button type="submit" class="btn-press px-6 bg-indigo-600 text-white rounded-2xl font-bold shadow-md shadow-indigo-200">Link</button></form><button onclick="disconnectCloud()" class="btn-press px-4 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold hover:bg-rose-50 transition" title="Disconnect"><i class="fas fa-unlink"></i></button></div><div id="cloudMsg" class="mt-3 text-xs font-bold text-emerald-600 flex items-center gap-2 hidden"><i class="fas fa-check-circle"></i> Sync Active</div></div>
+                    <div class="border-b border-slate-100 pb-8"><button onclick="debugData()" class="text-indigo-600 font-bold text-sm flex items-center gap-2 hover:underline"><i class="fas fa-wrench"></i> Debug / Recover Data</button></div>
+                    <div><h3 class="font-bold text-slate-800 mb-4">Budgets</h3><form id="budgetForm" class="flex gap-3 mb-4"><select id="budgetCat" class="input-box w-1/2"></select><input type="number" id="budgetLimit" placeholder="Limit" class="input-box w-1/3" step="0.01" required><button type="submit" class="btn-press w-14 bg-emerald-500 text-white rounded-2xl hover:bg-emerald-600 shadow-md shadow-emerald-200"><i class="fas fa-plus"></i></button></form><ul id="budgetSettingsList" class="space-y-3"></ul></div>
+                    <div class="border-t border-slate-100 pt-8" id="billFormContainer"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-800">Recurring Bills</h3><button onclick="cancelBillEdit()" id="cancelBillEditBtn" class="hidden text-xs text-rose-500 font-bold">Cancel</button></div><form id="billForm" class="flex gap-3 mb-4"><input type="number" id="billDay" placeholder="Day" class="input-box w-20 text-center" min="1" max="31" required><input type="text" id="billDesc" placeholder="Bill Name" class="input-box flex-1" required><input type="number" id="billAmount" placeholder="£" class="input-box w-24" step="0.01" required><button type="submit" id="billSubmitBtn" class="btn-press w-14 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-md shadow-indigo-200"><i class="fas fa-plus"></i></button></form><ul id="billList" class="space-y-3"></ul></div>
+                    <div class="border-t border-slate-100 pt-8"><h3 class="font-bold text-slate-800 mb-4">Categories</h3><form id="catForm" class="flex gap-3 mb-6"><input type="text" id="newCatName" placeholder="New Category Name" class="input-box" required><button type="submit" class="btn-press px-6 bg-slate-800 text-white rounded-2xl font-bold">Add</button></form><div class="flex flex-wrap gap-2" id="settingsCatList"></div></div>
+                    <div class="border-t border-slate-100 pt-8"><button onclick="hardReset()" class="text-rose-500 font-bold text-sm hover:bg-rose-50 px-4 py-2 rounded-xl transition w-full text-center">Reset All App Data</button></div>
                 </div>
             </div>
 
-            <div id="view-reports" class="view-section hidden fade-in">
-                <div class="mb-8"><h2 class="text-2xl font-bold text-slate-800">Monthly Reports</h2></div>
-                <div class="card p-6 overflow-hidden">
-                    <table class="w-full text-left border-collapse">
-                        <thead><tr class="text-xs font-bold text-slate-400 uppercase border-b border-slate-100"><th class="py-4 pl-2">Month</th><th class="py-4 text-right text-emerald-600">In</th><th class="py-4 text-right text-rose-600">Out</th><th class="py-4 text-right text-indigo-600">Net</th><th class="py-4 text-right pr-2">Rate</th></tr></thead>
-                        <tbody id="reportsTableBody" class="text-sm font-semibold text-slate-700"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div id="view-reports" class="view-section hidden fade-in"><div class="mb-8"><h2 class="text-2xl font-bold text-slate-800">Monthly Reports</h2></div><div class="card p-6 overflow-hidden"><table class="w-full text-left border-collapse"><thead><tr class="text-xs font-bold text-slate-400 uppercase border-b border-slate-100"><th class="py-4 pl-2">Month</th><th class="py-4 text-right text-emerald-600">In</th><th class="py-4 text-right text-rose-600">Out</th><th class="py-4 text-right text-indigo-600">Net</th><th class="py-4 text-right pr-2">Rate</th></tr></thead><tbody id="reportsTableBody" class="text-sm font-semibold text-slate-700"></tbody></table></div></div>
+            <div id="view-calendar" class="view-section hidden fade-in"><div class="flex justify-between items-end mb-8"><div><h2 class="text-2xl font-bold text-slate-800">Bill Calendar</h2><p class="text-slate-500 text-sm mt-1 font-medium">Total: <span id="calTotalBills" class="font-bold text-indigo-600">£0.00</span></p></div><button onclick="switchView('settings')" class="text-xs bg-white border border-slate-200 px-4 py-2 rounded-full font-bold shadow-sm">Manage</button></div><div class="card p-6"><div class="calendar-grid mb-4"><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Mon</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Tue</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Wed</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Thu</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Fri</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Sat</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Sun</div></div><div id="calendarGrid" class="calendar-grid"></div></div></div>
+            <div id="view-wealth" class="view-section hidden fade-in"><div class="card bg-gradient-to-r from-slate-900 to-slate-800 text-white p-8 md:p-10 mb-8 relative overflow-hidden border-none shadow-2xl"><div class="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6"><div><p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest mb-2">Net Worth</p><h1 class="text-5xl md:text-6xl font-extrabold tracking-tight privacy-target" id="totalWealth">£0.00</h1><div class="mt-4 flex gap-6 text-sm font-medium"><span class="text-emerald-400 flex items-center gap-2"><i class="fas fa-arrow-up"></i> <span class="privacy-target" id="valAssets">£0</span></span><span class="text-rose-400 flex items-center gap-2"><i class="fas fa-arrow-down"></i> <span class="privacy-target" id="valDebt">£0</span></span></div></div><div class="text-right bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/10"><p class="text-[10px] text-slate-300 uppercase font-bold tracking-widest mb-1">FIRE Status</p><p class="text-2xl font-bold text-yellow-400" id="fireEstimate">...</p></div></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="space-y-6"><div class="card p-6"><div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 class="font-bold text-lg text-slate-800">Assets</h3><button onclick="openWealthModal('asset')" class="text-xs bg-slate-900 text-white font-bold px-4 py-2 rounded-full hover:bg-slate-700 transition">Add</button></div><ul id="assetList" class="space-y-3 max-h-80 overflow-y-auto no-scroll pr-2"></ul></div><div class="card p-6 border-l-4 border-rose-500"><div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 class="font-bold text-lg text-slate-800">Liabilities</h3><button onclick="openWealthModal('debt')" class="text-xs bg-rose-600 text-white font-bold px-4 py-2 rounded-full hover:bg-rose-700 transition">Add</button></div><ul id="debtList" class="space-y-3 max-h-80 overflow-y-auto no-scroll pr-2"></ul></div></div><div class="card p-6 flex flex-col items-center"><h3 class="font-bold text-lg text-slate-800 mb-6 w-full">Allocation</h3><div class="h-80 w-full flex justify-center"><canvas id="wealthChart"></canvas></div></div></div></div>
 
-            <div id="view-calendar" class="view-section hidden fade-in">
-                <div class="flex justify-between items-end mb-8">
-                    <div><h2 class="text-2xl font-bold text-slate-800">Bill Calendar</h2><p class="text-slate-500 text-sm mt-1 font-medium">Total: <span id="calTotalBills" class="font-bold text-indigo-600">£0.00</span></p></div>
-                    <button onclick="switchView('settings')" class="text-xs bg-white border border-slate-200 px-4 py-2 rounded-full font-bold shadow-sm">Manage</button>
-                </div>
-                <div class="card p-6">
-                    <div class="calendar-grid mb-4"><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Mon</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Tue</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Wed</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Thu</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Fri</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Sat</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Sun</div></div>
-                    <div id="calendarGrid" class="calendar-grid"></div>
-                </div>
-            </div>
-
-            <div id="view-wealth" class="view-section hidden fade-in">
-                <div class="card bg-gradient-to-r from-slate-900 to-slate-800 text-white p-8 md:p-10 mb-8 relative overflow-hidden border-none shadow-2xl">
-                    <div class="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
-                        <div>
-                            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest mb-2">Net Worth</p>
-                            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight" id="totalWealth">£0.00</h1>
-                            <div class="mt-4 flex gap-6 text-sm font-medium">
-                                <span class="text-emerald-400 flex items-center gap-2"><i class="fas fa-arrow-up"></i> <span id="valAssets">£0</span></span>
-                                <span class="text-rose-400 flex items-center gap-2"><i class="fas fa-arrow-down"></i> <span id="valDebt">£0</span></span>
-                            </div>
-                        </div>
-                        <div class="text-right bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/10">
-                            <p class="text-[10px] text-slate-300 uppercase font-bold tracking-widest mb-1">FIRE Status</p>
-                            <p class="text-2xl font-bold text-yellow-400" id="fireEstimate">...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="space-y-6">
-                        <div class="card p-6">
-                            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-                                <h3 class="font-bold text-lg text-slate-800">Assets</h3>
-                                <button onclick="openWealthModal('asset')" class="text-xs bg-slate-900 text-white font-bold px-4 py-2 rounded-full hover:bg-slate-700 transition">Add</button>
-                            </div>
-                            <ul id="assetList" class="space-y-3 max-h-80 overflow-y-auto no-scroll pr-2"></ul>
-                        </div>
-                        <div class="card p-6 border-l-4 border-rose-500">
-                            <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-                                <h3 class="font-bold text-lg text-slate-800">Liabilities</h3>
-                                <button onclick="openWealthModal('debt')" class="text-xs bg-rose-600 text-white font-bold px-4 py-2 rounded-full hover:bg-rose-700 transition">Add</button>
-                            </div>
-                            <ul id="debtList" class="space-y-3 max-h-80 overflow-y-auto no-scroll pr-2"></ul>
-                        </div>
-                    </div>
-                    <div class="card p-6 flex flex-col items-center">
-                        <h3 class="font-bold text-lg text-slate-800 mb-6 w-full">Allocation</h3>
-                        <div class="h-80 w-full flex justify-center"><canvas id="wealthChart"></canvas></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="wealthFormContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-                <div class="card p-8 w-full max-w-sm shadow-2xl scale-100">
-                    <h3 class="font-bold text-xl mb-6 text-slate-800" id="wealthFormTitle">Add Item</h3>
-                    <form id="wealthForm" class="space-y-4">
-                        <input type="hidden" id="wealthType">
-                        <input type="text" id="wealthName" placeholder="Name" class="input-box" required>
-                        <input type="number" id="wealthValue" placeholder="Value (£)" class="input-box" step="0.01" required>
-                        <div id="assetTypeContainer">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Category</label>
-                            <div class="relative mt-1">
-                                <select id="wealthCategory" class="input-box appearance-none bg-white"><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Stock">Stock</option><option value="Crypto">Crypto</option><option value="Property">Property</option><option value="Pension">Pension</option></select>
-                                <div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></div>
-                            </div>
-                        </div>
-                        <div class="flex gap-3 pt-4"><button type="button" onclick="closeWealthModal()" class="w-1/2 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancel</button><button type="submit" class="w-1/2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Save</button></div>
-                    </form>
-                </div>
-            </div>
-            <div id="goalFormContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div class="card p-8 w-full max-w-sm shadow-2xl">
-                    <h3 class="font-bold text-xl mb-6 text-slate-800">Add Savings Goal</h3>
-                    <form id="goalForm" class="space-y-4">
-                        <input type="text" id="goalName" placeholder="Goal Name" class="input-box" required>
-                        <input type="number" id="goalTarget" placeholder="Target Amount (£)" class="input-box" step="0.01" required>
-                        <input type="number" id="goalCurrent" placeholder="Current Saved (£)" class="input-box" step="0.01" required>
-                        <div class="flex gap-3 pt-4"><button type="button" onclick="document.getElementById('goalFormContainer').classList.add('hidden')" class="w-1/2 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancel</button><button type="submit" class="w-1/2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Save</button></div>
-                    </form>
-                </div>
-            </div>
+            <div id="wealthFormContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all"><div class="card p-8 w-full max-w-sm shadow-2xl scale-100"><h3 class="font-bold text-xl mb-6 text-slate-800" id="wealthFormTitle">Add Item</h3><form id="wealthForm" class="space-y-4"><input type="hidden" id="wealthType"><input type="text" id="wealthName" placeholder="Name" class="input-box" required><input type="number" id="wealthValue" placeholder="Value (£)" class="input-box" step="0.01" required><div id="assetTypeContainer"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Category</label><div class="relative mt-1"><select id="wealthCategory" class="input-box appearance-none bg-white"><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Stock">Stock</option><option value="Crypto">Crypto</option><option value="Property">Property</option><option value="Pension">Pension</option></select><div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></div></div></div><div class="flex gap-3 pt-4"><button type="button" onclick="closeWealthModal()" class="w-1/2 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancel</button><button type="submit" class="w-1/2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Save</button></div></form></div></div>
+            <div id="goalFormContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><div class="card p-8 w-full max-w-sm shadow-2xl"><h3 class="font-bold text-xl mb-6 text-slate-800">Add Savings Goal</h3><form id="goalForm" class="space-y-4"><input type="text" id="goalName" placeholder="Goal Name" class="input-box" required><input type="number" id="goalTarget" placeholder="Target Amount (£)" class="input-box" step="0.01" required><input type="number" id="goalCurrent" placeholder="Current Saved (£)" class="input-box" step="0.01" required><div class="flex gap-3 pt-4"><button type="button" onclick="document.getElementById('goalFormContainer').classList.add('hidden')" class="w-1/2 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancel</button><button type="submit" class="w-1/2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Save</button></div></form></div></div>
         </div>
     </div>
 
@@ -462,15 +188,46 @@
         Chart.register(ChartDataLabels);
         const defaultCategories = ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings'];
         let db; try { const raw = localStorage.getItem('infinityDB'); db = raw ? JSON.parse(raw) : null; if(!db || typeof db !== 'object') db = { categories: [...defaultCategories], transactions: {}, assets: [], debts: [], recurring: [], budgets: {}, goals: [], billLog: [] }; if(!Array.isArray(db.assets)) db.assets = []; if(!Array.isArray(db.debts)) db.debts = []; db.assets.forEach(a => a.value = parseFloat(a.value || 0)); db.debts.forEach(d => d.value = parseFloat(d.value || 0)); if(!db.recurring) db.recurring = []; if(!db.budgets) db.budgets = {}; if(!db.goals) db.goals = []; if(!db.billLog) db.billLog = []; } catch(e) { db = { categories: [...defaultCategories], transactions: {}, assets: [], debts: [], recurring: [], budgets: [], goals: [], billLog: [] }; }
+        db.annualIncome = db.annualIncome || 0;
+
         let cloudUrl = localStorage.getItem('infinityCloudUrl') || "";
         function updateCloudUI() { if(cloudUrl) { document.getElementById('cloudUrlInput').value = cloudUrl; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-cloud text-emerald-500"></i> Cloud Active'; document.getElementById('cloudMsg').classList.remove('hidden'); document.getElementById('manualSyncBtn').classList.remove('hidden'); if(document.getElementById('mobileSyncBtn')) document.getElementById('mobileSyncBtn').classList.remove('hidden'); loadFromCloud(); } else { document.getElementById('cloudUrlInput').value = ''; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-hdd text-slate-500"></i> Local Mode'; document.getElementById('cloudMsg').classList.add('hidden'); document.getElementById('manualSyncBtn').classList.add('hidden'); if(document.getElementById('mobileSyncBtn')) document.getElementById('mobileSyncBtn').classList.add('hidden'); } }
         updateCloudUI();
+
+        // --- NEW: PRIVACY & ANIMATION LOGIC ---
+        let privacyMode = false;
+        function togglePrivacy() {
+            privacyMode = !privacyMode;
+            const targets = document.querySelectorAll('.privacy-target, [id^="kpi"], [id^="val"], #ytdIncomeDisplay, #annualGoalDisplay');
+            targets.forEach(el => {
+                if(privacyMode) el.classList.add('privacy-blur');
+                else el.classList.remove('privacy-blur');
+            });
+            const iconD = document.getElementById('privacyIconDesktop');
+            const iconM = document.getElementById('privacyIconMobile');
+            if(privacyMode) { iconD.className="fas fa-eye-slash"; iconM.className="fas fa-eye-slash text-sm"; }
+            else { iconD.className="fas fa-eye"; iconM.className="fas fa-eye text-sm"; }
+        }
+
+        function animateValue(obj, start, end, duration) {
+            if(privacyMode) { obj.innerText = `£${fmt(end)}`; return; } // No anim in privacy mode
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const val = start + progress * (end - start);
+                obj.innerText = `£${fmt(val)}`;
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
         let editingTxIndex = null, editingWealthIndex = null, editingWealthType = null, editingBillIndex = null, currentTxType = 'expense';
         const monthPicker = document.getElementById('monthPicker'); const today = new Date(); monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         let trendChart = null, wealthChart = null, spendingChart = null;
         const fmt = (num) => parseFloat(num).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         function getCategoryColor(category) { const categoryColors = { 'Debt': '#ef4444', 'Liabilities': '#ef4444', 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Bills': '#6366f1', 'Shopping': '#ec4899', 'Education': '#f43f5e', 'Insurance': '#64748b', 'Other': '#9ca3af' }; if(categoryColors[category]) return categoryColors[category]; let hash = 0; for (let i = 0; i < category.length; i++) { hash = category.charCodeAt(i) + ((hash << 5) - hash); } const palette = ['#14b8a6', '#f97316', '#a855f7', '#d946ef', '#0ea5e9', '#84cc16']; return palette[Math.abs(hash) % palette.length]; }
-        async function loadFromCloud() { if(!cloudUrl)return; document.getElementById('cloudLoader').classList.add('show'); try{ const res=await fetch(cloudUrl); const d=await res.json(); if(d&&d.categories){ db=d; db.assets.forEach(a=>a.value=parseFloat(a.value||0)); db.debts.forEach(d=>d.value=parseFloat(d.value||0)); localStorage.setItem('infinityDB',JSON.stringify(db)); renderAll(); } }catch(e){console.error(e);} document.getElementById('cloudLoader').classList.remove('show'); }
+        async function loadFromCloud() { if(!cloudUrl)return; document.getElementById('cloudLoader').classList.add('show'); try{ const res=await fetch(cloudUrl); const d=await res.json(); if(d&&d.categories){ db=d; db.assets.forEach(a=>a.value=parseFloat(a.value||0)); db.debts.forEach(d=>d.value=parseFloat(d.value||0)); db.annualIncome=db.annualIncome||0; localStorage.setItem('infinityDB',JSON.stringify(db)); renderAll(); } }catch(e){console.error(e);} document.getElementById('cloudLoader').classList.remove('show'); }
         async function saveToCloud() { if(!cloudUrl)return; document.getElementById('cloudLoader').classList.add('show'); try{ await fetch(cloudUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)}); }catch(e){console.error(e);} document.getElementById('cloudLoader').classList.remove('show'); }
         function manualSync() { if(cloudUrl) { saveToCloud(); setTimeout(loadFromCloud, 1000); } else { alert("Connect Cloud in Settings first."); } }
         function disconnectCloud() { cloudUrl = ""; localStorage.removeItem('infinityCloudUrl'); updateCloudUI(); alert("Disconnected from Cloud."); }
@@ -487,13 +244,42 @@
         function populateRoundUpSelector() { const select = document.getElementById('roundUpTarget'); select.innerHTML = ''; const defaultOpt = document.createElement('option'); defaultOpt.value = 'Round up'; defaultOpt.innerText = 'Round up (Default)'; select.appendChild(defaultOpt); db.assets.forEach(asset => { if(asset.name !== 'Round up') { const opt = document.createElement('option'); opt.value = asset.name; opt.innerText = asset.name; select.appendChild(opt); } }); }
         function renderAll() { renderDropdowns(); renderDashboard(); renderWealth(); renderSettings(); renderCalendar(); }
         function renderDropdowns() { let optionsHTML = `<optgroup label="Categories">`; db.categories.forEach(c => { optionsHTML += `<option value="${c}">${c}</option>`; }); optionsHTML += `</optgroup>`; if(db.assets.length > 0) { optionsHTML += `<optgroup label="Assets (Auto-Invest)">`; db.assets.forEach(a => { optionsHTML += `<option value="${a.name}">[Asset] ${a.name}</option>`; }); optionsHTML += `</optgroup>`; } document.getElementById('txCategory').innerHTML = optionsHTML; document.getElementById('budgetCat').innerHTML = optionsHTML; }
-        function renderDashboard() { const key = monthPicker.value; const data = db.transactions[key] || []; let inc = 0, exp = 0; const cats = {}; data.forEach(tx => { if (tx.type === 'income') inc += parseFloat(tx.amount); else { exp += parseFloat(tx.amount); cats[tx.category] = (cats[tx.category] || 0) + parseFloat(tx.amount); } }); document.getElementById('kpiIncome').innerText = `£${fmt(inc)}`; document.getElementById('kpiExpense').innerText = `£${fmt(exp)}`; document.getElementById('kpiBalance').innerText = `£${fmt(inc - exp)}`; let topCat = "None"; let topVal = 0; for(const [c, v] of Object.entries(cats)) { if(v > topVal) { topVal = v; topCat = c; } } document.getElementById('kpiTopCat').innerText = topCat; document.getElementById('kpiTopCatVal').innerText = `£${fmt(topVal)}`; const budgetCont = document.getElementById('budgetContainer'); budgetCont.innerHTML = ''; Object.keys(db.budgets).forEach(cat => { const limit = db.budgets[cat]; const spent = cats[cat] || 0; const pct = Math.min((spent / limit) * 100, 100); let color = 'bg-emerald-500'; if(pct > 75) color = 'bg-yellow-400'; if(pct > 95) color = 'bg-rose-500'; budgetCont.innerHTML += `<div><div class="flex justify-between text-xs font-bold mb-1.5 text-slate-500"><span>${cat}</span><span>£${fmt(spent)} / £${fmt(limit)}</span></div><div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${pct}%"></div></div></div>`; }); if(Object.keys(db.budgets).length === 0) budgetCont.innerHTML = '<p class="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">No budgets set.</p>'; const goalList = document.getElementById('goalList'); goalList.innerHTML = ''; db.goals.forEach((g, i) => { const pct = Math.min((g.current / g.target) * 100, 100); goalList.innerHTML += `<div class="bg-slate-50 p-4 rounded-2xl relative group border border-slate-100 transition hover:shadow-sm"><div class="flex justify-between text-xs font-bold mb-2 text-slate-600"><span>${g.name}</span><span>£${fmt(g.current)} / £${fmt(g.target)}</span></div><div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${pct}%"></div></div><button onclick="deleteGoal(${i})" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 hidden group-hover:block transition"><i class="fas fa-times"></i></button></div>`; }); if(db.goals.length === 0) goalList.innerHTML = '<p class="text-sm text-slate-400 text-center bg-slate-50 py-4 rounded-2xl border border-dashed border-slate-200">No goals set.</p>'; const tbody = document.getElementById('txTableBody'); tbody.innerHTML = ''; if (data.length === 0) document.getElementById('listEmptyState').classList.remove('hidden'); else { document.getElementById('listEmptyState').classList.add('hidden'); data.slice().reverse().forEach((tx, i) => { const realIndex = data.length - 1 - i; const autoBadge = tx.isAuto ? `<span class="badge-auto"><i class="fas fa-robot"></i> Auto</span>` : ''; const syncBadge = tx.isSync ? `<span class="badge-sync"><i class="fas fa-sync"></i> Asset</span>` : ''; tbody.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50 transition"><td class="py-4 pl-2"><div class="font-bold text-slate-700 flex items-center gap-2">${tx.desc} ${autoBadge} ${syncBadge}</div><div class="text-xs text-slate-400 font-medium mt-0.5">${tx.category}</div></td><td class="py-4 text-right font-bold ${tx.type === 'income' ? 'text-emerald-500' : 'text-slate-700'}">${tx.type === 'income' ? '+' : '-'}£${fmt(tx.amount)}</td><td class="py-4 text-right"><button onclick="editTx(${realIndex})" class="text-indigo-400 hover:text-indigo-600 transition px-2 btn-press"><i class="fas fa-pen"></i></button><button onclick="deleteTx(${realIndex})" class="text-slate-300 hover:text-rose-500 transition px-2 btn-press"><i class="fas fa-trash-alt"></i></button></td></tr>`; }); } updateTrendChart(); updateSpendingChart(cats); }
+
+        function renderDashboard() {
+            const key = monthPicker.value; const data = db.transactions[key] || []; let inc = 0, exp = 0; const cats = {}; data.forEach(tx => { if (tx.type === 'income') inc += parseFloat(tx.amount); else { exp += parseFloat(tx.amount); cats[tx.category] = (cats[tx.category] || 0) + parseFloat(tx.amount); } }); 
+            
+            // Animation triggers
+            animateValue(document.getElementById('kpiIncome'), 0, inc, 1000);
+            animateValue(document.getElementById('kpiExpense'), 0, exp, 1000);
+            animateValue(document.getElementById('kpiBalance'), 0, inc - exp, 1000);
+            
+            let topCat = "None"; let topVal = 0; for(const [c, v] of Object.entries(cats)) { if(v > topVal) { topVal = v; topCat = c; } } document.getElementById('kpiTopCat').innerText = topCat; 
+            animateValue(document.getElementById('kpiTopCatVal'), 0, topVal, 1000);
+
+            const budgetCont = document.getElementById('budgetContainer'); budgetCont.innerHTML = ''; Object.keys(db.budgets).forEach(cat => { const limit = db.budgets[cat]; const spent = cats[cat] || 0; const pct = Math.min((spent / limit) * 100, 100); let color = 'bg-emerald-500'; if(pct > 75) color = 'bg-yellow-400'; if(pct > 95) color = 'bg-rose-500'; budgetCont.innerHTML += `<div><div class="flex justify-between text-xs font-bold mb-1.5 text-slate-500"><span>${cat}</span><span>£${fmt(spent)} / £${fmt(limit)}</span></div><div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${pct}%"></div></div></div>`; }); if(Object.keys(db.budgets).length === 0) budgetCont.innerHTML = '<p class="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">No budgets set.</p>'; const goalList = document.getElementById('goalList'); goalList.innerHTML = ''; db.goals.forEach((g, i) => { const pct = Math.min((g.current / g.target) * 100, 100); goalList.innerHTML += `<div class="bg-slate-50 p-4 rounded-2xl relative group border border-slate-100 transition hover:shadow-sm"><div class="flex justify-between text-xs font-bold mb-2 text-slate-600"><span>${g.name}</span><span>£${fmt(g.current)} / £${fmt(g.target)}</span></div><div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:${pct}%"></div></div><button onclick="deleteGoal(${i})" class="absolute top-3 right-3 text-slate-300 hover:text-rose-500 hidden group-hover:block transition"><i class="fas fa-times"></i></button></div>`; }); if(db.goals.length === 0) goalList.innerHTML = '<p class="text-sm text-slate-400 text-center bg-slate-50 py-4 rounded-2xl border border-dashed border-slate-200">No goals set.</p>'; const tbody = document.getElementById('txTableBody'); tbody.innerHTML = ''; if (data.length === 0) document.getElementById('listEmptyState').classList.remove('hidden'); else { document.getElementById('listEmptyState').classList.add('hidden'); data.slice().reverse().forEach((tx, i) => { const realIndex = data.length - 1 - i; const autoBadge = tx.isAuto ? `<span class="badge-auto"><i class="fas fa-robot"></i> Auto</span>` : ''; const syncBadge = tx.isSync ? `<span class="badge-sync"><i class="fas fa-sync"></i> Asset</span>` : ''; tbody.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50 transition"><td class="py-4 pl-2"><div class="font-bold text-slate-700 flex items-center gap-2">${tx.desc} ${autoBadge} ${syncBadge}</div><div class="text-xs text-slate-400 font-medium mt-0.5">${tx.category}</div></td><td class="py-4 text-right font-bold ${tx.type === 'income' ? 'text-emerald-500' : 'text-slate-700'} privacy-target">${tx.type === 'income' ? '+' : '-'}£${fmt(tx.amount)}</td><td class="py-4 text-right"><button onclick="editTx(${realIndex})" class="text-indigo-400 hover:text-indigo-600 transition px-2 btn-press"><i class="fas fa-pen"></i></button><button onclick="deleteTx(${realIndex})" class="text-slate-300 hover:text-rose-500 transition px-2 btn-press"><i class="fas fa-trash-alt"></i></button></td></tr>`; }); }
+            
+            // ANNUAL INCOME LOGIC
+            const currentYear = new Date().getFullYear();
+            let ytdIncome = 0;
+            Object.keys(db.transactions).forEach(monthKey => { if(monthKey.startsWith(currentYear)) { db.transactions[monthKey].forEach(tx => { if(tx.type === 'income') ytdIncome += parseFloat(tx.amount); }); } });
+            document.getElementById('currentYearLabel').innerText = `${currentYear} Progress`;
+            animateValue(document.getElementById('ytdIncomeDisplay'), 0, ytdIncome, 1500);
+            document.getElementById('annualGoalDisplay').innerText = `£${fmt(db.annualIncome)}`;
+            let annualPct = 0;
+            if(db.annualIncome > 0) { annualPct = Math.min((ytdIncome / db.annualIncome) * 100, 100); }
+            document.getElementById('annualProgressBar').style.width = `${annualPct}%`;
+            document.getElementById('annualProgressText').innerText = `${annualPct.toFixed(1)}%`;
+            updateTrendChart(); updateSpendingChart(cats);
+        }
+
+        function editAnnualIncome() { const current = db.annualIncome || 0; const newVal = prompt("Set your Annual Income Target:", current); if(newVal !== null) { const parsed = parseFloat(newVal); if(!isNaN(parsed)) { db.annualIncome = parsed; saveData(); } } }
+
         function updateTrendChart(){const ctx=document.getElementById('trendChart').getContext('2d');const labels=[],incData=[],expData=[];let d=new Date();d.setMonth(d.getMonth()-5);let totalInc=0,totalExp=0;for(let i=0;i<6;i++){const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;labels.push(d.toLocaleString('default',{month:'short'}));const txs=db.transactions[key]||[];let inc=0,exp=0;txs.forEach(t=>t.type==='income'?inc+=parseFloat(t.amount):exp+=parseFloat(t.amount));incData.push(inc);expData.push(exp);totalInc+=inc;totalExp+=exp;d.setMonth(d.getMonth()+1);}document.getElementById('trendTotalIncome').innerText=`£${fmt(totalInc)}`;document.getElementById('trendTotalExpense').innerText=`£${fmt(totalExp)}`;if(trendChart)trendChart.destroy();trendChart=new Chart(ctx,{type:'bar',data:{labels:labels,datasets:[{label:'Income',data:incData,backgroundColor:'#10b981',borderRadius:6,barPercentage:0.6},{label:'Expenses',data:expData,backgroundColor:'#f43f5e',borderRadius:6,barPercentage:0.6}]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:10}},scales:{y:{display:false,grid:{display:false}},x:{grid:{display:false,drawBorder:false},ticks:{font:{family:"'Plus Jakarta Sans', sans-serif",size:11,weight:'600'},color:'#94a3b8'}}},plugins:{legend:{display:false},datalabels:{display:false}}}});}
-        function updateSpendingChart(cats){const ctx=document.getElementById('spendingChart').getContext('2d');const labels=Object.keys(cats);const values=Object.values(cats);const backgroundColors=labels.map(label=>getCategoryColor(label));if(spendingChart)spendingChart.destroy();if(values.length>0){spendingChart=new Chart(ctx,{type:'doughnut',data:{labels:labels,datasets:[{data:values,backgroundColor:backgroundColors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'right',labels:{usePointStyle:true,boxWidth:8,font:{family:"'Plus Jakarta Sans', sans-serif",size:11},generateLabels:(chart)=>{const data=chart.data;if(data.labels.length&&data.datasets.length){return data.labels.map((label,i)=>{const value=data.datasets[0].data[i];const meta=chart.getDatasetMeta(0);const style=meta.controller.getStyle(i);return{text:`${label} (£${fmt(value)})`,fillStyle:style.backgroundColor,strokeStyle:style.borderColor,lineWidth:style.borderWidth,hidden:isNaN(data.datasets[0].data[i])||meta.data[i].hidden,index:i};});}return[];}}},datalabels:{display:false}}}});}}
+        function updateSpendingChart(cats){const ctx=document.getElementById('spendingChart').getContext('2d');const labels=Object.keys(cats);const values=Object.values(cats);const backgroundColors=labels.map(label=>getCategoryColor(label));if(spendingChart)spendingChart.destroy();if(values.length>0){spendingChart=new Chart(ctx,{type:'doughnut',data:{labels:labels,datasets:[{data:values,backgroundColor:backgroundColors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'75%',plugins:{legend:{position:'right',labels:{usePointStyle:true,boxWidth:8,font:{family:"'Plus Jakarta Sans', sans-serif",size:11},generateLabels:(chart)=>{const data=chart.data;if(data.labels.length&&data.datasets.length){return data.labels.map((label,i)=>{const value=data.datasets[0].data[i];const meta=chart.getDatasetMeta(0);const style=meta.controller.getStyle(i);return{text:`${label} (${fmt(value)})`,fillStyle:style.backgroundColor,strokeStyle:style.borderColor,lineWidth:style.borderWidth,hidden:isNaN(data.datasets[0].data[i])||meta.data[i].hidden,index:i};});}return[];}}},datalabels:{display:false}}}});}}
         function updateWealthChart(typeMap){const ctx=document.getElementById('wealthChart').getContext('2d');const keys=Object.keys(typeMap);const values=Object.values(typeMap);const displayLabels=keys.map((k,i)=>`${k}: £${fmt(values[i])}`);if(wealthChart)wealthChart.destroy();const colors=keys.map(l=>{if(l==='Savings')return'#3b82f6';if(l==='Pension')return'#f97316';if(l==='Investment')return'#15803d';if(l==='Stock')return'#86efac';if(l==='Crypto')return'#10b981';if(l==='Property')return'#14b8a6';if(l==='Liabilities')return'#ef4444';return'#94a3b8';});if(values.length>0){wealthChart=new Chart(ctx,{type:'doughnut',data:{labels:displayLabels,datasets:[{data:values,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:10},cutout:'75%',plugins:{legend:{position:'right',labels:{usePointStyle:true,font:{size:11,family:"'Plus Jakarta Sans', sans-serif"}}},datalabels:{display:false}}}});}}
         function renderReports() { const tbody = document.getElementById('reportsTableBody'); tbody.innerHTML = ''; const months = Object.keys(db.transactions).sort().reverse(); months.forEach(m => { const txs = db.transactions[m]; let inc=0, exp=0; txs.forEach(t => t.type==='income' ? inc+=parseFloat(t.amount) : exp+=parseFloat(t.amount)); const net = inc - exp; const rate = inc > 0 ? Math.round((net/inc)*100) : 0; tbody.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50/50 transition"><td class="py-4 pl-2 font-bold text-slate-700">${m}</td><td class="py-4 text-right text-emerald-600 font-bold">£${fmt(inc)}</td><td class="py-4 text-right text-rose-600 font-bold">£${fmt(exp)}</td><td class="py-4 text-right text-indigo-600 font-bold">£${fmt(net)}</td><td class="py-4 text-right pr-2 font-bold text-slate-400">${rate}%</td></tr>`; }); }
         function renderCalendar() { const grid = document.getElementById('calendarGrid'); grid.innerHTML = ''; const [y, m] = monthPicker.value.split('-').map(Number); const daysInMonth = new Date(y, m, 0).getDate(); const currentDate = new Date(); const currentDay = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth()); let totalBills = 0; for(let i=1; i<=daysInMonth; i++) { let pills = ''; let billsToday = db.recurring.filter(b => parseInt(b.day) === i); if(i === daysInMonth) { const overflowBills = db.recurring.filter(b => parseInt(b.day) > daysInMonth); overflowBills.forEach(b => { b.isAdjusted = true; billsToday.push(b); }); } if(billsToday.length > 0) { billsToday.forEach(b => { totalBills += parseFloat(b.amount); const adjustedClass = b.isAdjusted ? 'adjusted' : ''; const label = b.isAdjusted ? '(Adj) ' : ''; pills += `<div class="bill-pill ${adjustedClass}">${label}${b.desc}: £${b.amount}</div>`; delete b.isAdjusted; }); } const todayClass = (isCurrentMonth && i === currentDay) ? 'today' : ''; grid.innerHTML += `<div class="cal-day ${todayClass}"><div class="text-[10px] font-bold ${todayClass ? 'text-amber-500' : 'text-slate-400'} mb-1">${i}</div><div class="flex flex-col gap-1 w-full overflow-hidden">${pills}</div></div>`; } document.getElementById('calTotalBills').innerText = `£${fmt(totalBills)}`; }
-        function renderSettings() { const billList = document.getElementById('billList'); billList.innerHTML = ''; db.recurring.sort((a,b)=>a.day-b.day).forEach((b, i) => { billList.innerHTML += `<li class="flex justify-between items-center bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm"><span><span class="bg-indigo-100 text-indigo-600 px-2 py-1 rounded-lg text-xs font-bold mr-2">Day ${b.day}</span> ${b.desc}</span><div class="flex gap-3"><span class="font-bold text-slate-700">£${fmt(b.amount)}</span><button onclick="editBill(${i})" class="text-indigo-400 hover:text-indigo-600 transition btn-press"><i class="fas fa-pen"></i></button><button onclick="deleteBill(${i})" class="text-slate-300 hover:text-rose-500 transition btn-press"><i class="fas fa-times"></i></button></div></li>`; }); const budList = document.getElementById('budgetSettingsList'); budList.innerHTML = ''; Object.keys(db.budgets).forEach(cat => { budList.innerHTML += `<li class="flex justify-between items-center bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm"><span>${cat}</span><div class="flex gap-3"><span class="font-bold text-slate-700">£${fmt(db.budgets[cat])}</span><button onclick="deleteBudget('${cat}')" class="text-slate-300 hover:text-rose-500 transition btn-press"><i class="fas fa-times"></i></button></div></li>`; }); const catList = document.getElementById('settingsCatList'); catList.innerHTML = ''; db.categories.forEach(c => { catList.innerHTML += `<div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm">${c} <button onclick="deleteCategory('${c}')" class="text-slate-400 hover:text-rose-500 transition btn-press"><i class="fas fa-times"></i></button></div>`; }); }
+        function renderSettings() { const billList = document.getElementById('billList'); billList.innerHTML = ''; db.recurring.sort((a,b)=>a.day-b.day).forEach((b, i) => { billList.innerHTML += `<li class="flex justify-between items-center bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm"><span><span class="bg-indigo-100 text-indigo-600 px-2 py-1 rounded-lg text-xs font-bold mr-2">Day ${b.day}</span> ${b.desc}</span><div class="flex gap-3"><span class="font-bold text-slate-700">£${fmt(b.amount)}</span><button onclick="editBill(${i})" class="text-indigo-400 hover:text-indigo-600 transition btn-press"><i class="fas fa-pen"></i></button><button onclick="deleteBill(${i})" class="text-slate-300 hover:text-rose-500 transition btn-press"><i class="fas fa-times"></i></button></div></li>`; }); const budList = document.getElementById('budgetSettingsList'); budList.innerHTML = ''; Object.keys(db.budgets).forEach(cat => { budList.innerHTML += `<li class="flex justify-between items-center bg-white border border-slate-200 p-3 rounded-xl text-sm"><span>${cat}</span><div class="flex gap-3"><span class="font-bold text-slate-700">£${fmt(db.budgets[cat])}</span><button onclick="deleteBudget('${cat}')" class="text-slate-400 hover:text-rose-500 transition btn-press"><i class="fas fa-times"></i></button></div></li>`; }); const catList = document.getElementById('settingsCatList'); catList.innerHTML = ''; db.categories.forEach(c => { catList.innerHTML += `<div class="px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 flex items-center gap-2 shadow-sm">${c} <button onclick="deleteCategory('${c}')" class="text-slate-400 hover:text-rose-500 transition btn-press"><i class="fas fa-times"></i></button></div>`; }); }
 
         document.getElementById('txForm').addEventListener('submit', e => { e.preventDefault(); const k=monthPicker.value; if(!db.transactions[k]) db.transactions[k]=[]; const amt = parseFloat(document.getElementById('txAmount').value); const desc = document.getElementById('txDesc').value; const cat = document.getElementById('txCategory').value; if(editingTxIndex !== null) { db.transactions[k][editingTxIndex] = { desc: desc, amount: amt, category: cat, type: currentTxType }; } else { let isAssetSync = false; const linkedAsset = db.assets.find(a => a.name === cat); if(currentTxType === 'expense' && linkedAsset) { linkedAsset.value = parseFloat(linkedAsset.value || 0) + amt; isAssetSync = true; saveData(); const notify = document.getElementById('assetSyncNotification'); const notifyText = document.getElementById('assetSyncText'); notify.classList.remove('hidden'); notifyText.innerText = `Added £${fmt(amt)} to ${linkedAsset.name}`; setTimeout(() => notify.classList.add('hidden'), 3000); } const isDebt = document.getElementById('isDebtPayment').checked; const debtIndex = document.getElementById('linkedDebtId').value; if(currentTxType === 'expense' && isDebt && debtIndex !== "") { if(db.debts[debtIndex]) { db.debts[debtIndex].value -= amt; if(db.debts[debtIndex].value < 0) db.debts[debtIndex].value = 0; } } const isRoundUp = document.getElementById('isRoundUp').checked; const roundUpTargetName = document.getElementById('roundUpTarget').value; if(currentTxType === 'expense' && isRoundUp && amt > 0) { const ceiling = Math.ceil(amt); let diff = ceiling - amt; if(diff > 0.001) { diff = parseFloat(diff.toFixed(2)); db.transactions[k].push({ desc: `Round Up (${desc})`, amount: diff, category: "Savings", type: "expense", isAuto: true }); let targetAsset = db.assets.find(a => a.name === roundUpTargetName); if(!targetAsset) { targetAsset = { name: roundUpTargetName, value: 0, type: 'Savings' }; db.assets.push(targetAsset); } targetAsset.value = parseFloat(targetAsset.value) + diff; } } db.transactions[k].push({ desc: desc, amount: amt, category: cat, type: currentTxType, isSync: isAssetSync }); } cancelTxEdit(); saveData(); });
         document.getElementById('wealthForm').addEventListener('submit', e => { e.preventDefault(); const t=document.getElementById('wealthType').value; const n=document.getElementById('wealthName').value; const v=parseFloat(document.getElementById('wealthValue').value); const c=document.getElementById('wealthCategory').value; if(editingWealthIndex !== null) { if(editingWealthType === 'asset') db.assets[editingWealthIndex] = {name:n, value:v, type:c}; else db.debts[editingWealthIndex] = {name:n, value:v}; } else { if(t==='asset') db.assets.push({name:n,value:v,type:c}); else db.debts.push({name:n,value:v}); } closeWealthModal(); saveData(); });
@@ -507,7 +293,7 @@
         function editWealth(type, index) { const item=(type==='asset')?db.assets[index]:db.debts[index]; openWealthModal(type); document.getElementById('wealthName').value=item.name; document.getElementById('wealthValue').value=item.value; if(type==='asset')document.getElementById('wealthCategory').value=item.type; editingWealthIndex=index; editingWealthType=type; document.getElementById('wealthFormTitle').innerText=`Edit ${type==='asset'?'Asset':'Liability'}`; }
         function closeWealthModal() { document.getElementById('wealthFormContainer').classList.add('hidden'); document.getElementById('wealthForm').reset(); editingWealthIndex=null; editingWealthType=null; }
         function editBill(index) { const bill=db.recurring[index]; document.getElementById('billDay').value=bill.day; document.getElementById('billDesc').value=bill.desc; document.getElementById('billAmount').value=bill.amount; editingBillIndex=index; document.getElementById('billFormContainer').classList.add('editing-mode','p-4','rounded-xl'); document.getElementById('billFormTitle').innerText="Update Bill"; document.getElementById('billSubmitBtn').innerHTML='<i class="fas fa-check"></i>'; document.getElementById('cancelBillEditBtn').classList.remove('hidden'); }
-        function cancelBillEdit() { editingBillIndex=null; document.getElementById('billForm').reset(); document.getElementById('billFormContainer').classList.remove('editing-mode','p-4','rounded-xl'); document.getElementById('billFormTitle').innerText="Recurring Bills"; document.getElementById('billSubmitBtn').innerHTML='<i class="fas fa-plus"></i>'; document.getElementById('cancelBillEditBtn').classList.add('hidden'); }
+        function cancelBillEdit() { editingBillIndex=null; document.getElementById('billForm').reset(); document.getElementById('billFormContainer').classList.remove('editing-mode','p-4','rounded-xl'); document.getElementById('billFormTitle').innerHTML='<i class="fas fa-calendar-check text-indigo-500"></i> Recurring Bills'; document.getElementById('billSubmitBtn').innerHTML='<i class="fas fa-plus"></i>'; document.getElementById('cancelBillEditBtn').classList.add('hidden'); }
         function openWealthModal(type) { document.getElementById('wealthFormContainer').classList.remove('hidden'); document.getElementById('wealthType').value = type; document.getElementById('wealthFormTitle').innerText = type === 'asset' ? 'Add Asset' : 'Add Debt'; if(type === 'debt') document.getElementById('assetTypeContainer').classList.add('hidden'); else document.getElementById('assetTypeContainer').classList.remove('hidden'); }
         function openGoalModal() { document.getElementById('goalFormContainer').classList.remove('hidden'); }
         window.deleteTx = (i) => { db.transactions[monthPicker.value].splice(i, 1); saveData(); };
