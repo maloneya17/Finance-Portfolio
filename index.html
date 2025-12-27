@@ -101,17 +101,18 @@
             <div id="view-dashboard" class="view-section fade-in">
                 
                 <div class="card p-6 mb-8 bg-white border border-slate-100">
-                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                        <div class="flex-1">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div class="flex-1 text-center md:text-left">
                             <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Earned in <span id="currentYearLabel">2025</span></p>
                             <h2 class="text-4xl font-extrabold text-emerald-600 tracking-tight privacy-target" id="ytdIncomeDisplay">£0.00</h2>
                         </div>
                         
-                        <div class="hidden md:block w-px h-16 bg-slate-100"></div>
+                        <div class="hidden md:block w-px h-12 bg-slate-100"></div>
+                        <div class="block md:hidden w-full h-px bg-slate-100"></div>
                         
-                        <div class="flex-1 md:text-right group cursor-pointer" onclick="editAnnualIncome()">
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex items-center md:justify-end gap-2">
-                                Annual Salary <span class="bg-slate-100 text-slate-400 p-1 rounded-md text-[10px] group-hover:text-indigo-600 transition"><i class="fas fa-pen"></i></span>
+                        <div class="flex-1 text-center md:text-right group cursor-pointer" onclick="editAnnualIncome()">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex justify-center md:justify-end gap-2 items-center">
+                                Annual Salary <i class="fas fa-pen text-[10px] text-slate-300 group-hover:text-indigo-500 transition"></i>
                             </p>
                             <h2 class="text-4xl font-extrabold text-slate-800 tracking-tight privacy-target hover:text-indigo-600 transition" id="annualSalaryDisplay">£0.00</h2>
                         </div>
@@ -251,7 +252,7 @@
             const currentYear = new Date().getFullYear();
             let ytdIncome = 0;
             Object.keys(db.transactions).forEach(monthKey => { if(monthKey.startsWith(currentYear)) { db.transactions[monthKey].forEach(tx => { if(tx.type === 'income') ytdIncome += parseFloat(tx.amount); }); } });
-            document.getElementById('currentYearLabel').innerText = `${currentYear} Progress`;
+            document.getElementById('currentYearLabel').innerText = `${currentYear}`;
             animateValue(document.getElementById('ytdIncomeDisplay'), 0, ytdIncome, 1500);
             animateValue(document.getElementById('annualSalaryDisplay'), 0, db.annualIncome, 1000);
             updateTrendChart(); updateSpendingChart(cats);
