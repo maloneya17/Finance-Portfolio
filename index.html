@@ -219,9 +219,9 @@
 
         function togglePrivacy() {
             privacyMode = !privacyMode;
-            localStorage.setItem('infinityPrivacy', privacyMode); // Save state
+            localStorage.setItem('infinityPrivacy', privacyMode); 
             updatePrivacyUI();
-            renderDashboard(); // Re-render to handle animations vs static blur
+            renderDashboard(); 
         }
 
         function animateValue(obj, start, end, duration) {
@@ -249,7 +249,12 @@
         function checkAutoBills() { try { const now = new Date(); const startDate = new Date('2025-12-26T00:00:00'); if (now < startDate) return; const currentDay = now.getDate(); const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; let addedBills = []; db.recurring.forEach(bill => { if(parseInt(bill.day) === currentDay) { const paymentId = `${bill.desc}-${currentKey}`; if(!db.billLog.includes(paymentId)) { if(!db.transactions[currentKey]) db.transactions[currentKey] = []; db.transactions[currentKey].push({ desc: bill.desc, amount: bill.amount, category: "Bills", type: "expense", isAuto: true }); db.billLog.push(paymentId); addedBills.push(bill.desc); } } }); if(addedBills.length > 0) { saveData(); const notify = document.getElementById('autoPayNotification'); document.getElementById('autoPayText').innerText = `Processed: ${addedBills.join(', ')}`; notify.classList.remove('hidden'); } } catch(e) {} }
         function saveData() { localStorage.setItem('infinityDB', JSON.stringify(db)); if(cloudUrl) saveToCloud(); renderAll(); }
         function debugData() { const raw = JSON.stringify(db, null, 2); const win = window.open("", "Debug", "width=600,height=600"); win.document.write("<pre>" + raw + "</pre>"); }
-        function switchView(view) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${view}`).classList.remove('hidden'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); document.getElementById(`nav-${view}`).classList.add('active'); cancelTxEdit(); closeWealthModal(); cancelBillEdit(); if(window.innerWidth < 768) toggleMobileMenu(); if(view === 'dashboard') { trendChart.resize(); spendingChart.resize(); populateDebtSelector(); populateRoundUpSelector(); } if(view === 'wealth') wealthChart.resize(); if(view === 'calendar') renderCalendar(); if(view === 'reports') renderReports(); }
+        function switchView(view) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${view}`).classList.remove('hidden'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); document.getElementById(`nav-${view}`).classList.add('active'); cancelTxEdit(); closeWealthModal(); cancelBillEdit(); if(window.innerWidth < 768) toggleMobileMenu(); if(view === 'dashboard') { trendChart.resize(); spendingChart.resize(); populateDebtSelector(); populateRoundUpSelector(); } if(view === 'wealth') wealthChart.resize(); if(view === 'calendar') renderCalendar(); 
+        
+        // --- KEY FIX FOR REPORTS: Force render when switching to tab
+        if(view === 'reports') renderReports(); 
+        }
+        
         function toggleMobileMenu() { const s = document.getElementById('sidebar'); s.classList.toggle('hidden'); s.classList.toggle('flex'); s.classList.toggle('fixed'); s.classList.toggle('inset-0'); }
         function setTxType(type) { currentTxType = type; document.getElementById('txType').value = type; const btnExp = document.getElementById('btn-expense'); const btnInc = document.getElementById('btn-income'); const sub = document.getElementById('submitBtn'); const debtContainer = document.getElementById('debtLinkContainer'); const roundUpContainer = document.getElementById('roundUpContainer'); if (type === 'expense') { btnExp.className="btn-press py-3 rounded-xl text-sm font-bold bg-white text-rose-600 shadow-sm transition-all"; btnInc.className="btn-press py-3 rounded-xl text-sm font-bold text-slate-400 transition-all"; if(!editingTxIndex && editingTxIndex !== 0) sub.innerText="Log Expense"; sub.classList.remove('bg-emerald-500', 'hover:bg-emerald-600'); sub.classList.add('bg-rose-600', 'hover:bg-rose-700'); debtContainer.classList.remove('hidden'); roundUpContainer.classList.remove('hidden'); populateDebtSelector(); populateRoundUpSelector(); } else { btnExp.className="btn-press py-3 rounded-xl text-sm font-bold text-slate-400 transition-all"; btnInc.className="btn-press py-3 rounded-xl text-sm font-bold bg-white text-emerald-600 shadow-sm transition-all"; if(!editingTxIndex && editingTxIndex !== 0) sub.innerText="Log Income"; sub.classList.remove('bg-rose-600', 'hover:bg-rose-700'); sub.classList.add('bg-emerald-500', 'hover:bg-emerald-600'); debtContainer.classList.add('hidden'); roundUpContainer.classList.add('hidden'); } }
         document.getElementById('isDebtPayment').addEventListener('change', (e) => { const s = document.getElementById('debtSelector'); if(e.target.checked) s.classList.remove('hidden'); else s.classList.add('hidden'); });
@@ -287,37 +292,53 @@
         // --- FIXED REPORT RENDERER ---
         function renderReports() { 
             const tbody = document.getElementById('reportsTableBody'); 
-            if (!tbody) return; // Safety
+            if (!tbody) return; 
             let html = '';
+            
+            // Safety Check: Ensure transactions exist
+            if (!db.transactions || Object.keys(db.transactions).length === 0) {
+                html = `<tr><td colspan="5" class="text-center py-12 text-slate-400 font-medium">No transactions recorded yet.</td></tr>`;
+                tbody.innerHTML = html;
+                return;
+            }
+
             const months = Object.keys(db.transactions).sort().reverse(); 
             
-            if (months.length === 0) {
-                html = `<tr><td colspan="5" class="text-center py-12 text-slate-400 font-medium">No transactions recorded yet.</td></tr>`;
-            } else {
-                months.forEach(m => { 
-                    const txs = db.transactions[m] || []; 
-                    let inc = 0, exp = 0; 
-                    txs.forEach(t => {
-                        const val = parseFloat(t.amount) || 0;
-                        if (t.type === 'income') inc += val; 
-                        else exp += val;
-                    });
-                    const net = inc - exp; 
-                    const rate = inc > 0 ? Math.round((net / inc) * 100) : 0;
-                    
-                    // Format Month: "2025-01" -> "Jan 2025"
-                    const dateObj = new Date(m + "-01");
-                    const monthName = dateObj.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+            // Manual Date Splitter (Robust)
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-                    html += `<tr class="border-b border-slate-50 hover:bg-slate-50/50 transition">
-                        <td class="py-4 pl-2 font-bold text-slate-700">${monthName}</td>
-                        <td class="py-4 text-right text-emerald-600 font-bold">£${fmt(inc)}</td>
-                        <td class="py-4 text-right text-rose-600 font-bold">£${fmt(exp)}</td>
-                        <td class="py-4 text-right text-indigo-600 font-bold">£${fmt(net)}</td>
-                        <td class="py-4 text-right pr-2 font-bold text-slate-400">${rate}%</td>
-                    </tr>`; 
-                }); 
-            }
+            months.forEach(m => { 
+                const txs = db.transactions[m] || []; 
+                let inc = 0, exp = 0; 
+                txs.forEach(t => {
+                    const val = parseFloat(t.amount) || 0;
+                    if (t.type === 'income') inc += val; 
+                    else exp += val;
+                });
+                const net = inc - exp; 
+                const rate = inc > 0 ? Math.round((net / inc) * 100) : 0;
+                
+                // "2025-01" -> Split into parts
+                const parts = m.split('-'); // ["2025", "01"]
+                let monthDisplay = m; // Fallback
+                
+                if (parts.length === 2) {
+                    const year = parts[0];
+                    const monthIndex = parseInt(parts[1], 10) - 1; // 0-based index
+                    if (monthNames[monthIndex]) {
+                        monthDisplay = `${monthNames[monthIndex]} ${year}`;
+                    }
+                }
+
+                html += `<tr class="border-b border-slate-50 hover:bg-slate-50/50 transition">
+                    <td class="py-4 pl-2 font-bold text-slate-700">${monthDisplay}</td>
+                    <td class="py-4 text-right text-emerald-600 font-bold">£${fmt(inc)}</td>
+                    <td class="py-4 text-right text-rose-600 font-bold">£${fmt(exp)}</td>
+                    <td class="py-4 text-right text-indigo-600 font-bold">£${fmt(net)}</td>
+                    <td class="py-4 text-right pr-2 font-bold text-slate-400">${rate}%</td>
+                </tr>`; 
+            }); 
+            
             tbody.innerHTML = html;
         }
 
