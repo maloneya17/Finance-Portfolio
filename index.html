@@ -37,7 +37,6 @@
         .cal-day.today { border: 2px solid #f59e0b; background-color: #fffbeb; }
         .bill-pill { font-size: 9px; padding: 3px 6px; border-radius: 6px; background: #eff6ff; color: #1e40af; font-weight: 700; border-left: 2px solid #3b82f6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .bill-pill.adjusted { border-left-color: #f59e0b; background: #fff7ed; color: #9a3412; }
-        
         .privacy-blur { filter: blur(8px); transition: filter 0.3s ease; user-select: none; }
         .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: #4f46e5; color: white; border-radius: 50%; box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5); display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; z-index: 40; }
         .fab:active { transform: scale(0.9); }
@@ -69,7 +68,7 @@
             </nav>
         </div>
         <div class="p-6 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 space-y-3">
-            <button onclick="togglePrivacy()" class="btn-press text-xs text-slate-400 hover:text-white font-bold flex items-center gap-2 mb-2 w-full p-2 rounded hover:bg-slate-800 transition"><i id="privacyIconDesktop" class="fas fa-eye"></i> Toggle Privacy</button>
+            <button onclick="togglePrivacy()" class="btn-press text-xs text-slate-400 hover:text-white font-bold flex items-center gap-2 mb-2 w-full p-2 rounded hover:bg-slate-800 transition"><i id="privacyIconDesktop" class="fas fa-eye"></i> Toggle Privacy Mode</button>
             <div id="cloudStatus" class="text-[10px] font-bold text-slate-500 flex items-center gap-2 mb-2 uppercase tracking-wide pl-1"><i class="fas fa-hdd"></i> Local Mode</div>
             <button onclick="manualSync()" id="manualSyncBtn" class="btn-press text-xs text-white bg-indigo-600 font-bold flex items-center justify-center gap-2 w-full p-3 rounded-xl hover:bg-indigo-500 transition hidden shadow-lg shadow-indigo-900/20"><i class="fas fa-sync"></i> Sync Now</button>
             <div class="flex gap-2">
