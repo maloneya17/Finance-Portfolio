@@ -37,6 +37,7 @@
         .cal-day.today { border: 2px solid #f59e0b; background-color: #fffbeb; }
         .bill-pill { font-size: 9px; padding: 3px 6px; border-radius: 6px; background: #eff6ff; color: #1e40af; font-weight: 700; border-left: 2px solid #3b82f6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .bill-pill.adjusted { border-left-color: #f59e0b; background: #fff7ed; color: #9a3412; }
+        
         .privacy-blur { filter: blur(8px); transition: filter 0.3s ease; user-select: none; }
         .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: #4f46e5; color: white; border-radius: 50%; box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5); display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; z-index: 40; }
         .fab:active { transform: scale(0.9); }
@@ -68,7 +69,7 @@
             </nav>
         </div>
         <div class="p-6 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 space-y-3">
-            <button onclick="togglePrivacy()" class="btn-press text-xs text-slate-400 hover:text-white font-bold flex items-center gap-2 mb-2 w-full p-2 rounded hover:bg-slate-800 transition"><i id="privacyIconDesktop" class="fas fa-eye"></i> Privacy Mode</button>
+            <button onclick="togglePrivacy()" class="btn-press text-xs text-slate-400 hover:text-white font-bold flex items-center gap-2 mb-2 w-full p-2 rounded hover:bg-slate-800 transition"><i id="privacyIconDesktop" class="fas fa-eye"></i> Toggle Privacy Mode</button>
             <div id="cloudStatus" class="text-[10px] font-bold text-slate-500 flex items-center gap-2 mb-2 uppercase tracking-wide pl-1"><i class="fas fa-hdd"></i> Local Mode</div>
             <button onclick="manualSync()" id="manualSyncBtn" class="btn-press text-xs text-white bg-indigo-600 font-bold flex items-center justify-center gap-2 w-full p-3 rounded-xl hover:bg-indigo-500 transition hidden shadow-lg shadow-indigo-900/20"><i class="fas fa-sync"></i> Sync Now</button>
             <div class="flex gap-2">
@@ -86,7 +87,7 @@
                 <div class="w-10 h-10 bg-indigo-600 rounded-xl hidden items-center justify-center text-white text-sm shadow-md shadow-indigo-200"><i class="fas fa-briefcase"></i></div>
                 <h1 class="font-bold text-lg text-slate-800 tracking-tight">Portfolio</h1>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
                 <button onclick="togglePrivacy()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i id="privacyIconMobile" class="fas fa-eye text-sm"></i></button>
                 <button onclick="manualSync()" class="w-9 h-9 bg-slate-100 text-indigo-600 rounded-full flex items-center justify-center hidden active:scale-90 transition" id="mobileSyncBtn"><i class="fas fa-sync text-sm"></i></button>
                 <button onclick="toggleMobileMenu()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i class="fas fa-bars text-sm"></i></button>
@@ -179,7 +180,6 @@
             </div>
 
             <div id="view-calendar" class="view-section hidden fade-in"><div class="flex justify-between items-end mb-8"><div><h2 class="text-2xl font-bold text-slate-800">Bill Calendar</h2><p class="text-slate-500 text-sm mt-1 font-medium">Total: <span id="calTotalBills" class="font-bold text-indigo-600">£0.00</span></p></div><button onclick="switchView('settings')" class="text-xs bg-white border border-slate-200 px-4 py-2 rounded-full font-bold shadow-sm">Manage</button></div><div class="card p-6"><div class="calendar-grid mb-4"><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Mon</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Tue</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Wed</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Thu</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Fri</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Sat</div><div class="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wide">Sun</div></div><div id="calendarGrid" class="calendar-grid"></div></div></div>
-            
             <div id="view-wealth" class="view-section hidden fade-in"><div class="card bg-gradient-to-r from-slate-900 to-slate-800 text-white p-8 md:p-10 mb-8 relative overflow-hidden border-none shadow-2xl"><div class="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6"><div><p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest mb-2">Net Worth</p><h1 class="text-5xl md:text-6xl font-extrabold tracking-tight privacy-target" id="totalWealth">£0.00</h1><div class="mt-4 flex gap-6 text-sm font-medium"><span class="text-emerald-400 flex items-center gap-2"><i class="fas fa-arrow-up"></i> <span class="privacy-target" id="valAssets">£0</span></span><span class="text-rose-400 flex items-center gap-2"><i class="fas fa-arrow-down"></i> <span class="privacy-target" id="valDebt">£0</span></span></div></div><div class="text-right bg-white/10 p-4 rounded-2xl backdrop-blur-md border border-white/10"><p class="text-[10px] text-slate-300 uppercase font-bold tracking-widest mb-1">FIRE Status</p><p class="text-2xl font-bold text-yellow-400" id="fireEstimate">...</p></div></div></div><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div class="space-y-6"><div class="card p-6"><div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 class="font-bold text-lg text-slate-800">Assets</h3><button onclick="openWealthModal('asset')" class="text-xs bg-slate-900 text-white font-bold px-4 py-2 rounded-full hover:bg-slate-700 transition">Add</button></div><ul id="assetList" class="space-y-3 max-h-80 overflow-y-auto no-scroll pr-2"></ul></div><div class="card p-6 border-l-4 border-rose-500"><div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4"><h3 class="font-bold text-lg text-slate-800">Liabilities</h3><button onclick="openWealthModal('debt')" class="text-xs bg-rose-600 text-white font-bold px-4 py-2 rounded-full hover:bg-rose-700 transition">Add</button></div><ul id="debtList" class="space-y-3 max-h-80 overflow-y-auto no-scroll pr-2"></ul></div></div><div class="card p-6 flex flex-col items-center"><h3 class="font-bold text-lg text-slate-800 mb-6 w-full">Allocation</h3><div class="h-80 w-full flex justify-center"><canvas id="wealthChart"></canvas></div></div></div></div>
 
             <div id="wealthFormContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all"><div class="card p-8 w-full max-w-sm shadow-2xl scale-100"><h3 class="font-bold text-xl mb-6 text-slate-800" id="wealthFormTitle">Add Item</h3><form id="wealthForm" class="space-y-4"><input type="hidden" id="wealthType"><input type="text" id="wealthName" placeholder="Name" class="input-box" required><input type="number" id="wealthValue" placeholder="Value (£)" class="input-box" step="0.01" required><div id="assetTypeContainer"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Category</label><div class="relative mt-1"><select id="wealthCategory" class="input-box appearance-none bg-white"><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Stock">Stock</option><option value="Crypto">Crypto</option><option value="Property">Property</option><option value="Pension">Pension</option></select><div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></div></div></div><div class="flex gap-3 pt-4"><button type="button" onclick="closeWealthModal()" class="w-1/2 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancel</button><button type="submit" class="w-1/2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Save</button></div></form></div></div>
@@ -287,11 +287,12 @@
         // --- FIXED REPORT RENDERER ---
         function renderReports() { 
             const tbody = document.getElementById('reportsTableBody'); 
+            if (!tbody) return; // Safety
             let html = '';
             const months = Object.keys(db.transactions).sort().reverse(); 
             
             if (months.length === 0) {
-                html = `<tr><td colspan="5" class="text-center py-8 text-slate-400">No records found.</td></tr>`;
+                html = `<tr><td colspan="5" class="text-center py-12 text-slate-400 font-medium">No transactions recorded yet.</td></tr>`;
             } else {
                 months.forEach(m => { 
                     const txs = db.transactions[m] || []; 
