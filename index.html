@@ -38,7 +38,9 @@
         .bill-pill { font-size: 9px; padding: 3px 6px; border-radius: 6px; background: #eff6ff; color: #1e40af; font-weight: 700; border-left: 2px solid #3b82f6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .bill-pill.adjusted { border-left-color: #f59e0b; background: #fff7ed; color: #9a3412; }
         
-        .privacy-blur { filter: blur(8px); transition: filter 0.3s ease; user-select: none; }
+        /* PRIVACY FILTER */
+        .privacy-blur { filter: blur(8px); transition: filter 0.3s ease; user-select: none; opacity: 0.5; }
+        
         .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: #4f46e5; color: white; border-radius: 50%; box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.5); display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; z-index: 40; }
         .fab:active { transform: scale(0.9); }
     </style>
@@ -69,7 +71,7 @@
             </nav>
         </div>
         <div class="p-6 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 space-y-3">
-            <button onclick="togglePrivacy()" class="btn-press text-xs text-slate-400 hover:text-white font-bold flex items-center gap-2 mb-2 w-full p-2 rounded hover:bg-slate-800 transition"><i id="privacyIconDesktop" class="fas fa-eye"></i> Toggle Privacy Mode</button>
+            <button onclick="togglePrivacy()" class="btn-press text-xs text-slate-400 hover:text-white font-bold flex items-center gap-2 mb-2 w-full p-2 rounded hover:bg-slate-800 transition"><i id="privacyIconDesktop" class="fas fa-eye"></i> Privacy Mode</button>
             <div id="cloudStatus" class="text-[10px] font-bold text-slate-500 flex items-center gap-2 mb-2 uppercase tracking-wide pl-1"><i class="fas fa-hdd"></i> Local Mode</div>
             <button onclick="manualSync()" id="manualSyncBtn" class="btn-press text-xs text-white bg-indigo-600 font-bold flex items-center justify-center gap-2 w-full p-3 rounded-xl hover:bg-indigo-500 transition hidden shadow-lg shadow-indigo-900/20"><i class="fas fa-sync"></i> Sync Now</button>
             <div class="flex gap-2">
@@ -87,7 +89,7 @@
                 <div class="w-10 h-10 bg-indigo-600 rounded-xl hidden items-center justify-center text-white text-sm shadow-md shadow-indigo-200"><i class="fas fa-briefcase"></i></div>
                 <h1 class="font-bold text-lg text-slate-800 tracking-tight">Portfolio</h1>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3">
                 <button onclick="togglePrivacy()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i id="privacyIconMobile" class="fas fa-eye text-sm"></i></button>
                 <button onclick="manualSync()" class="w-9 h-9 bg-slate-100 text-indigo-600 rounded-full flex items-center justify-center hidden active:scale-90 transition" id="mobileSyncBtn"><i class="fas fa-sync text-sm"></i></button>
                 <button onclick="toggleMobileMenu()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i class="fas fa-bars text-sm"></i></button>
@@ -106,10 +108,8 @@
                             <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Earned in <span id="currentYearLabel">2025</span></p>
                             <h2 class="text-4xl font-extrabold text-emerald-600 tracking-tight privacy-target" id="ytdIncomeDisplay">£0.00</h2>
                         </div>
-                        
                         <div class="hidden md:block w-px h-12 bg-slate-100"></div>
                         <div class="block md:hidden w-full h-px bg-slate-100"></div>
-                        
                         <div class="flex-1 text-center md:text-right group cursor-pointer" onclick="editAnnualIncome()">
                             <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex justify-center md:justify-end gap-2 items-center">
                                 Annual Salary <i class="fas fa-pen text-[10px] text-slate-300 group-hover:text-indigo-500 transition"></i>
@@ -191,18 +191,30 @@
         updateCloudUI();
 
         // --- PRIVACY & ANIMATION ---
-        let privacyMode = false;
-        function togglePrivacy() {
-            privacyMode = !privacyMode;
-            const targets = document.querySelectorAll('.privacy-target');
+        let privacyMode = localStorage.getItem('infinityPrivacy') === 'true'; // Load saved state
+
+        function updatePrivacyUI() {
+            const targets = document.querySelectorAll('.privacy-target, [id^="kpi"], [id^="val"], #ytdIncomeDisplay, #annualSalaryDisplay, #trendTotalIncome, #trendTotalExpense');
             targets.forEach(el => {
                 if(privacyMode) el.classList.add('privacy-blur');
                 else el.classList.remove('privacy-blur');
             });
             const iconD = document.getElementById('privacyIconDesktop');
             const iconM = document.getElementById('privacyIconMobile');
-            if(privacyMode) { iconD.className="fas fa-eye-slash"; iconM.className="fas fa-eye-slash text-sm"; }
-            else { iconD.className="fas fa-eye"; iconM.className="fas fa-eye text-sm"; }
+            if(privacyMode) { 
+                if(iconD) iconD.className="fas fa-eye-slash"; 
+                if(iconM) iconM.className="fas fa-eye-slash text-sm"; 
+            } else { 
+                if(iconD) iconD.className="fas fa-eye"; 
+                if(iconM) iconM.className="fas fa-eye text-sm"; 
+            }
+        }
+
+        function togglePrivacy() {
+            privacyMode = !privacyMode;
+            localStorage.setItem('infinityPrivacy', privacyMode); // Save state
+            updatePrivacyUI();
+            renderDashboard(); // Re-render to handle animations vs static blur
         }
 
         function animateValue(obj, start, end, duration) {
@@ -256,6 +268,7 @@
             animateValue(document.getElementById('ytdIncomeDisplay'), 0, ytdIncome, 1500);
             animateValue(document.getElementById('annualSalaryDisplay'), 0, db.annualIncome, 1000);
             updateTrendChart(); updateSpendingChart(cats);
+            updatePrivacyUI(); // Ensure privacy state is respected after render
         }
 
         function editAnnualIncome() { const current = db.annualIncome || 0; const newVal = prompt("Set your Annual Income Target:", current); if(newVal !== null) { const parsed = parseFloat(newVal); if(!isNaN(parsed)) { db.annualIncome = parsed; saveData(); } } }
