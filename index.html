@@ -145,16 +145,30 @@
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const save = () => { localStorage.setItem('infinityDB', JSON.stringify(db)); render(); };
         
-        // --- SMART COLOR GENERATOR ---
+        // --- STRICT COLOR GENERATOR ---
+        // Ensures only 'Debt' is Red. Random colors are forced between Yellow and Purple.
         const getCatColor = (c) => {
+            // 1. Fixed Mappings
+            if(c === 'Debt') return '#ef4444'; // Strict Red
             const map = {
-                'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308',
-                'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1', 'Debt': '#ef4444'
+                'Housing': '#3b82f6', // Blue
+                'Food': '#f59e0b',    // Amber
+                'Transport': '#06b6d4', // Cyan
+                'Utilities': '#eab308', // Yellow
+                'Entertainment': '#8b5cf6', // Violet
+                'Health': '#10b981',    // Emerald
+                'Savings': '#6366f1',   // Indigo
+                'Subscription': '#64748b' // Slate/Grey (Fixed to avoid confusion)
             };
             if(map[c]) return map[c];
+
+            // 2. Dynamic Safe Colors (Excludes Red spectrum 320-40)
             let hash = 0;
             for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash);
-            return `hsl(${Math.abs(hash % 360)}, 70%, 60%)`;
+            // Force Hue between 45 (Yellow-Orange) and 300 (Purple)
+            // Range width = 255.
+            const h = 45 + (Math.abs(hash) % 255); 
+            return `hsl(${h}, 70%, 60%)`;
         };
 
         function render() {
@@ -217,7 +231,7 @@
             if(spendingChart) spendingChart.destroy();
             spendingChart = new Chart(ctxSpend, {
                 type: 'doughnut',
-                plugins: [ChartDataLabels], // Explicitly Load Plugin
+                plugins: [ChartDataLabels],
                 data: {
                     labels: Object.keys(cats),
                     datasets: [{
@@ -231,7 +245,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '65%', // Thicker ring for text
+                    cutout: '65%',
                     plugins: {
                         legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } },
                         datalabels: {
@@ -241,8 +255,10 @@
                                 let sum = 0;
                                 let dataArr = ctx.chart.data.datasets[0].data;
                                 dataArr.map(data => { sum += data; });
-                                let percentage = (value * 100 / sum).toFixed(0) + "%";
-                                return percentage;
+                                let pct = (value * 100 / sum);
+                                // CLEANER LOOK: Hide label if less than 5%
+                                if(pct < 5) return null;
+                                return pct.toFixed(0) + "%";
                             },
                             textShadowColor: 'rgba(0, 0, 0, 0.5)',
                             textShadowBlur: 4
@@ -254,6 +270,8 @@
             // --- BAR CHART (TREND/CASH FLOW) ---
             const ctxTrend = document.getElementById('chartTrend').getContext('2d');
             if(trendChart) trendChart.destroy();
+            
+            // Calculate 6-month data
             const labels = [], dInc = [], dExp = [];
             let d = new Date(); d.setMonth(d.getMonth() - 5);
             for(let i=0; i<6; i++) {
@@ -265,6 +283,10 @@
                 dInc.push(_i); dExp.push(_e);
                 d.setMonth(d.getMonth() + 1);
             }
+            
+            // Calculate Totals for Overlay
+            const totalInc = dInc.reduce((a,b)=>a+b, 0);
+            const totalExp = dExp.reduce((a,b)=>a+b, 0);
 
             trendChart = new Chart(ctxTrend, {
                 type: 'bar',
@@ -284,19 +306,30 @@
                         y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } }
                     },
                     plugins: {
-                        legend: {
-                            display: true, // SHOW LEGEND
-                            position: 'top', // TOP
-                            align: 'start',  // LEFT ALIGNED
-                            labels: {
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                font: { weight: 'bold' }
-                            }
-                        },
-                        datalabels: { display: false } // Hide % on bars to keep it clean
+                        legend: { display: false }, // Hidden, we use custom overlay
+                        datalabels: { display: false }
                     }
-                }
+                },
+                // CUSTOM PLUGIN TO DRAW TEXT ON TOP LEFT
+                plugins: [{
+                    id: 'customTotals',
+                    afterDraw: (chart) => {
+                        const { ctx, chartArea: {top, left} } = chart;
+                        ctx.save();
+                        ctx.font = "bold 12px Inter";
+                        ctx.textAlign = 'left';
+                        
+                        // Draw Income
+                        ctx.fillStyle = '#059669'; // Emerald-600
+                        ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 5, top + 15);
+                        
+                        // Draw Expense
+                        ctx.fillStyle = '#e11d48'; // Rose-600
+                        ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 5, top + 32);
+                        
+                        ctx.restore();
+                    }
+                }]
             });
         }
 
