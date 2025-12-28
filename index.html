@@ -131,6 +131,26 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="card lg:col-span-2">
+                    <h3 class="font-bold text-lg text-slate-800 mb-4">Income vs Expense Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="chartYearly"></canvas>
+                    </div>
+                </div>
+                <div class="card bg-slate-900 text-white flex flex-col justify-center">
+                    <div class="mb-4">
+                        <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mb-3"><i class="fas fa-lightbulb text-white"></i></div>
+                        <h3 class="text-lg font-bold">Spending Insight</h3>
+                        <p class="text-sm text-slate-400 mt-1">Based on your activity this year.</p>
+                    </div>
+                    <div class="p-4 bg-white/10 rounded-lg border border-white/10">
+                        <p class="text-xs font-bold uppercase text-slate-400 tracking-wide mb-1">Status</p>
+                        <p class="font-medium text-sm leading-relaxed" id="rptInsightText">Loading insight...</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="card lg:col-span-2">
                     <h3 class="font-bold text-lg text-slate-800 mb-6">Monthly Breakdown</h3>
@@ -176,7 +196,7 @@
         if(Array.isArray(db.transactions)) db.transactions = {}; 
         
         let currentTxType = 'expense';
-        let trendChart, spendingChart;
+        let trendChart, spendingChart, yearlyChart;
         const monthPicker = document.getElementById('monthPicker');
         
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
@@ -290,6 +310,11 @@
             const monthTable = document.getElementById('rptMonthTable');
             monthTable.innerHTML = '';
 
+            // Arrays for Line Chart
+            const chLabels = [];
+            const chIncData = [];
+            const chExpData = [];
+
             // 2. Iterate Months 01-12
             for(let m=1; m<=12; m++) {
                 const mk = `${targetYear}-${String(m).padStart(2,'0')}`;
@@ -301,6 +326,11 @@
                     if(t.type === 'income') { mInc += v; annInc += v; }
                     else { mExp += v; annExp += v; annCat[t.category] = (annCat[t.category] || 0) + v; }
                 });
+
+                // Add to Chart Data
+                chLabels.push(new Date(targetYear, m-1).toLocaleString('default', { month: 'short' }));
+                chIncData.push(mInc);
+                chExpData.push(mExp);
 
                 // Row for Table
                 if(mInc > 0 || mExp > 0) {
@@ -338,6 +368,46 @@
                         <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%; background-color:${color}"></div></div>
                     </div>`;
                 });
+            }
+
+            // 5. Render Yearly Line Chart
+            const ctxYear = document.getElementById('chartYearly').getContext('2d');
+            if(yearlyChart) yearlyChart.destroy();
+            yearlyChart = new Chart(ctxYear, {
+                type: 'line',
+                data: {
+                    labels: chLabels,
+                    datasets: [
+                        { label: 'Income', data: chIncData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.4, fill: true, pointRadius: 3 },
+                        { label: 'Expense', data: chExpData, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', tension: 0.4, fill: true, pointRadius: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' }, datalabels: { display: false } },
+                    scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+                }
+            });
+
+            // 6. Generate "Spending Insight"
+            const activeMonths = chExpData.filter(v => v > 0);
+            const rptText = document.getElementById('rptInsightText');
+            
+            if(activeMonths.length < 2) {
+                rptText.innerText = "Not enough data yet. Keep adding transactions to unlock insights!";
+            } else {
+                const lastMonthVal = activeMonths[activeMonths.length - 1];
+                const prevMonths = activeMonths.slice(0, activeMonths.length - 1);
+                const avg = prevMonths.reduce((a,b)=>a+b, 0) / prevMonths.length;
+                
+                if(lastMonthVal > avg) {
+                    const pct = ((lastMonthVal - avg) / avg * 100).toFixed(0);
+                    rptText.innerHTML = `⚠️ Your recent spending is <span class="text-orange-400 font-bold">${pct}% higher</span> than your monthly average (£${fmt(avg)}). Try to reduce discretionary spending next month.`;
+                } else {
+                    const pct = ((avg - lastMonthVal) / avg * 100).toFixed(0);
+                    rptText.innerHTML = `✅ Great job! Your recent spending is <span class="text-emerald-400 font-bold">${pct}% lower</span> than your monthly average (£${fmt(avg)}). Keep saving!`;
+                }
             }
         }
 
