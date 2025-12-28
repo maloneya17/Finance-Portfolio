@@ -33,9 +33,13 @@
         .chart-container { position: relative; height: 260px; width: 100%; }
         .hidden { display: none !important; }
         
-        /* PROGRESS BAR FOR CATEGORIES */
+        /* PROGRESS BAR */
         .progress-bar-bg { background-color: #f1f5f9; border-radius: 999px; height: 6px; width: 100%; overflow: hidden; margin-top: 6px; }
         .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease-in-out; }
+
+        /* CHECKBOX CUSTOM */
+        .checkbox-wrapper input:checked + div { background-color: #10b981; border-color: #10b981; }
+        .checkbox-wrapper input:checked + div:after { content: '✔'; color: white; font-size: 10px; display: block; text-align: center; }
 
         /* ANIMATIONS */
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
@@ -65,6 +69,7 @@
 
             <nav>
                 <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item active"><i class="fas fa-chart-pie w-5"></i> Dashboard</div>
+                <div onclick="switchView('bills')" id="nav-bills" class="nav-item"><i class="fas fa-file-invoice-dollar w-5"></i> Bills</div>
                 <div onclick="switchView('reports')" id="nav-reports" class="nav-item"><i class="fas fa-chart-line w-5"></i> Reports</div>
                 <div onclick="switchView('settings')" id="nav-settings" class="nav-item"><i class="fas fa-sliders-h w-5"></i> Settings</div>
             </nav>
@@ -74,14 +79,13 @@
             <button onclick="manualSync()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
                 <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Cloud
             </button>
-            <div id="syncStatus" class="text-[10px] text-center text-slate-500 font-medium">Local Mode • v1.2</div>
+            <div id="syncStatus" class="text-[10px] text-center text-slate-500 font-medium">Local Mode • v1.3</div>
         </div>
     </div>
 
     <div id="main-content">
         
         <div id="view-dashboard" class="view-section fade-in">
-            
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                 <div class="card bg-slate-900 text-white col-span-1 md:col-span-2 lg:col-span-2 relative overflow-hidden group cursor-pointer border-none" onclick="editAnnualIncome()">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110"><i class="fas fa-edit text-6xl"></i></div>
@@ -92,21 +96,18 @@
                         <span class="flex items-center gap-1"><i class="fas fa-clock text-indigo-400"></i> Avg: <span id="kpiAvg" class="text-white">£0</span></span>
                     </div>
                 </div>
-
                 <div class="card border-l-4 border-emerald-500">
                     <div class="flex justify-between">
                         <div><p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Income (Month)</p><h3 class="text-2xl font-bold text-emerald-600 mt-1" id="kpiInc">£0.00</h3></div>
                         <div class="text-emerald-100 bg-emerald-50 rounded-lg w-8 h-8 flex items-center justify-center"><i class="fas fa-arrow-down text-emerald-500"></i></div>
                     </div>
                 </div>
-
                 <div class="card border-l-4 border-rose-500">
                     <div class="flex justify-between">
                         <div><p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Expenses (Month)</p><h3 class="text-2xl font-bold text-rose-600 mt-1" id="kpiExp">£0.00</h3></div>
                         <div class="text-rose-100 bg-rose-50 rounded-lg w-8 h-8 flex items-center justify-center"><i class="fas fa-arrow-up text-rose-500"></i></div>
                     </div>
                 </div>
-
                 <div class="card border-l-4 border-violet-500 md:col-span-2 lg:col-span-1">
                     <div class="flex justify-between">
                         <div class="overflow-hidden">
@@ -121,16 +122,10 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <div class="card lg:col-span-2">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-slate-800">Cash Flow (6 Months)</h3>
-                        <span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">Last 6 Months</span>
-                    </div>
+                    <div class="flex justify-between items-center mb-6"><h3 class="font-bold text-slate-800">Cash Flow</h3><span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">Last 6 Months</span></div>
                     <div class="chart-container"><canvas id="chartTrend"></canvas></div>
                 </div>
-                <div class="card">
-                    <h3 class="font-bold text-slate-800 mb-6">Spending Breakdown</h3>
-                    <div class="chart-container"><canvas id="chartSpend"></canvas></div>
-                </div>
+                <div class="card"><h3 class="font-bold text-slate-800 mb-6">Spending Breakdown</h3><div class="chart-container"><canvas id="chartSpend"></canvas></div></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -141,45 +136,91 @@
                             <button type="button" onclick="setTxType('expense')" id="btnExp" class="py-2 rounded-md text-sm font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
                             <button type="button" onclick="setTxType('income')" id="btnInc" class="py-2 rounded-md text-sm font-bold text-slate-400 transition">Income</button>
                         </div>
+                        <div><label class="text-[10px] font-bold text-slate-400 uppercase">Description</label><input type="text" id="txDesc" placeholder="e.g. Grocery Shop" class="input-std mt-1" required></div>
+                        <div class="flex gap-3">
+                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" placeholder="0.00" step="0.01" class="input-std mt-1" required></div>
+                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="input-std mt-1 bg-white cursor-pointer" onchange="checkNewCategory(this)"></select></div>
+                        </div>
+                        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition mt-2"><i class="fas fa-plus mr-1"></i> Add Transaction</button>
+                    </form>
+                </div>
+                <div class="card lg:col-span-2 min-h-[400px]">
+                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-slate-800">Recent Transactions</h3><span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">This Month</span></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse"><thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100"><th class="py-2 font-bold pl-2">Description</th><th class="py-2 font-bold text-right">Amount</th><th class="py-2 font-bold text-right pr-2">Action</th></tr></thead><tbody id="listTx" class="text-sm"></tbody></table>
+                        <div id="emptyState" class="hidden py-12 text-center"><div class="inline-block p-4 rounded-full bg-slate-50 mb-3"><i class="fas fa-receipt text-slate-300 text-2xl"></i></div><p class="text-slate-400 font-medium text-sm">No transactions yet.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-bills" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight mb-6">Recurring Bills</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card border-l-4 border-slate-500">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Total Commitments</p>
+                    <h3 class="text-2xl font-bold text-slate-700 mt-1" id="billTotal">£0.00</h3>
+                    <p class="text-xs text-slate-400 mt-2">Fixed monthly costs</p>
+                </div>
+                <div class="card border-l-4 border-indigo-500">
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Bills Paid</p>
+                    <div class="flex items-end gap-2 mt-1">
+                        <h3 class="text-2xl font-bold text-indigo-600" id="billPaid">£0.00</h3>
+                        <span class="text-xs font-bold text-indigo-400 mb-1" id="billProgressText">0%</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill bg-indigo-500" id="billProgressBar" style="width: 0%"></div></div>
+                </div>
+                <div class="card border-l-4 border-emerald-500 bg-emerald-50 border-none">
+                    <p class="text-xs text-emerald-600 font-bold uppercase tracking-wide">Safe to Spend</p>
+                    <h3 class="text-2xl font-bold text-emerald-700 mt-1" id="billSafe">£0.00</h3>
+                    <p class="text-xs text-emerald-600 mt-2 font-medium">Income - Total Bills</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card h-fit">
+                    <h3 class="font-bold text-lg mb-4 text-slate-800">Add Recurring Bill</h3>
+                    <form id="formBill" class="space-y-4">
                         <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">Description</label>
-                            <input type="text" id="txDesc" placeholder="e.g. Grocery Shop" class="input-std mt-1" required>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Bill Name</label>
+                            <input type="text" id="billName" placeholder="e.g. Rent" class="input-std mt-1" required>
                         </div>
                         <div class="flex gap-3">
                             <div class="w-1/2">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label>
-                                <input type="number" id="txAmt" placeholder="0.00" step="0.01" class="input-std mt-1" required>
+                                <input type="number" id="billAmt" placeholder="0.00" step="0.01" class="input-std mt-1" required>
                             </div>
                             <div class="w-1/2">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase">Category</label>
-                                <select id="txCat" class="input-std mt-1 bg-white cursor-pointer" onchange="checkNewCategory(this)"></select>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">Due Day</label>
+                                <input type="number" id="billDay" placeholder="1-31" min="1" max="31" class="input-std mt-1" required>
                             </div>
                         </div>
-                        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition mt-2">
-                            <i class="fas fa-plus mr-1"></i> Add Transaction
+                        <button type="submit" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">
+                            <i class="fas fa-plus-circle mr-1"></i> Add Bill
                         </button>
                     </form>
                 </div>
 
                 <div class="card lg:col-span-2 min-h-[400px]">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg text-slate-800">Recent Transactions</h3>
-                        <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">This Month</span>
+                        <h3 class="font-bold text-lg text-slate-800">Tracker for <span id="billMonthLabel" class="text-indigo-600"></span></h3>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="text-xs text-slate-400 uppercase border-b border-slate-100">
-                                    <th class="py-2 font-bold pl-2">Description</th>
-                                    <th class="py-2 font-bold text-right">Amount</th>
-                                    <th class="py-2 font-bold text-right pr-2">Action</th>
+                                <tr class="text-xs text-slate-400 uppercase border-b border-slate-100 bg-slate-50/50">
+                                    <th class="py-3 pl-3 font-bold rounded-l-lg w-16 text-center">Due</th>
+                                    <th class="py-3 font-bold pl-2">Name</th>
+                                    <th class="py-3 font-bold text-right">Amount</th>
+                                    <th class="py-3 font-bold text-center w-24">Paid?</th>
+                                    <th class="py-3 font-bold text-right pr-3 rounded-r-lg w-12"></th>
                                 </tr>
                             </thead>
-                            <tbody id="listTx" class="text-sm"></tbody>
+                            <tbody id="listBills" class="text-sm"></tbody>
                         </table>
-                        <div id="emptyState" class="hidden py-12 text-center">
-                            <div class="inline-block p-4 rounded-full bg-slate-50 mb-3"><i class="fas fa-receipt text-slate-300 text-2xl"></i></div>
-                            <p class="text-slate-400 font-medium text-sm">No transactions yet.</p>
+                        <div id="emptyBills" class="hidden py-12 text-center">
+                            <p class="text-slate-400 font-medium text-sm">No recurring bills set up.</p>
                         </div>
                     </div>
                 </div>
@@ -188,81 +229,31 @@
 
         <div id="view-reports" class="view-section hidden fade-in">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div>
-                    <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Yearly Analytics</h2>
-                    <p class="text-sm text-slate-500">Strategic overview of your finances.</p>
-                </div>
+                <div><h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Yearly Analytics</h2><p class="text-sm text-slate-500">Strategic overview of your finances.</p></div>
                 <div class="flex gap-2 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
                     <select id="reportYearSelect" class="bg-transparent font-bold text-sm text-slate-700 px-3 py-1 outline-none cursor-pointer" onchange="renderReports()"></select>
-                    <button onclick="downloadCSV()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-md transition flex items-center">
-                        <i class="fas fa-file-csv mr-2"></i> Export Data
-                    </button>
+                    <button onclick="downloadCSV()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-md transition flex items-center"><i class="fas fa-file-csv mr-2"></i> Export Data</button>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="card border-t-4 border-emerald-500 shadow-sm hover:shadow-md transition">
-                    <div class="flex justify-between items-start">
-                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Income</p><h3 class="text-2xl font-bold text-emerald-600 mt-1" id="rptInc">£0.00</h3></div>
-                        <div class="p-2 bg-emerald-50 rounded-lg text-emerald-500"><i class="fas fa-wallet"></i></div>
-                    </div>
-                </div>
-                <div class="card border-t-4 border-rose-500 shadow-sm hover:shadow-md transition">
-                    <div class="flex justify-between items-start">
-                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Expenses</p><h3 class="text-2xl font-bold text-rose-600 mt-1" id="rptExp">£0.00</h3></div>
-                        <div class="p-2 bg-rose-50 rounded-lg text-rose-500"><i class="fas fa-receipt"></i></div>
-                    </div>
-                </div>
-                <div class="card border-t-4 border-indigo-500 shadow-sm hover:shadow-md transition">
-                    <div class="flex justify-between items-start">
-                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Net Savings</p><h3 class="text-2xl font-bold text-indigo-600 mt-1" id="rptSav">£0.00</h3></div>
-                        <div class="p-2 bg-indigo-50 rounded-lg text-indigo-500"><i class="fas fa-piggy-bank"></i></div>
-                    </div>
-                </div>
+                <div class="card border-t-4 border-emerald-500 shadow-sm"><div class="flex justify-between items-start"><div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Income</p><h3 class="text-2xl font-bold text-emerald-600 mt-1" id="rptInc">£0.00</h3></div><div class="p-2 bg-emerald-50 rounded-lg text-emerald-500"><i class="fas fa-wallet"></i></div></div></div>
+                <div class="card border-t-4 border-rose-500 shadow-sm"><div class="flex justify-between items-start"><div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Expenses</p><h3 class="text-2xl font-bold text-rose-600 mt-1" id="rptExp">£0.00</h3></div><div class="p-2 bg-rose-50 rounded-lg text-rose-500"><i class="fas fa-receipt"></i></div></div></div>
+                <div class="card border-t-4 border-indigo-500 shadow-sm"><div class="flex justify-between items-start"><div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Net Savings</p><h3 class="text-2xl font-bold text-indigo-600 mt-1" id="rptSav">£0.00</h3></div><div class="p-2 bg-indigo-50 rounded-lg text-indigo-500"><i class="fas fa-piggy-bank"></i></div></div></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="card lg:col-span-2">
-                    <h3 class="font-bold text-lg text-slate-800 mb-4">Income vs Expense Trend</h3>
-                    <div class="chart-container"><canvas id="chartYearly"></canvas></div>
-                </div>
+                <div class="card lg:col-span-2"><h3 class="font-bold text-lg text-slate-800 mb-4">Income vs Expense Trend</h3><div class="chart-container"><canvas id="chartYearly"></canvas></div></div>
                 <div class="card bg-slate-900 text-white flex flex-col justify-center relative overflow-hidden">
                     <i class="fas fa-chart-line absolute -bottom-4 -right-4 text-8xl text-white opacity-5"></i>
-                    
-                    <div class="mb-6 relative z-10">
-                        <div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-indigo-500/50"><i class="fas fa-lightbulb text-white"></i></div>
-                        <h3 class="text-lg font-bold">Spending Insight</h3>
-                        <p class="text-sm text-slate-400 mt-1">AI-driven analysis of your habits.</p>
-                    </div>
-                    <div class="p-4 bg-white/10 rounded-lg border border-white/10 relative z-10 backdrop-blur-sm">
-                        <p class="text-[10px] font-bold uppercase text-slate-400 tracking-wide mb-2">Current Status</p>
-                        <p class="font-medium text-sm leading-relaxed" id="rptInsightText">Analyzing data...</p>
-                    </div>
+                    <div class="mb-6 relative z-10"><div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-indigo-500/50"><i class="fas fa-lightbulb text-white"></i></div><h3 class="text-lg font-bold">Spending Insight</h3><p class="text-sm text-slate-400 mt-1">AI-driven analysis of your habits.</p></div>
+                    <div class="p-4 bg-white/10 rounded-lg border border-white/10 relative z-10 backdrop-blur-sm"><p class="text-[10px] font-bold uppercase text-slate-400 tracking-wide mb-2">Current Status</p><p class="font-medium text-sm leading-relaxed" id="rptInsightText">Analyzing data...</p></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="card lg:col-span-2">
-                    <h3 class="font-bold text-lg text-slate-800 mb-6">Monthly Breakdown</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="text-xs text-slate-400 uppercase border-b border-slate-100 bg-slate-50/50">
-                                    <th class="py-3 pl-3 font-bold rounded-l-lg">Month</th>
-                                    <th class="py-3 font-bold text-right text-emerald-600">Income</th>
-                                    <th class="py-3 font-bold text-right text-rose-600">Expense</th>
-                                    <th class="py-3 font-bold text-right text-indigo-600 pr-3 rounded-r-lg">Net</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rptMonthTable" class="text-sm font-medium text-slate-600"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card h-fit">
-                    <h3 class="font-bold text-lg text-slate-800 mb-6">Top Spending Categories</h3>
-                    <div id="rptCatList" class="space-y-5"></div>
-                </div>
+                <div class="card lg:col-span-2"><h3 class="font-bold text-lg text-slate-800 mb-6">Monthly Breakdown</h3><div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100 bg-slate-50/50"><th class="py-3 pl-3 font-bold rounded-l-lg">Month</th><th class="py-3 font-bold text-right text-emerald-600">Income</th><th class="py-3 font-bold text-right text-rose-600">Expense</th><th class="py-3 font-bold text-right text-indigo-600 pr-3 rounded-r-lg">Net</th></tr></thead><tbody id="rptMonthTable" class="text-sm font-medium text-slate-600"></tbody></table></div></div>
+                <div class="card h-fit"><h3 class="font-bold text-lg text-slate-800 mb-6">Top Spending Categories</h3><div id="rptCatList" class="space-y-5"></div></div>
             </div>
         </div>
 
@@ -271,18 +262,12 @@
             <div class="card max-w-md mb-6">
                 <h3 class="font-bold mb-4">Cloud Sync</h3>
                 <p class="text-xs text-slate-400 mb-3">Connect your Google App Script URL here.</p>
-                <form id="formCloud" class="flex gap-2">
-                    <input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="input-std">
-                    <button class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save URL</button>
-                </form>
+                <form id="formCloud" class="flex gap-2"><input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="input-std"><button class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save URL</button></form>
             </div>
-            
             <div class="card max-w-md border-rose-100">
                 <h3 class="font-bold text-rose-600 mb-2">Danger Zone</h3>
                 <p class="text-xs text-slate-400 mb-4">This will delete all local transactions permanently.</p>
-                <button onclick="resetData()" class="text-rose-600 border border-rose-200 bg-rose-50 hover:bg-rose-100 font-bold text-sm px-4 py-2 rounded-lg transition">
-                    <i class="fas fa-trash-alt mr-2"></i> Reset All Data
-                </button>
+                <button onclick="resetData()" class="text-rose-600 border border-rose-200 bg-rose-50 hover:bg-rose-100 font-bold text-sm px-4 py-2 rounded-lg transition"><i class="fas fa-trash-alt mr-2"></i> Reset All Data</button>
             </div>
         </div>
     </div>
@@ -293,9 +278,19 @@
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
 
-        const DEFAULTS = { categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt'], transactions: {}, annualIncome: 0 };
+        // NEW DB STRUCTURE for BILLS
+        const DEFAULTS = { 
+            categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt'], 
+            transactions: {}, 
+            bills: [],       // Array of {id, name, amount, day}
+            billStatus: {},  // Object { '2024-05': { billId: true } }
+            annualIncome: 0 
+        };
+        
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
-        if(Array.isArray(db.transactions)) db.transactions = {}; // Legacy fix
+        if(Array.isArray(db.transactions)) db.transactions = {}; 
+        if(!db.bills) db.bills = [];
+        if(!db.billStatus) db.billStatus = {};
         
         let currentTxType = 'expense';
         let trendChart, spendingChart, yearlyChart;
@@ -305,15 +300,12 @@
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const save = () => { localStorage.setItem('infinityDB', JSON.stringify(db)); render(); };
-        
-        // Strict Color Generator (Vibrant, No Grey/Red except Debt)
         const getCatColor = (c) => {
-            if(c === 'Debt') return '#f43f5e'; // Rose-500
+            if(c === 'Debt') return '#f43f5e'; 
             const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1' };
             if(map[c]) return map[c];
-            let hash = 0;
-            for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash);
-            return `hsl(${45 + (Math.abs(hash) % 255)}, 80%, 60%)`; // Vibrant HSL
+            let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${45 + (Math.abs(hash) % 255)}, 80%, 60%)`; 
         };
 
         // --- CORE RENDER FUNCTION ---
@@ -331,19 +323,7 @@
                 const colorClass = t.type === 'income' ? 'text-emerald-600' : 'text-rose-600';
                 const sign = t.type === 'income' ? '+' : '-';
                 
-                list.insertAdjacentHTML('afterbegin', `
-                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition group">
-                        <td class="py-3 pl-2">
-                            <div class="font-bold text-slate-700">${t.desc}</div>
-                            <div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-500">${t.category}</div>
-                        </td>
-                        <td class="text-right font-bold ${colorClass}">${sign}£${fmt(val)}</td>
-                        <td class="text-right pr-2">
-                            <button onclick="delTx(${i})" class="text-slate-300 hover:text-rose-500 transition px-2 opacity-0 group-hover:opacity-100">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </td>
-                    </tr>`);
+                list.insertAdjacentHTML('afterbegin', `<tr class="border-b border-slate-50 hover:bg-slate-50 transition group"><td class="py-3 pl-2"><div class="font-bold text-slate-700">${t.desc}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-500">${t.category}</div></td><td class="text-right font-bold ${colorClass}">${sign}£${fmt(val)}</td><td class="text-right pr-2"><button onclick="delTx(${i})" class="text-slate-300 hover:text-rose-500 transition px-2 opacity-0 group-hover:opacity-100"><i class="fas fa-trash-alt"></i></button></td></tr>`);
             });
 
             // 2. Update KPIs
@@ -352,7 +332,6 @@
             document.getElementById('kpiExp').innerText = `£${fmt(exp)}`;
             document.getElementById('kpiSalary').innerText = `£${fmt(db.annualIncome)}`;
             
-            // YTD Calculation
             const year = key.split('-')[0];
             let ytd = 0;
             Object.keys(db.transactions).forEach(k => { if(k.startsWith(year)) db.transactions[k].forEach(t => { if(t.type === 'income') ytd += math(t.amount); }); });
@@ -360,7 +339,6 @@
             const currentMonthIndex = parseInt(key.split('-')[1]);
             document.getElementById('kpiAvg').innerText = `£${fmt(ytd / (currentMonthIndex || 1))}`;
 
-            // Top Category
             let maxCat = 'N/A'; let maxVal = 0;
             for(const [c, v] of Object.entries(cats)) { if(v > maxVal) { maxVal = v; maxCat = c; } }
             document.getElementById('kpiMaxCat').innerText = maxCat;
@@ -368,7 +346,103 @@
 
             renderDropdowns();
             updateDashboardCharts(cats);
+            renderBills(); // Update Bills View too
         }
+
+        // --- BILLS RENDER FUNCTION ---
+        function renderBills() {
+            const list = document.getElementById('listBills');
+            list.innerHTML = '';
+            const key = monthPicker.value;
+            const status = db.billStatus[key] || {};
+            
+            // Format Month Label
+            const [y, m] = key.split('-');
+            const dateObj = new Date(y, m - 1);
+            document.getElementById('billMonthLabel').innerText = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            let total = 0;
+            let paid = 0;
+
+            // Sort Bills by Day
+            const sortedBills = [...db.bills].sort((a,b) => a.day - b.day);
+
+            sortedBills.forEach((b) => {
+                total += b.amount;
+                const isPaid = status[b.id] === true;
+                if(isPaid) paid += b.amount;
+                
+                const trClass = isPaid ? 'bg-slate-50 opacity-60' : '';
+                const checkState = isPaid ? 'checked' : '';
+
+                list.insertAdjacentHTML('beforeend', `
+                    <tr class="border-b border-slate-50 transition ${trClass}">
+                        <td class="py-3 pl-3 text-center"><span class="bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-1 rounded">${b.day}</span></td>
+                        <td class="py-3 pl-2 font-bold text-slate-700">${b.name}</td>
+                        <td class="py-3 text-right text-slate-600 font-medium">£${fmt(b.amount)}</td>
+                        <td class="py-3 text-center">
+                            <label class="checkbox-wrapper cursor-pointer relative inline-block w-5 h-5">
+                                <input type="checkbox" class="absolute opacity-0 w-0 h-0" ${checkState} onchange="toggleBill('${b.id}')">
+                                <div class="w-5 h-5 border-2 border-slate-300 rounded bg-white transition flex items-center justify-center"></div>
+                            </label>
+                        </td>
+                        <td class="py-3 pr-3 text-right">
+                            <button onclick="delBill('${b.id}')" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            document.getElementById('emptyBills').classList.toggle('hidden', sortedBills.length > 0);
+            
+            // Stats
+            document.getElementById('billTotal').innerText = `£${fmt(total)}`;
+            document.getElementById('billPaid').innerText = `£${fmt(paid)}`;
+            
+            // Progress
+            const pct = total > 0 ? (paid / total) * 100 : 0;
+            document.getElementById('billProgressBar').style.width = `${pct}%`;
+            document.getElementById('billProgressText').innerText = `${pct.toFixed(0)}%`;
+
+            // Safe to Spend (Current Income in DB for this month - Total Bills)
+            const txs = db.transactions[key] || [];
+            const incomeMonth = txs.filter(t => t.type === 'income').reduce((a,b) => a + math(b.amount), 0);
+            const safe = incomeMonth - total;
+            document.getElementById('billSafe').innerText = `£${fmt(safe)}`;
+            document.getElementById('billSafe').className = safe >= 0 ? "text-2xl font-bold text-emerald-700 mt-1" : "text-2xl font-bold text-rose-700 mt-1";
+        }
+
+        // --- BILLS LOGIC ---
+        function toggleBill(id) {
+            const key = monthPicker.value;
+            if(!db.billStatus[key]) db.billStatus[key] = {};
+            // Toggle
+            if(db.billStatus[key][id]) delete db.billStatus[key][id];
+            else db.billStatus[key][id] = true;
+            save();
+        }
+
+        document.getElementById('formBill').addEventListener('submit', e => {
+            e.preventDefault();
+            const name = document.getElementById('billName').value;
+            const amt = math(document.getElementById('billAmt').value);
+            const day = parseInt(document.getElementById('billDay').value);
+            
+            if(name && amt && day) {
+                db.bills.push({ id: Date.now().toString(), name, amount: amt, day });
+                document.getElementById('billName').value = '';
+                document.getElementById('billAmt').value = '';
+                document.getElementById('billDay').value = '';
+                save();
+            }
+        });
+
+        window.delBill = (id) => {
+            if(confirm("Delete this recurring bill? This removes it from all months.")) {
+                db.bills = db.bills.filter(b => b.id !== id);
+                save();
+            }
+        };
 
         // --- DASHBOARD CHARTS ---
         function updateDashboardCharts(cats) {
@@ -376,17 +450,9 @@
             const ctxSpend = document.getElementById('chartSpend').getContext('2d');
             if(spendingChart) spendingChart.destroy();
             spendingChart = new Chart(ctxSpend, {
-                type: 'doughnut',
-                plugins: [ChartDataLabels],
+                type: 'doughnut', plugins: [ChartDataLabels],
                 data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(getCatColor), borderWidth: 2, borderColor: '#ffffff', hoverOffset: 8 }] },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, cutout: '70%', 
-                    layout: { padding: 20 },
-                    plugins: { 
-                        legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } }, 
-                        datalabels: { color: '#ffffff', font: { weight: 'bold', size: 10 }, formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); let pct = (value * 100 / sum); return pct < 5 ? null : pct.toFixed(0) + "%"; }, textShadowColor: 'rgba(0,0,0,0.3)', textShadowBlur: 3 } 
-                    } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%', layout: { padding: 20 }, plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } }, datalabels: { color: '#ffffff', font: { weight: 'bold', size: 10 }, formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); let pct = (value * 100 / sum); return pct < 5 ? null : pct.toFixed(0) + "%"; }, textShadowColor: 'rgba(0,0,0,0.3)', textShadowBlur: 3 } } }
             });
 
             // Trend Bar Chart
@@ -407,30 +473,15 @@
             const totalExp = dExp.reduce((a,b)=>a+b, 0);
             
             trendChart = new Chart(ctxTrend, {
-                type: 'bar',
-                plugins: [ChartDataLabels],
+                type: 'bar', plugins: [ChartDataLabels],
                 data: { labels: labels, datasets: [ { label: 'Income', data: dInc, backgroundColor: '#10b981', borderRadius: 4, barThickness: 14 }, { label: 'Expenses', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4, barThickness: 14 } ] },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } } }, 
-                    plugins: { legend: { display: false }, datalabels: { display: false } } 
-                },
-                plugins: [{ 
-                    id: 'customTotals', 
-                    afterDraw: (chart) => { 
-                        const { ctx, chartArea: {top, left} } = chart; 
-                        ctx.save(); ctx.font = "bold 12px Inter"; ctx.textAlign = 'left'; 
-                        ctx.fillStyle = '#059669'; ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 4, top + 10); 
-                        ctx.fillStyle = '#e11d48'; ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 4, top + 26); 
-                        ctx.restore(); 
-                    } 
-                }]
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } } }, plugins: { legend: { display: false }, datalabels: { display: false } } },
+                plugins: [{ id: 'customTotals', afterDraw: (chart) => { const { ctx, chartArea: {top, left} } = chart; ctx.save(); ctx.font = "bold 12px Inter"; ctx.textAlign = 'left'; ctx.fillStyle = '#059669'; ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 4, top + 10); ctx.fillStyle = '#e11d48'; ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 4, top + 26); ctx.restore(); } }]
             });
         }
 
         // --- REPORTS LOGIC ---
         function renderReports() {
-            // Get Available Years
             const years = new Set([new Date().getFullYear()]);
             Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0])));
             const yearList = Array.from(years).sort((a,b) => b - a);
@@ -446,130 +497,48 @@
             let annInc = 0, annExp = 0, annCat = {};
             const monthTable = document.getElementById('rptMonthTable');
             monthTable.innerHTML = '';
-
             const chLabels = []; const chIncData = []; const chExpData = [];
 
-            // Iterate 12 Months
             for(let m=1; m<=12; m++) {
                 const mk = `${targetYear}-${String(m).padStart(2,'0')}`;
                 const txs = db.transactions[mk] || [];
                 let mInc = 0, mExp = 0;
-
-                txs.forEach(t => {
-                    const v = math(t.amount);
-                    if(t.type === 'income') { mInc += v; annInc += v; }
-                    else { mExp += v; annExp += v; annCat[t.category] = (annCat[t.category] || 0) + v; }
-                });
-
-                chLabels.push(new Date(targetYear, m-1).toLocaleString('default', { month: 'short' }));
-                chIncData.push(mInc); chExpData.push(mExp);
-
+                txs.forEach(t => { const v = math(t.amount); if(t.type === 'income') { mInc += v; annInc += v; } else { mExp += v; annExp += v; annCat[t.category] = (annCat[t.category] || 0) + v; } });
+                chLabels.push(new Date(targetYear, m-1).toLocaleString('default', { month: 'short' })); chIncData.push(mInc); chExpData.push(mExp);
                 if(mInc > 0 || mExp > 0) {
                     const monthName = new Date(targetYear, m-1).toLocaleString('default', { month: 'long' });
-                    const net = mInc - mExp;
-                    const netColor = net >= 0 ? 'text-indigo-600' : 'text-rose-600';
+                    const net = mInc - mExp; const netColor = net >= 0 ? 'text-indigo-600' : 'text-rose-600';
                     monthTable.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50"><td class="py-3 pl-3 font-medium text-slate-700">${monthName}</td><td class="text-right text-emerald-600">£${fmt(mInc)}</td><td class="text-right text-rose-600">£${fmt(mExp)}</td><td class="text-right pr-3 font-bold ${netColor}">£${fmt(net)}</td></tr>`;
                 }
             }
             if(monthTable.innerHTML === '') monthTable.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 text-xs">No data for ${targetYear}</td></tr>`;
 
-            // Update Summaries
             document.getElementById('rptInc').innerText = `£${fmt(annInc)}`;
             document.getElementById('rptExp').innerText = `£${fmt(annExp)}`;
             document.getElementById('rptSav').innerText = `£${fmt(annInc - annExp)}`;
 
-            // Category Ranking
-            const catList = document.getElementById('rptCatList');
-            catList.innerHTML = '';
+            const catList = document.getElementById('rptCatList'); catList.innerHTML = '';
             const sortedCats = Object.entries(annCat).sort(([,a], [,b]) => b - a);
-            
-            if(sortedCats.length === 0) {
-                catList.innerHTML = `<p class="text-slate-400 text-xs text-center py-4">No spending data yet.</p>`;
-            } else {
-                const maxVal = sortedCats[0][1];
-                sortedCats.forEach(([cat, val]) => {
-                    const pct = (val / maxVal) * 100;
-                    const color = getCatColor(cat);
-                    catList.innerHTML += `
-                    <div>
-                        <div class="flex justify-between text-xs font-bold mb-1.5">
-                            <span class="text-slate-700">${cat}</span>
-                            <span class="text-slate-500">£${fmt(val)}</span>
-                        </div>
-                        <div class="progress-bar-bg"><div class="progress-bar-fill shadow-sm" style="width:${pct}%; background-color:${color}"></div></div>
-                    </div>`;
-                });
-            }
+            if(sortedCats.length === 0) { catList.innerHTML = `<p class="text-slate-400 text-xs text-center py-4">No spending data yet.</p>`; } 
+            else { const maxVal = sortedCats[0][1]; sortedCats.forEach(([cat, val]) => { const pct = (val / maxVal) * 100; const color = getCatColor(cat); catList.innerHTML += `<div><div class="flex justify-between text-xs font-bold mb-1.5"><span class="text-slate-700">${cat}</span><span class="text-slate-500">£${fmt(val)}</span></div><div class="progress-bar-bg"><div class="progress-bar-fill shadow-sm" style="width:${pct}%; background-color:${color}"></div></div></div>`; }); }
 
-            // Line Chart
             const ctxYear = document.getElementById('chartYearly').getContext('2d');
             if(yearlyChart) yearlyChart.destroy();
-            yearlyChart = new Chart(ctxYear, {
-                type: 'line',
-                data: {
-                    labels: chLabels,
-                    datasets: [
-                        { label: 'Income', data: chIncData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.05)', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 },
-                        { label: 'Expense', data: chExpData, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.05)', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }, datalabels: { display: false }, tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 } },
-                    scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false }, ticks: { display: false } }, x: { grid: { display: false } } }
-                }
-            });
+            yearlyChart = new Chart(ctxYear, { type: 'line', data: { labels: chLabels, datasets: [ { label: 'Income', data: chIncData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.05)', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 }, { label: 'Expense', data: chExpData, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.05)', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }, datalabels: { display: false }, tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false }, ticks: { display: false } }, x: { grid: { display: false } } } } });
 
-            // Insight Logic
-            const activeMonths = chExpData.filter(v => v > 0);
-            const rptText = document.getElementById('rptInsightText');
-            if(activeMonths.length < 2) {
-                rptText.innerText = "Add more transaction data to unlock insights.";
-            } else {
-                const lastMonthVal = activeMonths[activeMonths.length - 1];
-                const prevMonths = activeMonths.slice(0, activeMonths.length - 1);
-                const avg = prevMonths.reduce((a,b)=>a+b, 0) / prevMonths.length;
-                if(lastMonthVal > avg) {
-                    const pct = ((lastMonthVal - avg) / avg * 100).toFixed(0);
-                    rptText.innerHTML = `⚠️ Your recent spending is <span class="text-orange-400 font-bold">${pct}% higher</span> than your monthly average (£${fmt(avg)}).`;
-                } else {
-                    const pct = ((avg - lastMonthVal) / avg * 100).toFixed(0);
-                    rptText.innerHTML = `✅ Excellent! Your recent spending is <span class="text-emerald-400 font-bold">${pct}% lower</span> than average (£${fmt(avg)}).`;
-                }
-            }
+            const activeMonths = chExpData.filter(v => v > 0); const rptText = document.getElementById('rptInsightText');
+            if(activeMonths.length < 2) { rptText.innerText = "Add more transaction data to unlock insights."; } 
+            else { const lastMonthVal = activeMonths[activeMonths.length - 1]; const prevMonths = activeMonths.slice(0, activeMonths.length - 1); const avg = prevMonths.reduce((a,b)=>a+b, 0) / prevMonths.length; if(lastMonthVal > avg) { const pct = ((lastMonthVal - avg) / avg * 100).toFixed(0); rptText.innerHTML = `⚠️ Your recent spending is <span class="text-orange-400 font-bold">${pct}% higher</span> than your monthly average (£${fmt(avg)}).`; } else { const pct = ((avg - lastMonthVal) / avg * 100).toFixed(0); rptText.innerHTML = `✅ Excellent! Your recent spending is <span class="text-emerald-400 font-bold">${pct}% lower</span> than average (£${fmt(avg)}).`; } }
         }
 
-        function downloadCSV() {
-            const rows = [['Date', 'Description', 'Category', 'Type', 'Amount']];
-            Object.keys(db.transactions).forEach(dateKey => {
-                db.transactions[dateKey].forEach(t => { rows.push([dateKey, t.desc, t.category, t.type, t.amount]); });
-            });
-            const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-            const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", "finance_portfolio.csv");
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        }
+        function downloadCSV() { const rows = [['Date', 'Description', 'Category', 'Type', 'Amount']]; Object.keys(db.transactions).forEach(dateKey => { db.transactions[dateKey].forEach(t => { rows.push([dateKey, t.desc, t.category, t.type, t.amount]); }); }); const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n"); const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", "finance_portfolio.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
 
         // --- INTERACTION ---
-        function renderDropdowns() {
-            const select = document.getElementById('txCat');
-            const currentVal = select.value; select.innerHTML = '';
-            db.categories.forEach(c => { select.innerHTML += `<option value="${c}">${c}</option>`; });
-            select.innerHTML += `<option value="ADD_NEW_CAT" class="font-bold text-indigo-600">+ Add New...</option>`;
-            if(db.categories.includes(currentVal)) select.value = currentVal;
-        }
+        function renderDropdowns() { const select = document.getElementById('txCat'); const currentVal = select.value; select.innerHTML = ''; db.categories.forEach(c => { select.innerHTML += `<option value="${c}">${c}</option>`; }); select.innerHTML += `<option value="ADD_NEW_CAT" class="font-bold text-indigo-600">+ Add New...</option>`; if(db.categories.includes(currentVal)) select.value = currentVal; }
         function checkNewCategory(select) { if(select.value === 'ADD_NEW_CAT') { const newCat = prompt("Enter new Category Name:"); if(newCat && newCat.trim() !== "") { db.categories.push(newCat.trim()); save(); renderDropdowns(); select.value = newCat.trim(); } else { select.value = db.categories[0]; } } }
-        function setTxType(type) { 
-            currentTxType = type; 
-            document.getElementById('btnExp').className = type === 'expense' ? "flex-1 py-2 bg-rose-100 text-rose-600 rounded-lg font-bold text-sm transition shadow-inner" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; 
-            document.getElementById('btnInc').className = type === 'income' ? "flex-1 py-2 bg-emerald-100 text-emerald-600 rounded-lg font-bold text-sm transition shadow-inner" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; 
-        }
+        function setTxType(type) { currentTxType = type; document.getElementById('btnExp').className = type === 'expense' ? "flex-1 py-2 bg-rose-100 text-rose-600 rounded-lg font-bold text-sm transition shadow-inner" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; document.getElementById('btnInc').className = type === 'income' ? "flex-1 py-2 bg-emerald-100 text-emerald-600 rounded-lg font-bold text-sm transition shadow-inner" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; }
         
-        document.getElementById('formTx').addEventListener('submit', e => { 
-            e.preventDefault(); const k = monthPicker.value; if(!db.transactions[k]) db.transactions[k] = []; 
-            db.transactions[k].push({ desc: document.getElementById('txDesc').value, amount: math(document.getElementById('txAmt').value), category: document.getElementById('txCat').value, type: currentTxType }); 
-            document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = ''; save(); 
-        });
+        document.getElementById('formTx').addEventListener('submit', e => { e.preventDefault(); const k = monthPicker.value; if(!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push({ desc: document.getElementById('txDesc').value, amount: math(document.getElementById('txAmt').value), category: document.getElementById('txCat').value, type: currentTxType }); document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = ''; save(); });
         
         window.switchView = (id) => { 
             document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden')); 
@@ -577,6 +546,7 @@
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active')); 
             document.getElementById(`nav-${id}`).classList.add('active'); 
             if(id === 'reports') renderReports(); 
+            if(id === 'bills') renderBills();
         };
         
         window.delTx = (i) => { if(confirm("Delete this transaction?")) { db.transactions[monthPicker.value].splice(i, 1); save(); } };
