@@ -26,6 +26,8 @@
         .input-std:focus { border-color: #4f46e5; ring: 2px solid #e0e7ff; }
         .chart-container { position: relative; height: 260px; width: 100%; }
         .hidden { display: none !important; }
+        .progress-bar-bg { background-color: #f1f5f9; border-radius: 999px; height: 8px; width: 100%; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 999px; }
         ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
@@ -57,7 +59,6 @@
         
         <div id="view-dashboard" class="view-section">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                
                 <div class="card bg-slate-900 text-white col-span-1 md:col-span-2 lg:col-span-2 relative overflow-hidden group cursor-pointer" onclick="editAnnualIncome()">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-edit text-6xl"></i></div>
                     <p class="text-xs text-slate-400 font-bold uppercase mb-1">Annual Income Target</p>
@@ -67,38 +68,14 @@
                         <span><i class="fas fa-clock text-indigo-400"></i> Avg: <span id="kpiAvg" class="text-white">£0</span></span>
                     </div>
                 </div>
-
-                <div class="card border-l-4 border-emerald-500">
-                    <p class="text-xs text-slate-400 font-bold uppercase">Income (Month)</p>
-                    <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="kpiInc">£0.00</h3>
-                </div>
-
-                <div class="card border-l-4 border-rose-500">
-                    <p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p>
-                    <h3 class="text-2xl font-bold text-rose-600 mt-1" id="kpiExp">£0.00</h3>
-                </div>
-
-                <div class="card border-l-4 border-violet-500 md:col-span-2 lg:col-span-1">
-                    <p class="text-xs text-slate-400 font-bold uppercase">Top Spending</p>
-                    <h3 class="text-xl font-bold text-violet-600 mt-1 truncate" id="kpiMaxCat">N/A</h3>
-                    <p class="text-xs text-slate-500 font-medium mt-1" id="kpiMaxVal">£0.00</p>
-                </div>
-
+                <div class="card border-l-4 border-emerald-500"><p class="text-xs text-slate-400 font-bold uppercase">Income (Month)</p><h3 class="text-2xl font-bold text-emerald-600 mt-1" id="kpiInc">£0.00</h3></div>
+                <div class="card border-l-4 border-rose-500"><p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p><h3 class="text-2xl font-bold text-rose-600 mt-1" id="kpiExp">£0.00</h3></div>
+                <div class="card border-l-4 border-violet-500 md:col-span-2 lg:col-span-1"><p class="text-xs text-slate-400 font-bold uppercase">Top Spending</p><h3 class="text-xl font-bold text-violet-600 mt-1 truncate" id="kpiMaxCat">N/A</h3><p class="text-xs text-slate-500 font-medium mt-1" id="kpiMaxVal">£0.00</p></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="card lg:col-span-2">
-                    <h3 class="font-bold text-slate-800 mb-4">Cash Flow (6 Months)</h3>
-                    <div class="chart-container">
-                        <canvas id="chartTrend"></canvas>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3 class="font-bold text-slate-800 mb-4">Spending Breakdown</h3>
-                    <div class="chart-container">
-                        <canvas id="chartSpend"></canvas>
-                    </div>
-                </div>
+                <div class="card lg:col-span-2"><h3 class="font-bold text-slate-800 mb-4">Cash Flow (6 Months)</h3><div class="chart-container"><canvas id="chartTrend"></canvas></div></div>
+                <div class="card"><h3 class="font-bold text-slate-800 mb-4">Spending Breakdown</h3><div class="chart-container"><canvas id="chartSpend"></canvas></div></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -112,28 +89,73 @@
                         <div><label class="text-[10px] font-bold text-slate-400 uppercase">Description</label><input type="text" id="txDesc" placeholder="e.g. Grocery Shop" class="input-std mt-1" required></div>
                         <div class="flex gap-3">
                             <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" placeholder="0.00" step="0.01" class="input-std mt-1" required></div>
-                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label>
-                                <select id="txCat" class="input-std mt-1 bg-white cursor-pointer" onchange="checkNewCategory(this)"></select>
-                            </div>
+                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="input-std mt-1 bg-white cursor-pointer" onchange="checkNewCategory(this)"></select></div>
                         </div>
                         <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">Add Transaction</button>
                     </form>
                 </div>
-
                 <div class="card lg:col-span-2 min-h-[400px]">
                     <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-slate-800">Recent Transactions</h3><span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">This Month</span></div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100"><th class="py-2 font-bold pl-2">Description</th><th class="py-2 font-bold text-right">Amount</th><th class="py-2 font-bold text-right pr-2">Action</th></tr></thead>
-                            <tbody id="listTx" class="text-sm"></tbody>
-                        </table>
-                        <div id="emptyState" class="hidden py-12 text-center"><p class="text-slate-400 font-medium text-sm">No transactions yet.</p></div>
-                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100"><th class="py-2 font-bold pl-2">Description</th><th class="py-2 font-bold text-right">Amount</th><th class="py-2 font-bold text-right pr-2">Action</th></tr></thead><tbody id="listTx" class="text-sm"></tbody></table><div id="emptyState" class="hidden py-12 text-center"><p class="text-slate-400 font-medium text-sm">No transactions yet.</p></div></div>
                 </div>
             </div>
         </div>
 
-        <div id="view-reports" class="view-section hidden"><h2 class="text-2xl font-bold">Reports</h2><p>Coming soon...</p></div>
+        <div id="view-reports" class="view-section hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <h2 class="text-2xl font-extrabold text-slate-800">Yearly Analytics</h2>
+                <div class="flex gap-2 bg-white p-1 rounded-lg shadow-sm border border-slate-200">
+                    <select id="reportYearSelect" class="bg-transparent font-bold text-sm text-slate-700 px-3 py-1 outline-none cursor-pointer" onchange="renderReports()"></select>
+                    <button onclick="downloadCSV()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-1 rounded-md transition"><i class="fas fa-file-csv mr-1"></i> Export Data</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card border-t-4 border-emerald-500 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Income</p><h3 class="text-2xl font-bold text-emerald-600 mt-1" id="rptInc">£0.00</h3></div>
+                        <div class="p-2 bg-emerald-50 rounded-lg text-emerald-500"><i class="fas fa-arrow-down"></i></div>
+                    </div>
+                </div>
+                <div class="card border-t-4 border-rose-500 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Total Expenses</p><h3 class="text-2xl font-bold text-rose-600 mt-1" id="rptExp">£0.00</h3></div>
+                        <div class="p-2 bg-rose-50 rounded-lg text-rose-500"><i class="fas fa-arrow-up"></i></div>
+                    </div>
+                </div>
+                <div class="card border-t-4 border-indigo-500 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Net Savings</p><h3 class="text-2xl font-bold text-indigo-600 mt-1" id="rptSav">£0.00</h3></div>
+                        <div class="p-2 bg-indigo-50 rounded-lg text-indigo-500"><i class="fas fa-piggy-bank"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card lg:col-span-2">
+                    <h3 class="font-bold text-lg text-slate-800 mb-6">Monthly Breakdown</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-xs text-slate-400 uppercase border-b border-slate-100">
+                                    <th class="py-3 pl-2 font-bold">Month</th>
+                                    <th class="py-3 font-bold text-right text-emerald-600">Income</th>
+                                    <th class="py-3 font-bold text-right text-rose-600">Expense</th>
+                                    <th class="py-3 font-bold text-right text-indigo-600 pr-2">Net</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rptMonthTable" class="text-sm font-medium text-slate-600"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card h-fit">
+                    <h3 class="font-bold text-lg text-slate-800 mb-6">Top Spending Categories</h3>
+                    <div id="rptCatList" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+
         <div id="view-settings" class="view-section hidden">
             <h2 class="text-2xl font-bold mb-6">Settings</h2>
             <div class="card max-w-md">
@@ -161,35 +183,16 @@
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const save = () => { localStorage.setItem('infinityDB', JSON.stringify(db)); render(); };
         
-        // --- STRICT VIBRANT COLOR GENERATOR ---
-        // Guaranteed: No Grey, No Red (except Debt).
         const getCatColor = (c) => {
-            // 1. Fixed Mappings
-            if(c === 'Debt') return '#ef4444'; // Strict Red
-            const map = {
-                'Housing': '#3b82f6',   // Blue
-                'Food': '#f59e0b',      // Amber
-                'Transport': '#06b6d4', // Cyan
-                'Utilities': '#eab308', // Yellow
-                'Entertainment': '#8b5cf6', // Violet
-                'Health': '#10b981',    // Emerald
-                'Savings': '#6366f1'    // Indigo
-            };
+            if(c === 'Debt') return '#ef4444';
+            const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1' };
             if(map[c]) return map[c];
-
-            // 2. Dynamic Vibrant Colors
-            // We force high saturation to prevent Greys.
-            // We force Hue away from Red (0-40, 320-360).
             let hash = 0;
             for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash);
-            
-            // Hue Range: 45 (Orange-Yellow) to 300 (Purple)
-            const h = 45 + (Math.abs(hash) % 255); 
-            
-            // Saturation: 75% (Vibrant) | Lightness: 55% (Readable)
-            return `hsl(${h}, 75%, 55%)`;
+            return `hsl(${45 + (Math.abs(hash) % 255)}, 75%, 55%)`;
         };
 
+        // --- DASHBOARD RENDER ---
         function render() {
             const key = monthPicker.value;
             const data = db.transactions[key] || [];
@@ -215,12 +218,8 @@
             document.getElementById('kpiYTD').innerText = `£${fmt(ytd)}`;
             document.getElementById('kpiAvg').innerText = `£${fmt(ytd / (new Date().getMonth() + 1))}`;
 
-            // --- CALCULATE TOP CATEGORY ---
-            let maxCat = 'N/A';
-            let maxVal = 0;
-            for(const [c, v] of Object.entries(cats)) {
-                if(v > maxVal) { maxVal = v; maxCat = c; }
-            }
+            let maxCat = 'N/A'; let maxVal = 0;
+            for(const [c, v] of Object.entries(cats)) { if(v > maxVal) { maxVal = v; maxCat = c; } }
             document.getElementById('kpiMaxCat').innerText = maxCat;
             document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
 
@@ -236,70 +235,20 @@
             select.innerHTML += `<option value="ADD_NEW_CAT" class="font-bold text-indigo-600">+ Add New...</option>`;
             if(db.categories.includes(currentVal)) select.value = currentVal;
         }
-
-        function checkNewCategory(select) {
-            if(select.value === 'ADD_NEW_CAT') {
-                const newCat = prompt("Enter new Category Name:");
-                if(newCat && newCat.trim() !== "") {
-                    db.categories.push(newCat.trim());
-                    save();
-                    renderDropdowns();
-                    select.value = newCat.trim();
-                } else {
-                    select.value = db.categories[0];
-                }
-            }
-        }
+        function checkNewCategory(select) { if(select.value === 'ADD_NEW_CAT') { const newCat = prompt("Enter new Category Name:"); if(newCat && newCat.trim() !== "") { db.categories.push(newCat.trim()); save(); renderDropdowns(); select.value = newCat.trim(); } else { select.value = db.categories[0]; } } }
 
         function updateCharts(cats) {
             Chart.defaults.font.family = "'Inter', sans-serif";
-            
-            // --- PIE CHART (SPENDING) ---
             const ctxSpend = document.getElementById('chartSpend').getContext('2d');
             if(spendingChart) spendingChart.destroy();
             spendingChart = new Chart(ctxSpend, {
-                type: 'doughnut',
-                plugins: [ChartDataLabels],
-                data: {
-                    labels: Object.keys(cats),
-                    datasets: [{
-                        data: Object.values(cats),
-                        backgroundColor: Object.keys(cats).map(getCatColor),
-                        borderWidth: 2,
-                        borderColor: '#ffffff',
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '65%',
-                    plugins: {
-                        legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } },
-                        datalabels: {
-                            color: '#ffffff',
-                            font: { weight: 'bold', size: 11 },
-                            formatter: (value, ctx) => {
-                                let sum = 0;
-                                let dataArr = ctx.chart.data.datasets[0].data;
-                                dataArr.map(data => { sum += data; });
-                                let pct = (value * 100 / sum);
-                                // CLEANER LOOK: Hide label if less than 5%
-                                if(pct < 5) return null;
-                                return pct.toFixed(0) + "%";
-                            },
-                            textShadowColor: 'rgba(0, 0, 0, 0.5)',
-                            textShadowBlur: 4
-                        }
-                    }
-                }
+                type: 'doughnut', plugins: [ChartDataLabels],
+                data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(getCatColor), borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#ffffff', font: { weight: 'bold', size: 11 }, formatter: (value, ctx) => { let sum = 0; ctx.chart.data.datasets[0].data.map(data => sum += data); let pct = (value * 100 / sum); if(pct < 5) return null; return pct.toFixed(0) + "%"; }, textShadowColor: 'rgba(0, 0, 0, 0.5)', textShadowBlur: 4 } } }
             });
 
-            // --- BAR CHART (TREND/CASH FLOW) ---
             const ctxTrend = document.getElementById('chartTrend').getContext('2d');
             if(trendChart) trendChart.destroy();
-            
-            // Calculate 6-month data
             const labels = [], dInc = [], dExp = [];
             let d = new Date(); d.setMonth(d.getMonth() - 5);
             for(let i=0; i<6; i++) {
@@ -311,60 +260,114 @@
                 dInc.push(_i); dExp.push(_e);
                 d.setMonth(d.getMonth() + 1);
             }
-            
-            // Calculate Totals for Overlay
             const totalInc = dInc.reduce((a,b)=>a+b, 0);
             const totalExp = dExp.reduce((a,b)=>a+b, 0);
-
             trendChart = new Chart(ctxTrend, {
-                type: 'bar',
-                plugins: [ChartDataLabels],
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Income', data: dInc, backgroundColor: '#10b981', borderRadius: 6, barThickness: 16 },
-                        { label: 'Expenses', data: dExp, backgroundColor: '#f43f5e', borderRadius: 6, barThickness: 16 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } }
-                    },
-                    plugins: {
-                        legend: { display: false }, // Hidden, we use custom overlay
-                        datalabels: { display: false }
-                    }
-                },
-                // CUSTOM PLUGIN TO DRAW TEXT ON TOP LEFT
-                plugins: [{
-                    id: 'customTotals',
-                    afterDraw: (chart) => {
-                        const { ctx, chartArea: {top, left} } = chart;
-                        ctx.save();
-                        ctx.font = "bold 12px Inter";
-                        ctx.textAlign = 'left';
-                        
-                        // Draw Income
-                        ctx.fillStyle = '#059669'; // Emerald-600
-                        ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 5, top + 15);
-                        
-                        // Draw Expense
-                        ctx.fillStyle = '#e11d48'; // Rose-600
-                        ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 5, top + 32);
-                        
-                        ctx.restore();
-                    }
-                }]
+                type: 'bar', plugins: [ChartDataLabels],
+                data: { labels: labels, datasets: [ { label: 'Income', data: dInc, backgroundColor: '#10b981', borderRadius: 6, barThickness: 16 }, { label: 'Expenses', data: dExp, backgroundColor: '#f43f5e', borderRadius: 6, barThickness: 16 } ] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } } }, plugins: { legend: { display: false }, datalabels: { display: false } } },
+                plugins: [{ id: 'customTotals', afterDraw: (chart) => { const { ctx, chartArea: {top, left} } = chart; ctx.save(); ctx.font = "bold 12px Inter"; ctx.textAlign = 'left'; ctx.fillStyle = '#059669'; ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 5, top + 15); ctx.fillStyle = '#e11d48'; ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 5, top + 32); ctx.restore(); } }]
             });
         }
 
+        // --- REPORTS LOGIC ---
+        function renderReports() {
+            // 1. Get Years
+            const years = new Set([new Date().getFullYear()]);
+            Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0])));
+            const yearList = Array.from(years).sort((a,b) => b - a);
+            
+            const sel = document.getElementById('reportYearSelect');
+            if(sel.options.length === 0 || sel.options.length !== yearList.length) {
+                const savedVal = sel.value;
+                sel.innerHTML = '';
+                yearList.forEach(y => sel.innerHTML += `<option value="${y}">${y}</option>`);
+                if(yearList.includes(parseInt(savedVal))) sel.value = savedVal;
+            }
+
+            const targetYear = sel.value;
+            let annInc = 0, annExp = 0, annCat = {};
+            const monthTable = document.getElementById('rptMonthTable');
+            monthTable.innerHTML = '';
+
+            // 2. Iterate Months 01-12
+            for(let m=1; m<=12; m++) {
+                const mk = `${targetYear}-${String(m).padStart(2,'0')}`;
+                const txs = db.transactions[mk] || [];
+                let mInc = 0, mExp = 0;
+
+                txs.forEach(t => {
+                    const v = math(t.amount);
+                    if(t.type === 'income') { mInc += v; annInc += v; }
+                    else { mExp += v; annExp += v; annCat[t.category] = (annCat[t.category] || 0) + v; }
+                });
+
+                // Row for Table
+                if(mInc > 0 || mExp > 0) {
+                    const monthName = new Date(targetYear, m-1).toLocaleString('default', { month: 'long' });
+                    const net = mInc - mExp;
+                    const netColor = net >= 0 ? 'text-indigo-600' : 'text-rose-600';
+                    monthTable.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50"><td class="py-3 pl-2 font-medium">${monthName}</td><td class="text-right text-emerald-600">£${fmt(mInc)}</td><td class="text-right text-rose-600">£${fmt(mExp)}</td><td class="text-right pr-2 font-bold ${netColor}">£${fmt(net)}</td></tr>`;
+                }
+            }
+            if(monthTable.innerHTML === '') monthTable.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 text-xs">No data for ${targetYear}</td></tr>`;
+
+            // 3. Update Cards
+            document.getElementById('rptInc').innerText = `£${fmt(annInc)}`;
+            document.getElementById('rptExp').innerText = `£${fmt(annExp)}`;
+            document.getElementById('rptSav').innerText = `£${fmt(annInc - annExp)}`;
+
+            // 4. Update Category List
+            const catList = document.getElementById('rptCatList');
+            catList.innerHTML = '';
+            const sortedCats = Object.entries(annCat).sort(([,a], [,b]) => b - a);
+            
+            if(sortedCats.length === 0) {
+                catList.innerHTML = `<p class="text-slate-400 text-xs text-center py-4">No spending data yet.</p>`;
+            } else {
+                const maxVal = sortedCats[0][1];
+                sortedCats.forEach(([cat, val]) => {
+                    const pct = (val / maxVal) * 100;
+                    const color = getCatColor(cat);
+                    catList.innerHTML += `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-slate-700">${cat}</span>
+                            <span class="text-slate-500">£${fmt(val)}</span>
+                        </div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%; background-color:${color}"></div></div>
+                    </div>`;
+                });
+            }
+        }
+
+        function downloadCSV() {
+            const rows = [['Date', 'Description', 'Category', 'Type', 'Amount']];
+            Object.keys(db.transactions).forEach(dateKey => {
+                db.transactions[dateKey].forEach(t => {
+                    rows.push([dateKey, t.desc, t.category, t.type, t.amount]);
+                });
+            });
+            const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", "finance_portfolio_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // UTILS
         function setTxType(type) { currentTxType = type; document.getElementById('btnExp').className = type === 'expense' ? "flex-1 py-2 bg-rose-100 text-rose-600 rounded-lg font-bold text-sm transition" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; document.getElementById('btnInc').className = type === 'income' ? "flex-1 py-2 bg-emerald-100 text-emerald-600 rounded-lg font-bold text-sm transition" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; }
         document.getElementById('formTx').addEventListener('submit', e => { e.preventDefault(); const k = monthPicker.value; if(!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push({ desc: document.getElementById('txDesc').value, amount: math(document.getElementById('txAmt').value), category: document.getElementById('txCat').value, type: currentTxType }); document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = ''; save(); });
         
-        window.switchView = (id) => { document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden')); document.getElementById(`view-${id}`).classList.remove('hidden'); document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active')); document.getElementById(`nav-${id}`).classList.add('active'); };
+        window.switchView = (id) => { 
+            document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden')); 
+            document.getElementById(`view-${id}`).classList.remove('hidden'); 
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active')); 
+            document.getElementById(`nav-${id}`).classList.add('active'); 
+            if(id === 'reports') renderReports(); // Trigger Report Render
+        };
         window.delTx = (i) => { if(confirm("Delete this transaction?")) { db.transactions[monthPicker.value].splice(i, 1); save(); } };
         window.editAnnualIncome = () => { const v = prompt("Enter Annual Salary Target (£):", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
