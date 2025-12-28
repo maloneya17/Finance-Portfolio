@@ -95,7 +95,7 @@
             <button onclick="manualSync()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
                 <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Cloud
             </button>
-            <div id="syncStatus" class="text-[10px] text-center text-slate-500 font-medium">Local Mode • v1.5</div>
+            <div id="syncStatus" class="text-[10px] text-center text-slate-500 font-medium">Local Mode • v1.6</div>
         </div>
     </div>
 
@@ -174,21 +174,21 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-2">
                 <div>
                     <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight">Bill Calendar & Calculator</h2>
-                    <p class="text-sm text-slate-500">Plan your fixed recurring costs.</p>
+                    <p class="text-sm text-slate-500">Real-time liquidity and fixed cost planning.</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="card border-l-4 border-slate-500">
-                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Monthly Cost</p>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Monthly Bills</p>
                     <h3 class="text-2xl font-bold text-slate-700 mt-1" id="billTotal">£0.00</h3>
-                    <p class="text-xs text-slate-400 mt-1">Total recurring bills</p>
+                    <p class="text-xs text-slate-400 mt-1">Total recurring cost</p>
                 </div>
                 
                 <div class="card border-l-4 border-sky-500">
                     <p class="text-xs text-slate-400 font-bold uppercase tracking-wide">Yearly Cost</p>
                     <h3 class="text-2xl font-bold text-sky-600 mt-1" id="billYearly">£0.00</h3>
-                    <p class="text-xs text-sky-500 mt-1">Projected total (12 mo)</p>
+                    <p class="text-xs text-sky-500 mt-1">Projected (12 mo)</p>
                 </div>
 
                 <div class="card border-l-4 border-indigo-500">
@@ -200,9 +200,9 @@
                 </div>
 
                 <div class="card border-l-4 border-emerald-500 bg-emerald-50 border-none">
-                    <p class="text-xs text-emerald-600 font-bold uppercase tracking-wide">Safe to Spend</p>
+                    <p class="text-xs text-emerald-600 font-bold uppercase tracking-wide">Real-Time Safe</p>
                     <h3 class="text-2xl font-bold text-emerald-700 mt-1" id="billSafe">£0.00</h3>
-                    <p class="text-xs text-emerald-600 mt-1 font-medium">Income - Total Bills</p>
+                    <p class="text-[10px] text-emerald-600 mt-1 font-medium">Income - All Expenses - Unpaid Bills</p>
                 </div>
             </div>
 
@@ -392,6 +392,7 @@
             
             // Stats Vars
             let total = 0, paid = 0;
+            let unpaidBillTotal = 0;
 
             // Date Calcs
             const firstDay = new Date(y, m - 1, 1).getDay(); // 0=Sun, 1=Mon
@@ -408,7 +409,11 @@
 
                 // Stats
                 total += b.amount;
-                if(status[b.id]) paid += b.amount;
+                if(status[b.id]) {
+                    paid += b.amount;
+                } else {
+                    unpaidBillTotal += b.amount; // Track unpaid for Real-Time Calc
+                }
             });
 
             // Generate Grid HTML
@@ -463,16 +468,23 @@
             document.getElementById('billYearly').innerText = `£${fmt(total * 12)}`; // YEARLY PROJECTION
             
             // Paid Progress
-            document.getElementById('billPaid').innerText = `£${fmt(paid)}`; // Removed as standalone, handled by progress
             const pct = total > 0 ? (paid / total) * 100 : 0;
             document.getElementById('billProgressBar').style.width = `${pct}%`;
             document.getElementById('billProgressText').innerText = `${pct.toFixed(0)}%`;
 
-            // Bill to Income Ratio
-            // We use the income transactions of THIS month as the baseline
-            const txs = db.transactions[key] || [];
-            const incomeMonth = txs.filter(t => t.type === 'income').reduce((a,b) => a + math(b.amount), 0);
+            // REAL-TIME SAFE TO SPEND CALCULATION
+            // Formula: Income (This Month) - Total Expenses (This Month) - Unpaid Bills
             
+            const txs = db.transactions[key] || [];
+            let incomeMonth = 0;
+            let expenseMonth = 0;
+
+            txs.forEach(t => {
+                if(t.type === 'income') incomeMonth += math(t.amount);
+                else expenseMonth += math(t.amount);
+            });
+
+            // Bill to Income Ratio
             if(incomeMonth > 0) {
                 const ratio = (total / incomeMonth) * 100;
                 document.getElementById('billRatio').innerText = `${ratio.toFixed(0)}%`;
@@ -487,7 +499,7 @@
             }
 
             // Safe to Spend
-            const safe = incomeMonth - total;
+            const safe = incomeMonth - expenseMonth - unpaidBillTotal;
             document.getElementById('billSafe').innerText = `£${fmt(safe)}`;
             document.getElementById('billSafe').className = safe >= 0 ? "text-2xl font-bold text-emerald-700 mt-1" : "text-2xl font-bold text-rose-700 mt-1";
         }
