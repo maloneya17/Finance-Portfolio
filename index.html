@@ -56,8 +56,9 @@
     <div id="main-content">
         
         <div id="view-dashboard" class="view-section">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="card bg-slate-900 text-white col-span-1 md:col-span-2 relative overflow-hidden group cursor-pointer" onclick="editAnnualIncome()">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                
+                <div class="card bg-slate-900 text-white col-span-1 md:col-span-2 lg:col-span-2 relative overflow-hidden group cursor-pointer" onclick="editAnnualIncome()">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><i class="fas fa-edit text-6xl"></i></div>
                     <p class="text-xs text-slate-400 font-bold uppercase mb-1">Annual Income Target</p>
                     <h2 class="text-3xl font-extrabold" id="kpiSalary">£0.00</h2>
@@ -66,8 +67,23 @@
                         <span><i class="fas fa-clock text-indigo-400"></i> Avg: <span id="kpiAvg" class="text-white">£0</span></span>
                     </div>
                 </div>
-                <div class="card border-l-4 border-emerald-500"><p class="text-xs text-slate-400 font-bold uppercase">Income (Month)</p><h3 class="text-2xl font-bold text-emerald-600 mt-1" id="kpiInc">£0.00</h3></div>
-                <div class="card border-l-4 border-rose-500"><p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p><h3 class="text-2xl font-bold text-rose-600 mt-1" id="kpiExp">£0.00</h3></div>
+
+                <div class="card border-l-4 border-emerald-500">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Income (Month)</p>
+                    <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="kpiInc">£0.00</h3>
+                </div>
+
+                <div class="card border-l-4 border-rose-500">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p>
+                    <h3 class="text-2xl font-bold text-rose-600 mt-1" id="kpiExp">£0.00</h3>
+                </div>
+
+                <div class="card border-l-4 border-violet-500 md:col-span-2 lg:col-span-1">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Top Spending</p>
+                    <h3 class="text-xl font-bold text-violet-600 mt-1 truncate" id="kpiMaxCat">N/A</h3>
+                    <p class="text-xs text-slate-500 font-medium mt-1" id="kpiMaxVal">£0.00</p>
+                </div>
+
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -198,6 +214,15 @@
             Object.keys(db.transactions).forEach(k => { if(k.startsWith(year)) db.transactions[k].forEach(t => { if(t.type === 'income') ytd += math(t.amount); }); });
             document.getElementById('kpiYTD').innerText = `£${fmt(ytd)}`;
             document.getElementById('kpiAvg').innerText = `£${fmt(ytd / (new Date().getMonth() + 1))}`;
+
+            // --- CALCULATE TOP CATEGORY ---
+            let maxCat = 'N/A';
+            let maxVal = 0;
+            for(const [c, v] of Object.entries(cats)) {
+                if(v > maxVal) { maxVal = v; maxCat = c; }
+            }
+            document.getElementById('kpiMaxCat').innerText = maxCat;
+            document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
 
             renderDropdowns();
             updateCharts(cats);
