@@ -131,7 +131,33 @@
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const save = () => { localStorage.setItem('infinityDB', JSON.stringify(db)); render(); };
-        const getCatColor = (c) => { const m = {'Housing':'#3b82f6', 'Food':'#f59e0b', 'Transport':'#06b6d4', 'Utilities':'#eab308', 'Entertainment':'#8b5cf6', 'Health':'#10b981', 'Savings':'#6366f1', 'Debt':'#ef4444'}; return m[c] || '#94a3b8'; };
+        
+        // --- SMART COLOR GENERATOR ---
+        const getCatColor = (c) => {
+            const map = {
+                'Housing': '#3b82f6', // Blue
+                'Food': '#f59e0b',    // Amber
+                'Transport': '#06b6d4', // Cyan
+                'Utilities': '#eab308', // Yellow
+                'Entertainment': '#8b5cf6', // Violet
+                'Health': '#10b981',    // Emerald
+                'Savings': '#6366f1',   // Indigo
+                'Debt': '#ef4444',      // Red (Fixed)
+                'Shopping': '#ec4899',  // Pink
+                'Bills': '#f97316',     // Orange
+                'Insurance': '#64748b'  // Slate
+            };
+            
+            if(map[c]) return map[c]; // Return predefined color
+
+            // Dynamic Hash for unknown categories
+            let hash = 0;
+            for (let i = 0; i < c.length; i++) {
+                hash = c.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const h = Math.abs(hash % 360); // Hue 0-360
+            return `hsl(${h}, 70%, 60%)`; // Consistent Saturation/Lightness
+        };
 
         function render() {
             const key = monthPicker.value;
@@ -158,25 +184,19 @@
             document.getElementById('kpiYTD').innerText = `£${fmt(ytd)}`;
             document.getElementById('kpiAvg').innerText = `£${fmt(ytd / (new Date().getMonth() + 1))}`;
 
-            renderDropdowns(); // Update categories
+            renderDropdowns();
             updateCharts(cats);
         }
 
         // --- DYNAMIC CATEGORY LOGIC ---
         function renderDropdowns() {
             const select = document.getElementById('txCat');
-            const currentVal = select.value; // Remember selection
+            const currentVal = select.value;
             select.innerHTML = '';
             
-            // Standard Categories
-            db.categories.forEach(c => {
-                select.innerHTML += `<option value="${c}">${c}</option>`;
-            });
-            
-            // Add New Option
+            db.categories.forEach(c => { select.innerHTML += `<option value="${c}">${c}</option>`; });
             select.innerHTML += `<option value="ADD_NEW_CAT" class="font-bold text-indigo-600">+ Add New...</option>`;
             
-            // Restore selection if valid, else default
             if(db.categories.includes(currentVal)) select.value = currentVal;
         }
 
@@ -184,15 +204,11 @@
             if(select.value === 'ADD_NEW_CAT') {
                 const newCat = prompt("Enter new Category Name:");
                 if(newCat && newCat.trim() !== "") {
-                    // Add to DB
                     db.categories.push(newCat.trim());
-                    save(); // Save DB with new category
-                    
-                    // Re-render and Select
+                    save();
                     renderDropdowns();
                     select.value = newCat.trim();
                 } else {
-                    // Reset if cancelled
                     select.value = db.categories[0];
                 }
             }
