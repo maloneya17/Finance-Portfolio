@@ -145,30 +145,33 @@
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const save = () => { localStorage.setItem('infinityDB', JSON.stringify(db)); render(); };
         
-        // --- STRICT COLOR GENERATOR ---
-        // Ensures only 'Debt' is Red. Random colors are forced between Yellow and Purple.
+        // --- STRICT VIBRANT COLOR GENERATOR ---
+        // Guaranteed: No Grey, No Red (except Debt).
         const getCatColor = (c) => {
             // 1. Fixed Mappings
             if(c === 'Debt') return '#ef4444'; // Strict Red
             const map = {
-                'Housing': '#3b82f6', // Blue
-                'Food': '#f59e0b',    // Amber
+                'Housing': '#3b82f6',   // Blue
+                'Food': '#f59e0b',      // Amber
                 'Transport': '#06b6d4', // Cyan
                 'Utilities': '#eab308', // Yellow
                 'Entertainment': '#8b5cf6', // Violet
                 'Health': '#10b981',    // Emerald
-                'Savings': '#6366f1',   // Indigo
-                'Subscription': '#64748b' // Slate/Grey (Fixed to avoid confusion)
+                'Savings': '#6366f1'    // Indigo
             };
             if(map[c]) return map[c];
 
-            // 2. Dynamic Safe Colors (Excludes Red spectrum 320-40)
+            // 2. Dynamic Vibrant Colors
+            // We force high saturation to prevent Greys.
+            // We force Hue away from Red (0-40, 320-360).
             let hash = 0;
             for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash);
-            // Force Hue between 45 (Yellow-Orange) and 300 (Purple)
-            // Range width = 255.
+            
+            // Hue Range: 45 (Orange-Yellow) to 300 (Purple)
             const h = 45 + (Math.abs(hash) % 255); 
-            return `hsl(${h}, 70%, 60%)`;
+            
+            // Saturation: 75% (Vibrant) | Lightness: 55% (Readable)
+            return `hsl(${h}, 75%, 55%)`;
         };
 
         function render() {
