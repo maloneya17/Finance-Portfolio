@@ -16,8 +16,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* CORE */
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; padding-top: env(safe-area-inset-top); padding-bottom: calc(90px + env(safe-area-inset-bottom)); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); -webkit-tap-highlight-color: transparent; }
+        /* CORE & RESET */
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #1e293b; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); -webkit-tap-highlight-color: transparent; }
         
         /* HEADER - Z-INDEX & CLICKS */
         .glass-header { 
@@ -28,6 +28,24 @@
             pointer-events: none; 
         }
         .glass-header .interactive { pointer-events: auto; } 
+
+        /* STATUS DOT ANIMATION */
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: #94a3b8; /* Default Gray */
+            display: inline-block; margin-right: 8px;
+            transition: all 0.3s ease;
+        }
+        .status-dot.online {
+            background-color: #10b981; /* Green */
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
 
         /* UI ELEMENTS */
         .card { background: #fff; border-radius: 24px; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05); border: 1px solid #f1f5f9; transition: transform 0.1s; }
@@ -60,14 +78,8 @@
         /* LOADER & FAB */
         #cloudLoader { position: fixed; top: calc(env(safe-area-inset-top) + 15px); right: 20px; z-index: 100; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); font-size: 12px; font-weight: 700; color: #4f46e5; transition: 0.3s; transform: translateY(-200%); opacity: 0; pointer-events: none; }
         #cloudLoader.show { transform: translateY(0); opacity: 1; }
-        .fab { position: fixed; bottom: 95px; right: 20px; width: 56px; height: 56px; background: #4f46e5; color: white; border-radius: 50%; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; z-index: 45; cursor: pointer; }
+        .fab { position: fixed; bottom: 30px; right: 20px; width: 56px; height: 56px; background: #4f46e5; color: white; border-radius: 50%; box-shadow: 0 15px 30px -5px rgba(79, 70, 229, 0.4); display: flex; align-items: center; justify-content: center; font-size: 24px; transition: transform 0.2s; z-index: 50; cursor: pointer; }
         .fab:active { transform: scale(0.9); }
-
-        /* BOTTOM NAV */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; z-index: 50; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; padding-bottom: env(safe-area-inset-bottom); }
-        .b-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #94a3b8; font-size: 10px; font-weight: 700; width: 50px; }
-        .b-nav-item i { font-size: 20px; }
-        .b-nav-item.active { color: #4f46e5; }
     </style>
 </head>
 <body class="flex flex-col md:flex-row h-screen overflow-hidden">
@@ -78,18 +90,22 @@
         <div class="p-8">
             <div class="flex items-center gap-4 mb-12">
                 <img src="icon.png" class="w-14 h-14 rounded-2xl shadow-lg shadow-indigo-600/30 object-cover bg-white" onerror="this.style.display='none'">
-                <h1 class="font-bold text-xl text-white tracking-tight leading-tight">Finance<br>Portfolio</h1>
+                <div>
+                    <h1 class="font-bold text-xl text-white tracking-tight leading-tight">
+                        <div class="status-dot"></div>Portfolio
+                    </h1>
+                </div>
             </div>
             <div class="mb-10">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 block pl-1">Timeline</label>
                 <input type="month" id="monthPicker" class="w-full p-4 bg-slate-800/50 border border-slate-700 rounded-2xl font-bold text-white focus:border-indigo-500 cursor-pointer outline-none transition hover:bg-slate-800">
             </div>
             <nav class="space-y-3">
-                <div onclick="switchView('dashboard')" id="nav-d-dashboard" class="nav-item active"><i class="fas fa-chart-pie w-5"></i> Dashboard</div>
-                <div onclick="switchView('reports')" id="nav-d-reports" class="nav-item"><i class="fas fa-chart-line w-5"></i> Reports</div>
-                <div onclick="switchView('calendar')" id="nav-d-calendar" class="nav-item"><i class="fas fa-calendar-day w-5"></i> Calendar</div>
-                <div onclick="switchView('wealth')" id="nav-d-wealth" class="nav-item"><i class="fas fa-vault w-5"></i> Net Worth</div>
-                <div onclick="switchView('settings')" id="nav-d-settings" class="nav-item"><i class="fas fa-sliders w-5"></i> Settings</div>
+                <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item active"><i class="fas fa-chart-pie w-5"></i> Dashboard</div>
+                <div onclick="switchView('reports')" id="nav-reports" class="nav-item"><i class="fas fa-chart-line w-5"></i> Reports</div>
+                <div onclick="switchView('calendar')" id="nav-calendar" class="nav-item"><i class="fas fa-calendar-day w-5"></i> Calendar</div>
+                <div onclick="switchView('wealth')" id="nav-wealth" class="nav-item"><i class="fas fa-vault w-5"></i> Net Worth</div>
+                <div onclick="switchView('settings')" id="nav-settings" class="nav-item"><i class="fas fa-sliders w-5"></i> Settings</div>
             </nav>
         </div>
         <div class="p-6 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 space-y-3">
@@ -108,17 +124,20 @@
         <div class="md:hidden glass-header px-5 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3 interactive">
                 <img src="icon.png" class="w-10 h-10 rounded-xl shadow-md shadow-indigo-200 object-cover bg-white" onerror="this.style.display='none'">
-                <h1 class="font-bold text-lg text-slate-800 tracking-tight">Portfolio</h1>
+                <h1 class="font-bold text-lg text-slate-800 tracking-tight flex items-center">
+                    <div class="status-dot"></div>Portfolio
+                </h1>
             </div>
             <div class="flex items-center gap-2 interactive">
                 <button onclick="togglePrivacy()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i id="privacyIconMobile" class="fas fa-eye text-sm"></i></button>
                 <button onclick="manualSync()" class="w-9 h-9 bg-slate-100 text-indigo-600 rounded-full flex items-center justify-center hidden active:scale-90 transition" id="mobileSyncBtn"><i class="fas fa-sync text-sm"></i></button>
+                <button onclick="toggleMobileMenu()" class="w-9 h-9 bg-slate-100 text-slate-600 rounded-full flex items-center justify-center active:scale-90 transition"><i class="fas fa-bars text-sm"></i></button>
             </div>
         </div>
 
         <button onclick="document.getElementById('txFormCard').scrollIntoView({behavior:'smooth'});" class="fab md:hidden shadow-xl shadow-indigo-500/40"><i class="fas fa-plus"></i></button>
 
-        <div class="flex-1 overflow-y-auto no-scroll p-5 md:p-12">
+        <div class="flex-1 overflow-y-auto no-scroll p-5 md:p-12 pb-32">
             
             <div id="view-dashboard" class="view-section fade-in">
                 <div class="card p-6 mb-8 bg-white border border-slate-100">
@@ -200,7 +219,7 @@
             <div id="view-settings" class="view-section hidden fade-in">
                 <div class="card p-8 max-w-2xl mx-auto space-y-10">
                     <div><h2 class="text-2xl font-bold text-slate-800">Settings</h2></div>
-                    <div class="bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100"><h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-cloud text-indigo-600"></i> Cloud Sync</h3><p class="text-xs text-slate-500 mb-4">Link Google Apps Script to sync iPhone & Laptop.</p><div class="flex gap-2"><form id="cloudForm" class="flex-1 flex gap-2"><input type="text" id="cloudUrlInput" placeholder="https://script.google.com/..." class="input-std" required><button type="submit" id="cloudBtn" class="btn-press px-6 bg-indigo-600 text-white rounded-2xl font-bold shadow-md shadow-indigo-200">Link</button></form><button onclick="disconnectCloud()" class="btn-press px-4 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold hover:bg-rose-50 transition" title="Disconnect"><i class="fas fa-unlink"></i></button></div><div id="cloudMsg" class="mt-3 text-xs font-bold text-emerald-600 flex items-center gap-2 hidden"><i class="fas fa-check-circle"></i> Sync Active</div></div>
+                    <div class="bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100"><h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="fas fa-cloud text-indigo-600"></i> Cloud Sync</h3><p class="text-xs text-slate-500 mb-4">Link Google Apps Script to sync iPhone & Laptop.</p><div class="flex gap-2"><form id="cloudForm" class="flex-1 flex gap-2"><input type="text" id="cloudUrlInput" placeholder="https://script.google.com/..." class="input-std" required><button type="submit" class="btn-press px-6 bg-indigo-600 text-white rounded-2xl font-bold shadow-md shadow-indigo-200">Link</button></form><button onclick="disconnectCloud()" class="btn-press px-4 bg-white text-rose-500 border border-rose-100 rounded-2xl font-bold hover:bg-rose-50 transition" title="Disconnect"><i class="fas fa-unlink"></i></button></div><div id="cloudMsg" class="mt-3 text-xs font-bold text-emerald-600 flex items-center gap-2 hidden"><i class="fas fa-check-circle"></i> Sync Active</div></div>
                     <div class="border-b border-slate-100 pb-8"><button onclick="debugData()" class="text-indigo-600 font-bold text-sm flex items-center gap-2 hover:underline"><i class="fas fa-wrench"></i> Debug / Recover Data</button></div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div><h3 class="font-bold text-slate-800 mb-4">Budgets</h3><form id="budgetForm" class="flex gap-3 mb-4"><select id="budgetCat" class="input-std w-1/2"></select><input type="number" id="budgetLimit" placeholder="Limit" class="input-std w-1/3" step="0.01" inputmode="decimal" required><button type="submit" class="btn-press w-14 bg-emerald-500 text-white rounded-2xl hover:bg-emerald-600 shadow-md shadow-emerald-200"><i class="fas fa-plus"></i></button></form><ul id="budgetSettingsList" class="space-y-3"></ul></div><div><h3 class="font-bold text-slate-800 mb-4">Goals</h3><button onclick="openGoalModal()" class="w-full py-3 bg-indigo-50 text-indigo-600 font-bold rounded-xl hover:bg-indigo-100 transition">Add New Goal</button><ul id="goalList" class="space-y-3 mt-4"></ul></div></div>
                     <div class="border-t border-slate-100 pt-8" id="billFormContainer"><div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-800">Recurring Bills</h3><button onclick="cancelBillEdit()" id="cancelBillEditBtn" class="hidden text-xs text-rose-500 font-bold">Cancel</button></div><form id="billForm" class="flex gap-3 mb-4"><input type="number" id="billDay" placeholder="Day" class="input-std w-20 text-center" min="1" max="31" inputmode="numeric" required><input type="text" id="billDesc" placeholder="Bill Name" class="input-std flex-1" required><input type="number" id="billAmount" placeholder="£" class="input-std w-24" step="0.01" inputmode="decimal" required><button type="submit" id="billSubmitBtn" class="btn-press w-14 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 shadow-md shadow-indigo-200"><i class="fas fa-plus"></i></button></form><ul id="billList" class="space-y-3"></ul></div>
@@ -212,14 +231,6 @@
             <div id="wealthFormContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all"><div class="card p-8 w-full max-w-sm shadow-2xl scale-100"><h3 class="font-bold text-xl mb-6 text-slate-800" id="wealthFormTitle">Add Item</h3><form id="wealthForm" class="space-y-4"><input type="hidden" id="wealthType"><input type="text" id="wealthName" placeholder="Name" class="input-std" required><input type="number" id="wealthValue" placeholder="Value (£)" class="input-std" step="0.01" inputmode="decimal" required><div id="assetTypeContainer"><label class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Category</label><div class="relative mt-1"><select id="wealthCategory" class="input-std appearance-none bg-white"><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Stock">Stock</option><option value="Crypto">Crypto</option><option value="Property">Property</option><option value="Pension">Pension</option></select><div class="absolute right-4 top-4 text-slate-400 pointer-events-none"><i class="fas fa-chevron-down text-xs"></i></div></div></div><div class="flex gap-3 pt-4"><button type="button" onclick="closeWealthModal()" class="w-1/2 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancel</button><button type="submit" class="w-1/2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Save</button></div></form></div></div>
             <div id="goalFormContainer" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"><div class="card p-8 w-full max-w-sm shadow-2xl"><h3 class="font-bold text-xl mb-6 text-slate-800">Add Savings Goal</h3><form id="goalForm" class="space-y-4"><input type="text" id="goalName" placeholder="Goal Name" class="input-std" required><input type="number" id="goalTarget" placeholder="Target Amount (£)" class="input-std" step="0.01" inputmode="decimal" required><input type="number" id="goalCurrent" placeholder="Current Saved (£)" class="input-std" step="0.01" inputmode="decimal" required><div class="flex gap-3 pt-4"><button type="button" onclick="document.getElementById('goalFormContainer').classList.add('hidden')" class="w-1/2 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200">Cancel</button><button type="submit" class="w-1/2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200">Save</button></div></form></div></div>
         </div>
-    </div>
-
-    <div class="bottom-nav mobile-only">
-        <div onclick="switchView('dashboard')" id="nav-m-dashboard" class="b-nav-item active"><i class="fas fa-chart-pie"></i><span>Dash</span></div>
-        <div onclick="switchView('reports')" id="nav-m-reports" class="b-nav-item"><i class="fas fa-chart-line"></i><span>Reports</span></div>
-        <div onclick="switchView('calendar')" id="nav-m-calendar" class="b-nav-item"><i class="fas fa-calendar-day"></i><span>Cal</span></div>
-        <div onclick="switchView('wealth')" id="nav-m-wealth" class="b-nav-item"><i class="fas fa-vault"></i><span>Wealth</span></div>
-        <div onclick="switchView('settings')" id="nav-m-settings" class="b-nav-item"><i class="fas fa-sliders"></i><span>Set</span></div>
     </div>
 
     <script>
@@ -243,10 +254,14 @@
         monthPicker.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         let trendChart = null, wealthChart = null, spendingChart = null;
         
-        function compactFmt(num) { return Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 1 }).format(num); }
+        // COMPACT NUMBERS (1.2k)
+        function compactFmt(num) {
+            return Intl.NumberFormat('en-GB', { notation: "compact", maximumFractionDigits: 1 }).format(num);
+        }
         const fmt = (num) => parseFloat(num).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         function math(v) { return parseFloat(Number(v || 0).toFixed(2)); } // NAN Safety
 
+        // --- 3. COLOR LOGIC (DEBT IS RED) ---
         function getCategoryColor(c) {
             const map = { 'Debt':'#ef4444', 'Liabilities':'#ef4444', 'Loans':'#ef4444', 'Housing':'#3b82f6', 'Food':'#f59e0b', 'Transport':'#06b6d4', 'Utilities':'#eab308', 'Entertainment':'#8b5cf6', 'Health':'#10b981', 'Savings':'#6366f1' };
             if(map[c]) return map[c];
@@ -258,14 +273,9 @@
         function switchView(view) { 
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); 
             document.getElementById(`view-${view}`).classList.remove('hidden'); 
-            
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); 
-            const dNav = document.getElementById(`nav-d-${view}`);
-            if(dNav) dNav.classList.add('active');
-
-            document.querySelectorAll('.b-nav-item').forEach(el => el.classList.remove('active'));
-            const mNav = document.getElementById(`nav-m-${view}`);
-            if(mNav) mNav.classList.add('active');
+            document.getElementById(`nav-${view}`).classList.add('active'); 
+            if(window.innerWidth < 768) toggleMobileMenu(); 
             
             if(view==='dashboard') { setTimeout(() => { if(trendChart) trendChart.resize(); if(spendingChart) spendingChart.resize(); }, 50); }
             if(view==='wealth') { renderWealth(); setTimeout(() => { if(wealthChart) wealthChart.resize(); }, 50); }
@@ -363,12 +373,12 @@
             const lbud = document.getElementById('budgetSettingsList'); lbud.innerHTML=''; Object.keys(db.budgets).forEach(c => lbud.innerHTML += `<li class="flex justify-between p-3 bg-slate-50 rounded-xl text-sm"><span>${c}</span><span>£${fmt(db.budgets[c])} <button onclick="deleteBudget('${c}')" class="text-rose-500 ml-2">×</button></span></li>`);
         }
         function toggleMobileMenu() { const s = document.getElementById('sidebar'); s.classList.toggle('hidden'); s.classList.toggle('flex'); s.classList.toggle('fixed'); s.classList.toggle('inset-0'); }
-        function updatePrivacyUI() { document.querySelectorAll('.privacy-target').forEach(e => e.classList.toggle('privacy-blur', privacyMode)); }
+        function updatePrivacyUI() { document.querySelectorAll('.privacy-target').forEach(e => e.classList.toggle('privacy-blur', privacyMode)); const dots = document.querySelectorAll('.status-dot'); dots.forEach(d => { if(cloudUrl) d.classList.add('online'); else d.classList.remove('online'); }); }
         function animateValue(obj, start, end, duration) { if(privacyMode){obj.innerText=`£${fmt(end)}`; return;} let startTimestamp = null; const step = (timestamp) => { if (!startTimestamp) startTimestamp = timestamp; const progress = Math.min((timestamp - startTimestamp) / duration, 1); obj.innerText = `£${fmt(start + progress * (end - start))}`; if (progress < 1) window.requestAnimationFrame(step); }; window.requestAnimationFrame(step); }
         function manualSync() { if(cloudUrl) { saveToCloud(); setTimeout(loadFromCloud, 1000); } else { alert("Connect Cloud in Settings first."); } }
         function disconnectCloud() { cloudUrl = ""; localStorage.removeItem('infinityCloudUrl'); updateCloudUI(); alert("Disconnected from Cloud."); }
         function checkAutoBills() { try { const now = new Date(); const todayNum = now.getDate(); const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`; const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(); const isLastDay = (todayNum === daysInMonth); db.recurring.forEach(b => { const billDay = parseInt(b.day, 10); let shouldPay = false; if (billDay === todayNum) shouldPay = true; if (isLastDay && billDay > todayNum) shouldPay = true; if(shouldPay) { const pid = `${b.desc}-${currentKey}`; if(!db.billLog.includes(pid)) { if(!db.transactions[currentKey]) db.transactions[currentKey] = []; db.transactions[currentKey].push({ desc: b.desc, amount: b.amount, category: "Bills", type: "expense", isAuto: true }); db.billLog.push(pid); } } }); saveData(); } catch(e) {} }
-        function updateCloudUI() { if(cloudUrl) { document.getElementById('cloudUrlInput').value = cloudUrl; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-cloud text-emerald-500"></i> Cloud Active'; document.getElementById('cloudMsg').classList.remove('hidden'); document.getElementById('manualSyncBtn').classList.remove('hidden'); if(document.getElementById('mobileSyncBtn')) document.getElementById('mobileSyncBtn').classList.remove('hidden'); loadFromCloud(); } else { document.getElementById('cloudUrlInput').value = ''; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-hdd text-slate-500"></i> Local Mode'; document.getElementById('cloudMsg').classList.add('hidden'); document.getElementById('manualSyncBtn').classList.add('hidden'); if(document.getElementById('mobileSyncBtn')) document.getElementById('mobileSyncBtn').classList.add('hidden'); } }
+        function updateCloudUI() { if(cloudUrl) { document.getElementById('cloudUrlInput').value = cloudUrl; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-cloud text-emerald-500"></i> Cloud Active'; document.getElementById('cloudMsg').classList.remove('hidden'); document.getElementById('manualSyncBtn').classList.remove('hidden'); } else { document.getElementById('cloudUrlInput').value = ''; document.getElementById('cloudStatus').innerHTML = '<i class="fas fa-hdd text-slate-500"></i> Local Mode'; document.getElementById('cloudMsg').classList.add('hidden'); document.getElementById('manualSyncBtn').classList.add('hidden'); } updatePrivacyUI(); }
 
         document.getElementById('txForm').addEventListener('submit', e => { e.preventDefault(); const k=monthPicker.value; if(!db.transactions[k]) db.transactions[k]=[]; const t = { desc: document.getElementById('txDesc').value, amount: math(document.getElementById('txAmt').value), category: document.getElementById('txCategory').value, type: currentTxType }; if(editingTxIndex!==null) db.transactions[k][editingTxIndex]=t; else db.transactions[k].push(t); saveData(); cancelTxEdit(); });
         document.getElementById('billForm').addEventListener('submit', e => { e.preventDefault(); db.recurring.push({ day: document.getElementById('billDay').value, desc: document.getElementById('billDesc').value, amount: math(document.getElementById('billAmount').value) }); saveData(); document.getElementById('billForm').reset(); renderSettings(); });
@@ -376,46 +386,7 @@
         document.getElementById('goalForm').addEventListener('submit', e => { e.preventDefault(); db.goals.push({ name: document.getElementById('goalName').value, target: math(document.getElementById('goalTarget').value), current: math(document.getElementById('goalCurrent').value) }); saveData(); document.getElementById('goalFormContainer').classList.add('hidden'); renderSettings(); });
         document.getElementById('catForm').addEventListener('submit', e => { e.preventDefault(); db.categories.push(document.getElementById('newCatName').value); saveData(); });
         document.getElementById('budgetForm').addEventListener('submit', e => { e.preventDefault(); db.budgets[document.getElementById('budgetCat').value] = math(document.getElementById('budgetLimit').value); saveData(); });
-        
-        // --- 2. LINK VERIFICATION (THE FIX) ---
-        document.getElementById('cloudForm').addEventListener('submit', async e => { 
-            e.preventDefault(); 
-            const url = document.getElementById('cloudUrlInput').value;
-            const btn = document.getElementById('cloudBtn');
-            const originalText = btn.innerText;
-            btn.innerText = "Testing...";
-            
-            try {
-                // Ping the script to check connection
-                const res = await fetch(url);
-                if (!res.ok) throw new Error("Google blocked the request");
-                const data = await res.json(); // If this fails, it's not the right script
-                
-                // Connection Valid
-                cloudUrl = url;
-                localStorage.setItem('infinityCloudUrl', cloudUrl);
-                alert("✅ Success! Cloud Linked.");
-                
-                // Logic: If cloud has data, ask to merge. Else, save local to cloud.
-                if (data && data.categories) {
-                    if(confirm("Found data in cloud. Load it? (Cancel will keep local data)")) {
-                        db = data;
-                        saveData();
-                    } else {
-                        saveToCloud();
-                    }
-                } else {
-                    saveToCloud();
-                }
-                updateCloudUI();
-            } catch (err) {
-                alert("❌ Connection Failed.\n\nMake sure the URL ends in '/exec' and permissions are set to 'Anyone'.");
-                localStorage.removeItem('infinityCloudUrl');
-                updateCloudUI();
-            } finally {
-                btn.innerText = originalText;
-            }
-        });
+        document.getElementById('cloudForm').addEventListener('submit', e => { e.preventDefault(); cloudUrl = document.getElementById('cloudUrlInput').value; localStorage.setItem('infinityCloudUrl', cloudUrl); alert("Connected!"); updateCloudUI(); saveToCloud(); });
 
         function editAnnualIncome() { const v=prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome=parseFloat(v); saveData(); } }
         function editTx(i) { const t=db.transactions[monthPicker.value][i]; document.getElementById('txDesc').value=t.desc; document.getElementById('txAmt').value=t.amount; document.getElementById('txCategory').value=t.category; setTxType(t.type); editingTxIndex=i; document.getElementById('txFormTitle').innerText="Edit"; document.getElementById('cancelEditTxBtn').classList.remove('hidden'); document.getElementById('txFormCard').scrollIntoView({behavior:'smooth'}); }
@@ -446,8 +417,8 @@
             renderWealth(); 
             renderSettings(); 
             renderCalendar(); 
-            // Update Reports (Only if visible to save resources, but safe to call)
             renderReports();
+            updateCloudUI(); // Ensures the dot is green on load
         }
         function renderDropdowns() { 
             let optionsHTML = `<optgroup label="Categories">`; 
