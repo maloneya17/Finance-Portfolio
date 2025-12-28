@@ -24,7 +24,7 @@
         .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .input-std { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; }
         .input-std:focus { border-color: #4f46e5; ring: 2px solid #e0e7ff; }
-        .chart-container { position: relative; height: 240px; width: 100%; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
         .hidden { display: none !important; }
         ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
@@ -71,8 +71,18 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="card lg:col-span-2"><h3 class="font-bold text-slate-800 mb-4">Cash Flow (6 Months)</h3><div class="chart-container"><canvas id="chartTrend"></canvas></div></div>
-                <div class="card"><h3 class="font-bold text-slate-800 mb-4">Spending Breakdown</h3><div class="chart-container"><canvas id="chartSpend"></canvas></div></div>
+                <div class="card lg:col-span-2">
+                    <h3 class="font-bold text-slate-800 mb-4">Cash Flow (6 Months)</h3>
+                    <div class="chart-container">
+                        <canvas id="chartTrend"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold text-slate-800 mb-4">Spending Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="chartSpend"></canvas>
+                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -119,6 +129,9 @@
     </div>
 
     <script>
+        // --- REGISTER PLUGINS ---
+        Chart.register(ChartDataLabels);
+
         // INIT
         const DEFAULTS = { categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt'], transactions: {}, annualIncome: 0 };
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
@@ -135,28 +148,13 @@
         // --- SMART COLOR GENERATOR ---
         const getCatColor = (c) => {
             const map = {
-                'Housing': '#3b82f6', // Blue
-                'Food': '#f59e0b',    // Amber
-                'Transport': '#06b6d4', // Cyan
-                'Utilities': '#eab308', // Yellow
-                'Entertainment': '#8b5cf6', // Violet
-                'Health': '#10b981',    // Emerald
-                'Savings': '#6366f1',   // Indigo
-                'Debt': '#ef4444',      // Red (Fixed)
-                'Shopping': '#ec4899',  // Pink
-                'Bills': '#f97316',     // Orange
-                'Insurance': '#64748b'  // Slate
+                'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308',
+                'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1', 'Debt': '#ef4444'
             };
-            
-            if(map[c]) return map[c]; // Return predefined color
-
-            // Dynamic Hash for unknown categories
+            if(map[c]) return map[c];
             let hash = 0;
-            for (let i = 0; i < c.length; i++) {
-                hash = c.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            const h = Math.abs(hash % 360); // Hue 0-360
-            return `hsl(${h}, 70%, 60%)`; // Consistent Saturation/Lightness
+            for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${Math.abs(hash % 360)}, 70%, 60%)`;
         };
 
         function render() {
@@ -188,15 +186,12 @@
             updateCharts(cats);
         }
 
-        // --- DYNAMIC CATEGORY LOGIC ---
         function renderDropdowns() {
             const select = document.getElementById('txCat');
             const currentVal = select.value;
             select.innerHTML = '';
-            
             db.categories.forEach(c => { select.innerHTML += `<option value="${c}">${c}</option>`; });
             select.innerHTML += `<option value="ADD_NEW_CAT" class="font-bold text-indigo-600">+ Add New...</option>`;
-            
             if(db.categories.includes(currentVal)) select.value = currentVal;
         }
 
@@ -216,10 +211,47 @@
 
         function updateCharts(cats) {
             Chart.defaults.font.family = "'Inter', sans-serif";
+            
+            // --- PIE CHART (SPENDING) ---
             const ctxSpend = document.getElementById('chartSpend').getContext('2d');
             if(spendingChart) spendingChart.destroy();
-            spendingChart = new Chart(ctxSpend, { type: 'doughnut', data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(getCatColor), borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } }, datalabels: { display: false } } } });
+            spendingChart = new Chart(ctxSpend, {
+                type: 'doughnut',
+                plugins: [ChartDataLabels], // Explicitly Load Plugin
+                data: {
+                    labels: Object.keys(cats),
+                    datasets: [{
+                        data: Object.values(cats),
+                        backgroundColor: Object.keys(cats).map(getCatColor),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%', // Thicker ring for text
+                    plugins: {
+                        legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } },
+                        datalabels: {
+                            color: '#ffffff',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value, ctx) => {
+                                let sum = 0;
+                                let dataArr = ctx.chart.data.datasets[0].data;
+                                dataArr.map(data => { sum += data; });
+                                let percentage = (value * 100 / sum).toFixed(0) + "%";
+                                return percentage;
+                            },
+                            textShadowColor: 'rgba(0, 0, 0, 0.5)',
+                            textShadowBlur: 4
+                        }
+                    }
+                }
+            });
 
+            // --- BAR CHART (TREND/CASH FLOW) ---
             const ctxTrend = document.getElementById('chartTrend').getContext('2d');
             if(trendChart) trendChart.destroy();
             const labels = [], dInc = [], dExp = [];
@@ -233,7 +265,39 @@
                 dInc.push(_i); dExp.push(_e);
                 d.setMonth(d.getMonth() + 1);
             }
-            trendChart = new Chart(ctxTrend, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Income', data: dInc, backgroundColor: '#10b981', borderRadius: 4, barThickness: 12 }, { label: 'Expenses', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4, barThickness: 12 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } } }, plugins: { legend: { display: false }, datalabels: { display: false } } } });
+
+            trendChart = new Chart(ctxTrend, {
+                type: 'bar',
+                plugins: [ChartDataLabels],
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Income', data: dInc, backgroundColor: '#10b981', borderRadius: 6, barThickness: 16 },
+                        { label: 'Expenses', data: dExp, backgroundColor: '#f43f5e', borderRadius: 6, barThickness: 16 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true, // SHOW LEGEND
+                            position: 'top', // TOP
+                            align: 'start',  // LEFT ALIGNED
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        datalabels: { display: false } // Hide % on bars to keep it clean
+                    }
+                }
+            });
         }
 
         function setTxType(type) { currentTxType = type; document.getElementById('btnExp').className = type === 'expense' ? "flex-1 py-2 bg-rose-100 text-rose-600 rounded-lg font-bold text-sm transition" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; document.getElementById('btnInc').className = type === 'income' ? "flex-1 py-2 bg-emerald-100 text-emerald-600 rounded-lg font-bold text-sm transition" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; }
