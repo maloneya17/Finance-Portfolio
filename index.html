@@ -63,8 +63,9 @@
         .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
         .status-dot.active { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
         .status-dot.inactive { background-color: #94a3b8; }
-
-        /* ANIMATIONS */
+        .status-dot.syncing { background-color: #f59e0b; animation: pulse 1s infinite; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -100,7 +101,7 @@
         </div>
 
         <div class="mt-auto pt-6 border-t border-slate-800">
-            <button onclick="manualSync()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
+            <button onclick="manualSync()" id="btnSync" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
                 <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Cloud
             </button>
             
@@ -354,6 +355,99 @@
             renderWealth(); 
         }
 
+        // --- CLOUD SYNC LOGIC (FAST V3) ---
+        function updateCloudStatus() {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            if (db.cloudURL && db.cloudURL.length > 10) {
+                dot.className = 'status-dot active';
+                text.innerText = 'Cloud Active';
+                document.getElementById('cloudInput').value = db.cloudURL;
+            } else {
+                dot.className = 'status-dot inactive';
+                text.innerText = 'Local Mode';
+            }
+        }
+
+        document.getElementById('formCloud').addEventListener('submit', e => {
+            e.preventDefault();
+            const url = document.getElementById('cloudInput').value.trim();
+            if(url) {
+                db.cloudURL = url;
+                save();
+                alert("Connected! The status light should now be green.");
+            }
+        });
+
+        // FAST SYNC FUNCTION (v3.0)
+        async function manualSync() {
+            if(!db.cloudURL) { 
+                alert("Please configure Cloud URL in Settings first."); 
+                return; 
+            }
+
+            const btn = document.getElementById('btnSync'); 
+            const dot = document.getElementById('statusDot'); 
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; 
+            btn.disabled = true; 
+            dot.className = 'status-dot syncing';
+
+            try {
+                console.time("Sync Download");
+                const response = await fetch(db.cloudURL);
+                const cloudData = await response.json();
+                console.timeEnd("Sync Download");
+
+                if (cloudData.status !== 'new') {
+                    const billMap = new Map();
+                    [...db.bills, ...(cloudData.bills || [])].forEach(b => billMap.set(b.id, b));
+                    db.bills = Array.from(billMap.values());
+
+                    if (cloudData.wealth) db.wealth = cloudData.wealth;
+
+                    const allTx = {};
+                    Object.keys(cloudData.transactions || {}).forEach(date => {
+                        if (!allTx[date]) allTx[date] = new Set();
+                        (cloudData.transactions[date] || []).forEach(t => allTx[date].add(JSON.stringify(t)));
+                    });
+                    Object.keys(db.transactions || {}).forEach(date => {
+                        if (!allTx[date]) allTx[date] = new Set();
+                        (db.transactions[date] || []).forEach(t => allTx[date].add(JSON.stringify(t)));
+                    });
+                    db.transactions = {};
+                    Object.keys(allTx).forEach(date => {
+                        db.transactions[date] = Array.from(allTx[date]).map(JSON.parse);
+                    });
+                    
+                    Object.keys(cloudData.billStatus || {}).forEach(date => {
+                        if(!db.billStatus[date]) db.billStatus[date] = {};
+                        Object.assign(db.billStatus[date], cloudData.billStatus[date]);
+                    });
+                }
+
+                console.time("Sync Upload");
+                await fetch(db.cloudURL, { 
+                    method: 'POST', 
+                    body: JSON.stringify(db) 
+                });
+                console.timeEnd("Sync Upload");
+
+                save(); 
+                alert("Sync Complete! (Fast Mode)");
+
+            } catch (err) { 
+                alert("Sync Error: " + err.message); 
+                console.error(err);
+            } finally { 
+                btn.innerHTML = originalText; 
+                btn.disabled = false; 
+                updateCloudStatus(); 
+                render(); 
+            }
+        }
+
         // --- WEALTH & RETIREMENT LOGIC ---
         function renderWealth() {
             const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0);
@@ -427,9 +521,36 @@
         window.resetData = () => { if(confirm("⚠️ Are you sure? This will delete ALL data.")) { localStorage.removeItem('infinityDB'); location.reload(); } };
         
         // --- CLOUD LOGIC ---
-        document.getElementById('formCloud').addEventListener('submit', e => { e.preventDefault(); const url = document.getElementById('cloudInput').value.trim(); if(url) { db.cloudURL = url; save(); alert("Connected to Cloud!"); } });
-        window.manualSync = () => { if(db.cloudURL) alert("Syncing to: " + db.cloudURL); else alert("Please configure Cloud URL in Settings first."); };
-        function updateCloudStatus() { const dot = document.getElementById('statusDot'); const text = document.getElementById('statusText'); if(db.cloudURL) { dot.className = 'status-dot active'; text.innerText = 'Cloud Active'; } else { dot.className = 'status-dot inactive'; text.innerText = 'Local Mode'; } if(db.cloudURL) document.getElementById('cloudInput').value = db.cloudURL; }
+        function updateCloudStatus() { const dot = document.getElementById('statusDot'); const text = document.getElementById('statusText'); if(db.cloudURL && db.cloudURL.length > 10) { dot.className = 'status-dot active'; text.innerText = 'Cloud Active'; document.getElementById('cloudInput').value = db.cloudURL; } else { dot.className = 'status-dot inactive'; text.innerText = 'Local Mode'; } }
+        document.getElementById('formCloud').addEventListener('submit', e => { e.preventDefault(); const url = document.getElementById('cloudInput').value.trim(); if(url) { db.cloudURL = url; save(); alert("Connected! The status light should now be green."); } });
+        
+        // FAST SYNC FUNCTION
+        async function manualSync() {
+            if(!db.cloudURL) { alert("Please configure Cloud URL in Settings first."); return; }
+            const btn = document.getElementById('btnSync'); const dot = document.getElementById('statusDot'); const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; btn.disabled = true; dot.className = 'status-dot syncing';
+            try {
+                // 1. Download
+                const response = await fetch(db.cloudURL);
+                const cloudData = await response.json();
+                
+                // 2. Merge (Cloud Wins for structural integrity, but we keep local new data)
+                if (cloudData.status !== 'new') {
+                    const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => billMap.set(b.id, b)); db.bills = Array.from(billMap.values());
+                    if (cloudData.wealth) db.wealth = cloudData.wealth;
+                    Object.keys(cloudData.transactions || {}).forEach(dateKey => {
+                        if (!db.transactions[dateKey]) db.transactions[dateKey] = [];
+                        const localStrings = db.transactions[dateKey].map(JSON.stringify);
+                        (cloudData.transactions[dateKey] || []).forEach(t => { if (!localStrings.includes(JSON.stringify(t))) db.transactions[dateKey].push(t); });
+                    });
+                }
+
+                // 3. Upload Combined
+                await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db) });
+                save(); alert("Sync Complete!");
+            } catch (err) { alert("Sync Error: " + err.message); } 
+            finally { btn.innerHTML = originalText; btn.disabled = false; updateCloudStatus(); }
+        }
 
         // START
         const now = new Date();
