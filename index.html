@@ -265,7 +265,7 @@
             renderWealth(); 
         }
 
-        // --- SYNC ENGINE v3.2 ---
+        // --- SYNC ENGINE v4.0 (FIXED BILL STATUS SYNC) ---
         function updateCloudStatus() { const dot = document.getElementById('statusDot'); const text = document.getElementById('statusText'); if(db.cloudURL && db.cloudURL.length > 10) { dot.className = 'status-dot active'; text.innerText = 'Cloud Active'; document.getElementById('cloudInput').value = db.cloudURL; } else { dot.className = 'status-dot inactive'; text.innerText = 'Local Mode'; } }
         document.getElementById('formCloud').addEventListener('submit', e => { e.preventDefault(); const url = document.getElementById('cloudInput').value.trim(); if(url) { db.cloudURL = url; save(); alert("Connected! The status light should now be green."); } });
 
@@ -275,7 +275,7 @@
             btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; btn.disabled = true; dot.className = 'status-dot syncing';
 
             try {
-                // 1. Download (Cache Buster added to prevent stale data)
+                // 1. Download (Cache Buster added)
                 const response = await fetch(db.cloudURL + "?t=" + Date.now());
                 const cloud = await response.json();
 
@@ -300,8 +300,6 @@
 
                     // C. Wealth
                     if (cloud.wealth) {
-                        // Simple merge for wealth, assuming cloud is source of truth for simplicity or just concat
-                        // Better: Use Map by name
                         const assetMap = new Map(); [...db.wealth.assets, ...cloud.wealth.assets].forEach(a => assetMap.set(a.name, a)); db.wealth.assets = Array.from(assetMap.values());
                         const debtMap = new Map(); [...db.wealth.debts, ...cloud.wealth.debts].forEach(d => debtMap.set(d.name, d)); db.wealth.debts = Array.from(debtMap.values());
                     }
@@ -313,8 +311,34 @@
                     db.transactions = {};
                     allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
 
-                    // E. Bill Status
-                    Object.keys(cloud.billStatus || {}).forEach(date => { if(!db.billStatus[date]) db.billStatus[date] = {}; Object.assign(db.billStatus[date], cloud.billStatus[date]); });
+                    // E. Bill Status (FIXED TIMESTAMP LOGIC)
+                    // We need to merge carefully.
+                    // Structure: key -> billID -> { paid: bool, updated: ms }
+                    // If old structure (bool only), convert.
+                    
+                    const mergeStatus = (local, remote) => {
+                        const merged = { ...local };
+                        Object.keys(remote || {}).forEach(bid => {
+                            const lVal = local[bid];
+                            const rVal = remote[bid];
+                            
+                            // Normalize to objects
+                            const lObj = (typeof lVal === 'object') ? lVal : { paid: !!lVal, updated: 0 };
+                            const rObj = (typeof rVal === 'object') ? rVal : { paid: !!rVal, updated: 0 };
+
+                            if (rObj.updated > lObj.updated) {
+                                merged[bid] = rObj; // Remote wins
+                            } else if (!lVal) {
+                                merged[bid] = rObj; // Local didn't exist, take remote
+                            }
+                            // Else keep local (it's newer)
+                        });
+                        return merged;
+                    };
+
+                    Object.keys(cloud.billStatus || {}).forEach(date => {
+                        db.billStatus[date] = mergeStatus(db.billStatus[date] || {}, cloud.billStatus[date]);
+                    });
                 }
 
                 // 2. Upload
@@ -325,13 +349,26 @@
             finally { btn.innerHTML = originalText; btn.disabled = false; updateCloudStatus(); render(); }
         }
 
-        // --- CALENDAR ---
+        // --- CALENDAR RENDER ---
         function renderCalendar() {
-            const key = monthPicker.value; const [y, m] = key.split('-').map(Number); const status = db.billStatus[key] || {}; const currentDate = new Date(); const currentDayNum = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
+            const key = monthPicker.value; const [y, m] = key.split('-').map(Number); 
+            
+            // Normalize Status Access
+            const getStatus = (bid) => {
+                const s = (db.billStatus[key] || {})[bid];
+                if (!s) return false;
+                return (typeof s === 'object') ? s.paid : s; // Handle old boolean vs new object
+            };
+
+            const currentDate = new Date(); const currentDayNum = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
             let total = 0, paid = 0, unpaidBillTotal = 0; const firstDay = new Date(y, m - 1, 1).getDay(); const daysInMonth = new Date(y, m, 0).getDate(); const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-            const billMap = {}; db.bills.forEach(b => { let day = b.day; if(day > daysInMonth) day = daysInMonth; if(!billMap[day]) billMap[day] = []; billMap[day].push(b); total += b.amount; if(status[b.id]) paid += b.amount; else unpaidBillTotal += b.amount; });
+            const billMap = {}; db.bills.forEach(b => { let day = b.day; if(day > daysInMonth) day = daysInMonth; if(!billMap[day]) billMap[day] = []; billMap[day].push(b); total += b.amount; if(getStatus(b.id)) paid += b.amount; else unpaidBillTotal += b.amount; });
             const grid = document.getElementById('calendarCells'); grid.innerHTML = ''; for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 min-h-[100px]"></div>`;
-            for(let d=1; d<=daysInMonth; d++) { const dayBills = billMap[d] || []; let billsHtml = ''; dayBills.forEach(b => { const isPaid = status[b.id]; let cls = isPaid ? 'paid' : 'unpaid'; if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue'; const icon = isPaid ? '<i class="fas fa-check"></i>' : ''; billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}', '${b.name}', ${b.amount})"><span class="truncate">${b.name} ${icon}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`; }); const isToday = isCurrentMonth && d === currentDayNum ? 'current-day' : ''; grid.innerHTML += `<div class="calendar-day ${isToday}"><div class="day-number">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`; }
+            for(let d=1; d<=daysInMonth; d++) { const dayBills = billMap[d] || []; let billsHtml = ''; dayBills.forEach(b => { 
+                const isPaid = getStatus(b.id); 
+                let cls = isPaid ? 'paid' : 'unpaid'; if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue'; const icon = isPaid ? '<i class="fas fa-check"></i>' : ''; 
+                billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}', '${b.name}', ${b.amount})"><span class="truncate">${b.name} ${icon}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`; 
+            }); const isToday = isCurrentMonth && d === currentDayNum ? 'current-day' : ''; grid.innerHTML += `<div class="calendar-day ${isToday}"><div class="day-number">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`; }
             const totalCells = startOffset + daysInMonth; const remaining = (7 - (totalCells % 7)) % 7; for(let i=0; i<remaining; i++) grid.innerHTML += `<div class="bg-slate-50 min-h-[100px]"></div>`;
             document.getElementById('calendarMonthLabel').innerText = new Date(y, m-1).toLocaleString('default', { month: 'long', year: 'numeric' }); document.getElementById('billTotal').innerText = `£${fmt(total)}`; document.getElementById('billYearly').innerText = `£${fmt(total * 12)}`; 
             const pct = total > 0 ? (paid / total) * 100 : 0; document.getElementById('billProgressBar').style.width = `${pct}%`; document.getElementById('billProgressText').innerText = `${pct.toFixed(0)}%`;
@@ -340,7 +377,31 @@
             const safe = incomeMonth - expenseMonth - unpaidBillTotal; document.getElementById('billSafe').innerText = `£${fmt(safe)}`; document.getElementById('billSafe').className = safe >= 0 ? "text-2xl font-bold text-emerald-700 mt-1" : "text-2xl font-bold text-rose-700 mt-1";
         }
 
-        function toggleBill(id, name, amount) { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const isCurrentlyPaid = db.billStatus[key][id]; if(!isCurrentlyPaid) { if(confirm(`Mark '${name}' as paid?\n\nThis will automatically add a £${amount} transaction to your main dashboard.`)) { db.billStatus[key][id] = true; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: name, amount: math(amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = false; save(); } }
+        // --- NEW TOGGLE LOGIC WITH TIMESTAMPS ---
+        function toggleBill(id, name, amount) { 
+            const key = monthPicker.value; 
+            if(!db.billStatus[key]) db.billStatus[key] = {}; 
+            
+            // Get current
+            const s = db.billStatus[key][id];
+            const isCurrentlyPaid = (typeof s === 'object') ? s.paid : !!s;
+
+            // Set new state object with timestamp
+            const newState = { paid: !isCurrentlyPaid, updated: Date.now() };
+            
+            if(!isCurrentlyPaid) { 
+                if(confirm(`Mark '${name}' as paid?\n\nThis will automatically add a £${amount} transaction to your main dashboard.`)) { 
+                    db.billStatus[key][id] = newState; 
+                    if(!db.transactions[key]) db.transactions[key] = []; 
+                    db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: name, amount: math(amount), category: 'Bills', type: 'expense' }); 
+                    save(); 
+                } 
+            } else { 
+                db.billStatus[key][id] = newState; 
+                save(); 
+            } 
+        }
+        
         document.getElementById('formBill').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('billName').value; const amt = math(document.getElementById('billAmt').value); const day = parseInt(document.getElementById('billDay').value); if(name && amt && day) { db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day }); document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = ''; save(); } });
         window.delBill = (id) => { if(confirm("Delete this recurring bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); } };
 
@@ -356,7 +417,7 @@
         window.editAnnualIncome = () => { const v = prompt("Enter Annual Salary Target (£):", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("⚠️ Are you sure? This will delete ALL data.")) { localStorage.removeItem('infinityDB'); location.reload(); } };
         
-        // --- WEALTH ---
+        // --- WEALTH & RETIREMENT LOGIC ---
         function renderWealth() {
             const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); const netWorth = totalAssets - totalDebts;
             document.getElementById('wealthNet').innerText = `£${fmt(netWorth)}`; document.getElementById('wealthAssetsTotal').innerText = `£${fmt(totalAssets)}`; document.getElementById('wealthDebtTotal').innerText = `£${fmt(totalDebts)}`;
