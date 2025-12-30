@@ -163,8 +163,8 @@
                 <div class="card border border-slate-200"><div class="flex justify-between items-end mb-4"><div><h3 class="font-bold text-slate-800 text-lg">Retirement</h3><p class="text-xs text-slate-500 mt-1">4% Rule (25x Exp)</p></div><div class="text-right"><p class="text-xs text-slate-400 font-bold uppercase">Freedom</p><h3 class="text-xl font-bold text-indigo-600" id="wealthFireNumber">£0.00</h3></div></div><div class="relative pt-2"><div class="flex justify-between text-xs font-bold mb-2"><span class="text-slate-500">0%</span><span class="text-indigo-600" id="wealthFirePct">0%</span><span class="text-slate-500">100%</span></div><div class="w-full bg-slate-100 rounded-full h-4 overflow-hidden"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" id="wealthFireBar" style="width: 0%"></div></div><p class="text-xs text-center text-slate-400 mt-3" id="wealthFireMsg">Loading...</p></div></div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="card h-fit"><h3 class="font-bold text-lg text-emerald-700 mb-4">Assets</h3><form id="formAsset" class="mb-6 p-3 bg-emerald-50 rounded-lg border border-emerald-100"><div class="mb-2"><label class="text-[10px] font-bold text-emerald-600 uppercase">Type</label><select id="assetType" class="input-std mt-1 bg-white border-emerald-200"><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Property">Property</option><option value="Vehicle">Vehicle</option><option value="Cash">Cash</option><option value="Other">Other</option></select></div><div class="flex gap-2 mb-2"><div class="w-2/3"><label class="text-[10px] font-bold text-emerald-600 uppercase">Name</label><input type="text" id="assetName" placeholder="e.g. ISA" class="input-std mt-1 border-emerald-200" required></div><div class="w-1/3"><label class="text-[10px] font-bold text-emerald-600 uppercase">Value</label><input type="number" id="assetVal" placeholder="0.00" class="input-std mt-1 border-emerald-200" required></div></div><button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2 font-bold text-xs shadow-sm transition">Add Asset</button></form><div id="listAssets" class="space-y-2"></div></div>
-                <div class="card h-fit"><h3 class="font-bold text-lg text-rose-700 mb-4">Liabilities (Debt)</h3><form id="formDebt" class="mb-6 p-3 bg-rose-50 rounded-lg border border-rose-100"><div class="mb-2"><label class="text-[10px] font-bold text-rose-600 uppercase">Type</label><select id="debtType" class="input-std mt-1 bg-white border-rose-200"><option value="Mortgage">Mortgage</option><option value="Loan">Personal Loan</option><option value="Credit Card">Credit Card</option><option value="Student Loan">Student Loan</option><option value="Other">Other</option></select></div><div class="flex gap-2 mb-2"><div class="w-2/3"><label class="text-[10px] font-bold text-rose-600 uppercase">Name</label><input type="text" id="debtName" placeholder="e.g. Amex" class="input-std mt-1 border-rose-200" required></div><div class="w-1/3"><label class="text-[10px] font-bold text-rose-600 uppercase">Amount</label><input type="number" id="debtVal" placeholder="0.00" class="input-std mt-1 border-rose-200" required></div></div><button class="w-full bg-rose-600 hover:bg-rose-700 text-white rounded-md py-2 font-bold text-xs shadow-sm transition">Add Debt</button></form><div id="listDebts" class="space-y-2"></div></div>
+                <div class="card h-fit"><h3 class="font-bold text-lg text-emerald-700 mb-4">Assets</h3><form id="formAsset" class="mb-6 p-3 bg-emerald-50 rounded-lg border border-emerald-100"><div class="mb-2"><label class="text-[10px] font-bold text-emerald-600 uppercase">Type</label><select id="assetType" class="input-std mt-1 bg-white border-emerald-200"><option value="Savings">Savings</option><option value="Investment">Investment</option><option value="Property">Property</option><option value="Vehicle">Vehicle</option><option value="Cash">Cash</option><option value="Other">Other</option></select></div><div class="flex gap-2 mb-2"><div class="w-2/3"><label class="text-[10px] font-bold text-emerald-600 uppercase">Name</label><input type="text" id="assetName" placeholder="e.g. ISA" class="input-std mt-1 border-emerald-200" required></div><div class="w-1/3"><label class="text-[10px] font-bold text-emerald-600 uppercase">Value</label><input type="number" id="assetVal" placeholder="0.00" step="0.01" class="input-std mt-1 border-emerald-200" required></div></div><button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2 font-bold text-xs shadow-sm transition">Add Asset</button></form><div id="listAssets" class="space-y-2"></div></div>
+                <div class="card h-fit"><h3 class="font-bold text-lg text-rose-700 mb-4">Liabilities (Debt)</h3><form id="formDebt" class="mb-6 p-3 bg-rose-50 rounded-lg border border-rose-100"><div class="mb-2"><label class="text-[10px] font-bold text-rose-600 uppercase">Type</label><select id="debtType" class="input-std mt-1 bg-white border-rose-200"><option value="Mortgage">Mortgage</option><option value="Loan">Personal Loan</option><option value="Credit Card">Credit Card</option><option value="Student Loan">Student Loan</option><option value="Other">Other</option></select></div><div class="flex gap-2 mb-2"><div class="w-2/3"><label class="text-[10px] font-bold text-rose-600 uppercase">Name</label><input type="text" id="debtName" placeholder="e.g. Amex" class="input-std mt-1 border-rose-200" required></div><div class="w-1/3"><label class="text-[10px] font-bold text-rose-600 uppercase">Amount</label><input type="number" id="debtVal" placeholder="0.00" step="0.01" class="input-std mt-1 border-rose-200" required></div></div><button class="w-full bg-rose-600 hover:bg-rose-700 text-white rounded-md py-2 font-bold text-xs shadow-sm transition">Add Debt</button></form><div id="listDebts" class="space-y-2"></div></div>
             </div>
         </div>
 
@@ -176,4 +176,208 @@
                 <div class="card border-t-4 border-indigo-500 shadow-sm"><div class="flex justify-between items-start"><div><p class="text-xs font-bold text-slate-400 uppercase tracking-wide">Net Savings</p><h3 class="text-2xl font-bold text-indigo-600 mt-1" id="rptSav">£0.00</h3></div><div class="p-2 bg-indigo-50 rounded-lg text-indigo-500"><i class="fas fa-piggy-bank"></i></div></div></div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="card lg:col-span-2"><h3 class="font-bold text-lg text-slate-800 mb-4">Income vs
+                <div class="card lg:col-span-2"><h3 class="font-bold text-lg text-slate-800 mb-4">Income vs Expense Trend</h3><div class="chart-container"><canvas id="chartYearly"></canvas></div></div>
+                <div class="card bg-slate-900 text-white flex flex-col justify-center relative overflow-hidden"><i class="fas fa-chart-line absolute -bottom-4 -right-4 text-8xl text-white opacity-5"></i><div class="mb-6 relative z-10"><div class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center mb-3 shadow-lg shadow-indigo-500/50"><i class="fas fa-lightbulb text-white"></i></div><h3 class="text-lg font-bold">Spending Insight</h3><p class="text-sm text-slate-400 mt-1">AI-driven analysis of your habits.</p></div><div class="p-4 bg-white/10 rounded-lg border border-white/10 relative z-10 backdrop-blur-sm"><p class="text-[10px] font-bold uppercase text-slate-400 tracking-wide mb-2">Current Status</p><p class="font-medium text-sm leading-relaxed" id="rptInsightText">Analyzing data...</p></div></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card lg:col-span-2"><h3 class="font-bold text-lg text-slate-800 mb-6">Monthly Breakdown</h3><div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100 bg-slate-50/50"><th class="py-3 pl-3 font-bold rounded-l-lg">Month</th><th class="py-3 font-bold text-right text-emerald-600">Income</th><th class="py-3 font-bold text-right text-rose-600">Expense</th><th class="py-3 font-bold text-right text-indigo-600 pr-3 rounded-r-lg">Net</th></tr></thead><tbody id="rptMonthTable" class="text-sm font-medium text-slate-600"></tbody></table></div></div>
+                <div class="card h-fit"><h3 class="font-bold text-lg text-slate-800 mb-6">Top Spending Categories</h3><div id="rptCatList" class="space-y-5"></div></div>
+            </div>
+        </div>
+
+        <div id="view-settings" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6">Settings</h2>
+            <div class="card max-w-md mb-6"><h3 class="font-bold mb-4">Cloud Sync</h3><p class="text-xs text-slate-400 mb-3">Connect your Google App Script URL here.</p><form id="formCloud" class="flex gap-2"><input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="input-std"><button class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save URL</button></form></div>
+            <div class="card max-w-md border-rose-100"><h3 class="font-bold text-rose-600 mb-2">Danger Zone</h3><p class="text-xs text-slate-400 mb-4">This will delete all local transactions permanently.</p><button onclick="resetData()" class="text-rose-600 border border-rose-200 bg-rose-50 hover:bg-rose-100 font-bold text-sm px-4 py-2 rounded-lg transition"><i class="fas fa-trash-alt mr-2"></i> Reset All Data</button></div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIG
+        Chart.register(ChartDataLabels);
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = '#64748b';
+
+        // DEFAULT DATA
+        const DEFAULTS = { 
+            categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt', 'Bills'], 
+            transactions: {}, 
+            bills: [], billStatus: {},
+            wealth: { assets: [], debts: [] },
+            deletedIds: [],
+            annualIncome: 0,
+            cloudURL: '' 
+        };
+        
+        let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
+        let isDirty = false;
+
+        // Init Migration
+        if(Array.isArray(db.transactions)) db.transactions = {}; 
+        if(!db.bills) db.bills = [];
+        if(!db.billStatus) db.billStatus = {};
+        if(!db.wealth) db.wealth = { assets: [], debts: [] };
+        if(!db.categories.includes('Bills')) db.categories.push('Bills');
+        if(!db.deletedIds) db.deletedIds = [];
+        if(!db.cloudURL) db.cloudURL = '';
+        
+        let currentTxType = 'expense';
+        let trendChart, spendingChart, yearlyChart, wealthChart;
+        const monthPicker = document.getElementById('monthPicker');
+        
+        // HELPERS
+        const math = (v) => parseFloat(Number(v || 0).toFixed(2));
+        const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const save = (skipSync = false) => { 
+            localStorage.setItem('infinityDB', JSON.stringify(db)); 
+            render(); 
+            updateCloudStatus(); 
+            if(!skipSync) isDirty = true; 
+        };
+        const getCatColor = (c) => { if(c === 'Debt') return '#f43f5e'; if(c === 'Bills') return '#64748b'; const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1' }; if(map[c]) return map[c]; let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${45 + (Math.abs(hash) % 255)}, 80%, 60%)`; };
+        const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+        // --- RENDER ---
+        function render() {
+            Object.keys(db.transactions).forEach(k => { db.transactions[k].forEach(t => { if(!t.id) { t.id = genId(); t.updatedAt = Date.now(); } }); }); // Migrate IDs
+            const key = monthPicker.value;
+            const data = db.transactions[key] || [];
+            let inc = 0, exp = 0, cats = {};
+            const list = document.getElementById('listTx');
+            list.innerHTML = '';
+
+            data.forEach((t, i) => {
+                const val = math(t.amount);
+                if(t.type === 'income') inc += val; else { exp += val; cats[t.category] = (cats[t.category] || 0) + val; }
+                const colorClass = t.type === 'income' ? 'text-emerald-600' : 'text-rose-600';
+                const sign = t.type === 'income' ? '+' : '-';
+                list.insertAdjacentHTML('afterbegin', `<tr class="border-b border-slate-50 hover:bg-slate-50 transition group"><td class="py-3 pl-2"><div class="font-bold text-slate-700">${t.desc}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-500">${t.category}</div></td><td class="text-right font-bold ${colorClass}">${sign}£${fmt(val)}</td><td class="text-right pr-2"><button onclick="delTx('${t.id}', '${key}')" class="text-slate-300 hover:text-rose-500 transition px-2 opacity-0 group-hover:opacity-100"><i class="fas fa-trash-alt"></i></button></td></tr>`);
+            });
+
+            document.getElementById('emptyState').classList.toggle('hidden', data.length > 0);
+            document.getElementById('kpiInc').innerText = `£${fmt(inc)}`;
+            document.getElementById('kpiExp').innerText = `£${fmt(exp)}`;
+            document.getElementById('kpiSalary').innerText = `£${fmt(db.annualIncome)}`;
+            
+            const year = key.split('-')[0];
+            let ytd = 0;
+            Object.keys(db.transactions).forEach(k => { if(k.startsWith(year)) db.transactions[k].forEach(t => { if(t.type === 'income') ytd += math(t.amount); }); });
+            document.getElementById('kpiYTD').innerText = `£${fmt(ytd)}`;
+            const currentMonthIndex = parseInt(key.split('-')[1]);
+            document.getElementById('kpiAvg').innerText = `£${fmt(ytd / (currentMonthIndex || 1))}`;
+
+            let maxCat = 'N/A'; let maxVal = 0;
+            for(const [c, v] of Object.entries(cats)) { if(v > maxVal) { maxVal = v; maxCat = c; } }
+            document.getElementById('kpiMaxCat').innerText = maxCat;
+            document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
+
+            renderDropdowns();
+            updateDashboardCharts(cats);
+            renderCalendar(); 
+            renderWealth(); 
+        }
+
+        // --- BACKGROUND SYNC ENGINE (v5.0) ---
+        function updateCloudStatus() { const dot = document.getElementById('statusDot'); const text = document.getElementById('statusText'); if(db.cloudURL && db.cloudURL.length > 10) { dot.className = 'status-dot active'; text.innerText = 'Cloud Active'; document.getElementById('cloudInput').value = db.cloudURL; } else { dot.className = 'status-dot inactive'; text.innerText = 'Local Mode'; } }
+        document.getElementById('formCloud').addEventListener('submit', e => { e.preventDefault(); const url = document.getElementById('cloudInput').value.trim(); if(url) { db.cloudURL = url; save(); alert("Connected! The status light should now be green."); manualSync(true); } });
+
+        async function manualSync(showLoading = false) {
+            if(!db.cloudURL) { if(showLoading) alert("Please configure Cloud URL in Settings first."); return; }
+            
+            const btn = document.getElementById('btnSync'); 
+            const indicator = document.getElementById('syncIndicator');
+            const originalText = btn.innerHTML;
+            
+            if(showLoading) {
+                btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; btn.disabled = true;
+            } else {
+                indicator.className = "text-[10px] text-amber-500 font-bold block animate-pulse";
+                indicator.innerHTML = `<i class="fas fa-sync fa-spin"></i> Checking...`;
+                indicator.classList.remove('hidden');
+            }
+
+            try {
+                // 1. Download with CORS mode and headers to satisfy new GAS requirements
+                // We use 'text/plain' to avoid Preflight OPTIONS issues
+                const response = await fetch(db.cloudURL + "?t=" + Date.now(), {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+                
+                const cloudData = await response.json();
+
+                if (cloudData.status !== 'new') {
+                    // A. Deleted
+                    const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]);
+                    db.deletedIds = Array.from(allDeleted);
+
+                    // B. Bills
+                    const billMap = new Map();
+                    [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } });
+                    db.bills = Array.from(billMap.values());
+
+                    // C. Wealth
+                    if (cloudData.wealth) {
+                        const assetMap = new Map(); [...db.wealth.assets, ...cloudData.wealth.assets].forEach(a => assetMap.set(a.name, a)); db.wealth.assets = Array.from(assetMap.values());
+                        const debtMap = new Map(); [...db.wealth.debts, ...cloudData.wealth.debts].forEach(d => debtMap.set(d.name, d)); db.wealth.debts = Array.from(debtMap.values());
+                    }
+
+                    // D. Transactions
+                    const allTx = new Map();
+                    Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); });
+                    Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); });
+                    db.transactions = {};
+                    allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
+
+                    // E. Bill Status
+                    // Use timestamp based merging
+                    const mergeStatus = (local, remote) => {
+                        const merged = { ...local };
+                        Object.keys(remote || {}).forEach(bid => {
+                            const lVal = local[bid]; const rVal = remote[bid];
+                            const lObj = (typeof lVal === 'object') ? lVal : { paid: !!lVal, updated: 0 };
+                            const rObj = (typeof rVal === 'object') ? rVal : { paid: !!rVal, updated: 0 };
+                            // Remote is newer? Take it.
+                            if (rObj.updated > lObj.updated) merged[bid] = rObj; 
+                            else if (!lVal) merged[bid] = rObj;
+                        });
+                        return merged;
+                    };
+                    Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = mergeStatus(db.billStatus[date] || {}, cloudData.billStatus[date]); });
+                }
+
+                // 2. Upload
+                await fetch(db.cloudURL, { 
+                    method: 'POST', 
+                    body: JSON.stringify(db),
+                    headers: { "Content-Type": "text/plain;charset=utf-8" } // Important for CORS
+                });
+                
+                save(true); // Save to local
+                if(showLoading) alert("Sync Complete!");
+
+            } catch (err) { console.error(err); if(showLoading) alert("Sync Error: " + err.message); } 
+            finally { 
+                if(showLoading) { btn.innerHTML = originalText; btn.disabled = false; }
+                indicator.className = "text-[10px] text-emerald-500 font-bold block";
+                indicator.innerHTML = `<i class="fas fa-check"></i> Updated`;
+                setTimeout(() => indicator.classList.add('hidden'), 4000);
+                render(); 
+            }
+        }
+
+        // BACKGROUND LOOP (20s)
+        setInterval(() => { if(db.cloudURL) manualSync(false); }, 20000);
+        
+        // SYNC ON LOAD
+        setTimeout(() => { if(db.cloudURL) manualSync(false); }, 1000);
+
+        // START
+        const now = new Date();
+        monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+        monthPicker.addEventListener('change', render);
+        updateCloudStatus();
+        render();
+    </script>
+</body>
+</html>
