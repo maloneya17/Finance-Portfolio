@@ -14,27 +14,29 @@
     <style>
         /* CORE LAYOUT */
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; display: flex; height: 100vh; overflow: hidden; }
-        #sidebar { width: 260px; background-color: #0f172a; color: white; display: flex; flex-direction: column; padding: 24px; flex-shrink: 0; z-index: 20; }
-        #main-content { flex-grow: 1; overflow-y: auto; padding: 32px; background-color: #f1f5f9; position: relative; }
+        
+        /* SIDEBAR - Increased Z-Index to fix clicking issues */
+        #sidebar { width: 260px; background-color: #0f172a; color: white; display: flex; flex-direction: column; padding: 24px; flex-shrink: 0; z-index: 50; position: relative; }
+        
+        #main-content { flex-grow: 1; overflow-y: auto; padding: 32px; background-color: #f1f5f9; position: relative; z-index: 10; }
 
         /* UI ELEMENTS */
         .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; font-weight: 600; color: #94a3b8; cursor: pointer; transition: all 0.2s ease; margin-bottom: 4px; }
         .nav-item:hover { background-color: #1e293b; color: white; transform: translateX(4px); }
         .nav-item.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transform: translateX(0); }
+        
         .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.2s ease; }
         .input-std { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; background-color: #fff; }
         .input-std:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
         .chart-container { position: relative; height: 260px; width: 100%; }
         .chart-container-sm { position: relative; height: 180px; width: 100%; }
         .hidden { display: none !important; }
-        .progress-bar-bg { background-color: #f1f5f9; border-radius: 999px; height: 6px; width: 100%; overflow: hidden; margin-top: 6px; }
-        .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease-in-out; }
         
-        /* CALENDAR */
+        /* CALENDAR STYLES */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
         .calendar-header { background-color: #f8fafc; padding: 12px 0; text-align: center; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
         .calendar-day { background-color: white; min-height: 100px; padding: 8px; position: relative; transition: background-color 0.2s; }
-        .calendar-day:hover { background-color: #f8fafc; }
         .day-number { font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 4px; }
         .current-day { background-color: #f0f9ff; }
         .current-day .day-number { color: #0284c7; font-weight: 800; }
@@ -42,19 +44,20 @@
         /* BILL CHIPS */
         .bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
         .bill-chip.unpaid { background-color: #f1f5f9; color: #475569; border-left-color: #cbd5e1; }
-        .bill-chip.unpaid:hover { background-color: #e2e8f0; }
         .bill-chip.paid { background-color: #dcfce7; color: #166534; border-left-color: #22c55e; text-decoration: line-through; opacity: 0.8; }
-        .bill-chip.paid:hover { opacity: 1; }
         .bill-chip.overdue { border: 1px solid #fca5a5; background-color: #fef2f2; border-left: 3px solid #ef4444; }
         .btn-delete-bill { opacity: 0; transition: opacity 0.2s; padding: 2px; margin-left: 4px; color: #94a3b8; }
         .bill-chip:hover .btn-delete-bill { opacity: 1; }
 
-        /* STATUS */
+        /* STATUS DOT */
         .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
         .status-dot.active { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
         .status-dot.inactive { background-color: #94a3b8; }
         .status-dot.syncing { background-color: #f59e0b; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        .progress-bar-bg { background-color: #f1f5f9; border-radius: 999px; height: 6px; width: 100%; overflow: hidden; margin-top: 6px; }
+        .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease-in-out; }
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -68,10 +71,12 @@
                 <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg transform rotate-3"><i class="fas fa-wallet text-white"></i></div>
                 <h1 class="font-bold text-lg leading-tight">Finance<br>Portfolio</h1>
             </div>
+            
             <div class="mb-8">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Timeline</label>
                 <input type="month" id="monthPicker" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg font-bold text-white text-sm outline-none focus:border-indigo-500 transition">
             </div>
+
             <nav>
                 <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item active"><i class="fas fa-chart-pie w-5"></i> Dashboard</div>
                 <div onclick="switchView('bills')" id="nav-bills" class="nav-item"><i class="fas fa-calendar-alt w-5"></i> Bills</div>
@@ -80,6 +85,7 @@
                 <div onclick="switchView('settings')" id="nav-settings" class="nav-item"><i class="fas fa-sliders-h w-5"></i> Settings</div>
             </nav>
         </div>
+
         <div class="mt-auto pt-6 border-t border-slate-800">
             <div class="flex justify-between items-center mb-2 px-1">
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Auto-Sync</span>
@@ -131,7 +137,7 @@
                             <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" placeholder="0.00" step="0.01" class="input-std mt-1" required></div>
                             <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="input-std mt-1 bg-white cursor-pointer" onchange="checkNewCategory(this)"></select></div>
                         </div>
-                        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow-md transition mt-2"><i class="fas fa-plus mr-1"></i> Add Transaction</button>
+                        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition mt-2"><i class="fas fa-plus mr-1"></i> Add Transaction</button>
                     </form>
                 </div>
                 <div class="card lg:col-span-2 min-h-[400px]">
@@ -193,7 +199,7 @@
     </div>
 
     <script>
-        // CONFIG
+        // --- CONFIG & INIT ---
         Chart.register(ChartDataLabels);
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
@@ -211,8 +217,8 @@
         
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
         let isDirty = false;
-
-        // Init Migration
+        
+        // --- MIGRATION SAFEGUARDS ---
         if(Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
@@ -225,7 +231,7 @@
         let trendChart, spendingChart, yearlyChart, wealthChart;
         const monthPicker = document.getElementById('monthPicker');
         
-        // HELPERS
+        // --- HELPERS ---
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const save = (skipSync = false) => { 
@@ -237,7 +243,7 @@
         const getCatColor = (c) => { if(c === 'Debt') return '#f43f5e'; if(c === 'Bills') return '#64748b'; const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1' }; if(map[c]) return map[c]; let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${45 + (Math.abs(hash) % 255)}, 80%, 60%)`; };
         const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-        // --- RENDER ---
+        // --- CORE RENDER FUNCTION ---
         function render() {
             Object.keys(db.transactions).forEach(k => { db.transactions[k].forEach(t => { if(!t.id) { t.id = genId(); t.updatedAt = Date.now(); } }); }); // Migrate IDs
             const key = monthPicker.value;
@@ -370,14 +376,99 @@
         setInterval(() => { if(db.cloudURL) manualSync(false); }, 20000);
         
         // SYNC ON LOAD
-        setTimeout(() => { if(db.cloudURL) manualSync(false); }, 1000);
+        window.addEventListener('DOMContentLoaded', () => {
+            render(); // Initial Render
+            if(db.cloudURL) {
+                updateCloudStatus();
+                setTimeout(() => manualSync(false), 500); // Trigger auto-sync shortly after load
+            }
+        });
+
+        // --- CALENDAR RENDER ---
+        function renderCalendar() {
+            const key = monthPicker.value; const [y, m] = key.split('-').map(Number); const status = db.billStatus[key] || {}; const currentDate = new Date(); const currentDayNum = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
+            let total = 0, paid = 0, unpaidBillTotal = 0; const firstDay = new Date(y, m - 1, 1).getDay(); const daysInMonth = new Date(y, m, 0).getDate(); const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+            const billMap = {}; db.bills.forEach(b => { let day = b.day; if(day > daysInMonth) day = daysInMonth; if(!billMap[day]) billMap[day] = []; billMap[day].push(b); total += b.amount; 
+                const s = (db.billStatus[key] || {})[b.id];
+                const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount; 
+            });
+            const grid = document.getElementById('calendarCells'); grid.innerHTML = ''; for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 min-h-[100px]"></div>`;
+            for(let d=1; d<=daysInMonth; d++) { const dayBills = billMap[d] || []; let billsHtml = ''; dayBills.forEach(b => { 
+                const s = (db.billStatus[key] || {})[b.id];
+                const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                let cls = isPaid ? 'paid' : 'unpaid'; if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue'; const icon = isPaid ? '<i class="fas fa-check"></i>' : ''; 
+                billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}', '${b.name}', ${b.amount})"><span class="truncate">${b.name} ${icon}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`; 
+            }); const isToday = isCurrentMonth && d === currentDayNum ? 'current-day' : ''; grid.innerHTML += `<div class="calendar-day ${isToday}"><div class="day-number">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`; }
+            const totalCells = startOffset + daysInMonth; const remaining = (7 - (totalCells % 7)) % 7; for(let i=0; i<remaining; i++) grid.innerHTML += `<div class="bg-slate-50 min-h-[100px]"></div>`;
+            document.getElementById('calendarMonthLabel').innerText = new Date(y, m-1).toLocaleString('default', { month: 'long', year: 'numeric' }); document.getElementById('billTotal').innerText = `£${fmt(total)}`; document.getElementById('billYearly').innerText = `£${fmt(total * 12)}`; 
+            const pct = total > 0 ? (paid / total) * 100 : 0; document.getElementById('billProgressBar').style.width = `${pct}%`; document.getElementById('billProgressText').innerText = `${pct.toFixed(0)}%`;
+            const txs = db.transactions[key] || []; let incomeMonth = 0; let expenseMonth = 0; txs.forEach(t => { if(t.type === 'income') incomeMonth += math(t.amount); else expenseMonth += math(t.amount); });
+            if(incomeMonth > 0) { const ratio = (total / incomeMonth) * 100; document.getElementById('billRatio').innerText = `${ratio.toFixed(0)}%`; const ratioEl = document.getElementById('billRatio'); if(ratio < 30) ratioEl.className = "text-2xl font-bold text-emerald-600"; else if(ratio < 50) ratioEl.className = "text-2xl font-bold text-amber-500"; else ratioEl.className = "text-2xl font-bold text-rose-600"; } else { document.getElementById('billRatio').innerText = "N/A"; }
+            const safe = incomeMonth - expenseMonth - unpaidBillTotal; document.getElementById('billSafe').innerText = `£${fmt(safe)}`; document.getElementById('billSafe').className = safe >= 0 ? "text-2xl font-bold text-emerald-700 mt-1" : "text-2xl font-bold text-rose-700 mt-1";
+        }
+
+        function toggleBill(id, name, amount) { 
+            const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; 
+            const s = db.billStatus[key][id];
+            const isCurrentlyPaid = (typeof s === 'object') ? s.paid : !!s;
+            const newState = { paid: !isCurrentlyPaid, updated: Date.now() };
+
+            if(!isCurrentlyPaid) { 
+                if(confirm(`Mark '${name}' as paid?\n\nThis will automatically add a £${amount} transaction to your main dashboard.`)) { 
+                    db.billStatus[key][id] = newState; 
+                    if(!db.transactions[key]) db.transactions[key] = []; 
+                    db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: name, amount: math(amount), category: 'Bills', type: 'expense' }); 
+                    save(); 
+                } 
+            } else { db.billStatus[key][id] = newState; save(); } 
+        }
+        
+        document.getElementById('formBill').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('billName').value; const amt = math(document.getElementById('billAmt').value); const day = parseInt(document.getElementById('billDay').value); if(name && amt && day) { db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day }); document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = ''; save(); } });
+        window.delBill = (id) => { if(confirm("Delete this recurring bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); } };
+
+        function updateDashboardCharts(cats) { const ctxSpend = document.getElementById('chartSpend').getContext('2d'); if(spendingChart) spendingChart.destroy(); spendingChart = new Chart(ctxSpend, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(getCatColor), borderWidth: 2, borderColor: '#ffffff', hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', layout: { padding: 20 }, plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 11 } } }, datalabels: { color: '#ffffff', font: { weight: 'bold', size: 10 }, formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); let pct = (value * 100 / sum); return pct < 5 ? null : pct.toFixed(0) + "%"; }, textShadowColor: 'rgba(0,0,0,0.3)', textShadowBlur: 3 } } } }); const ctxTrend = document.getElementById('chartTrend').getContext('2d'); if(trendChart) trendChart.destroy(); const labels = [], dInc = [], dExp = []; let d = new Date(); d.setMonth(d.getMonth() - 5); for(let i=0; i<6; i++) { const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; labels.push(d.toLocaleString('default', { month: 'short' })); const txs = db.transactions[k] || []; let _i = 0, _e = 0; txs.forEach(t => { if(t.type==='income') _i+=t.amount; else _e+=t.amount; }); dInc.push(_i); dExp.push(_e); d.setMonth(d.getMonth() + 1); } const totalInc = dInc.reduce((a,b)=>a+b, 0); const totalExp = dExp.reduce((a,b)=>a+b, 0); trendChart = new Chart(ctxTrend, { type: 'bar', plugins: [ChartDataLabels], data: { labels: labels, datasets: [ { label: 'Income', data: dInc, backgroundColor: '#10b981', borderRadius: 4, barThickness: 14 }, { label: 'Expenses', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4, barThickness: 14 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { color: '#f1f5f9', drawBorder: false }, ticks: { callback: v => (v >= 1000 ? v/1000 + 'k' : v) } } }, plugins: { legend: { display: false }, datalabels: { display: false } } }, plugins: [{ id: 'customTotals', afterDraw: (chart) => { const { ctx, chartArea: {top, left} } = chart; ctx.save(); ctx.font = "bold 12px Inter"; ctx.textAlign = 'left'; ctx.fillStyle = '#059669'; ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 4, top + 10); ctx.fillStyle = '#e11d48'; ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 4, top + 26); ctx.restore(); } }] }); }
+        function renderReports() { const years = new Set([new Date().getFullYear()]); Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0]))); const yearList = Array.from(years).sort((a,b) => b - a); const sel = document.getElementById('reportYearSelect'); if(sel.options.length === 0 || sel.options.length !== yearList.length) { const savedVal = sel.value; sel.innerHTML = ''; yearList.forEach(y => sel.innerHTML += `<option value="${y}">${y}</option>`); if(yearList.includes(parseInt(savedVal))) sel.value = savedVal; } const targetYear = sel.value; let annInc = 0, annExp = 0, annCat = {}; const monthTable = document.getElementById('rptMonthTable'); monthTable.innerHTML = ''; const chLabels = []; const chIncData = []; const chExpData = []; for(let m=1; m<=12; m++) { const mk = `${targetYear}-${String(m).padStart(2,'0')}`; const txs = db.transactions[mk] || []; let mInc = 0, mExp = 0; txs.forEach(t => { const v = math(t.amount); if(t.type === 'income') { mInc += v; annInc += v; } else { mExp += v; annExp += v; annCat[t.category] = (annCat[t.category] || 0) + v; } }); chLabels.push(new Date(targetYear, m-1).toLocaleString('default', { month: 'short' })); chIncData.push(mInc); chExpData.push(mExp); if(mInc > 0 || mExp > 0) { const monthName = new Date(targetYear, m-1).toLocaleString('default', { month: 'long' }); const net = mInc - mExp; const netColor = net >= 0 ? 'text-indigo-600' : 'text-rose-600'; monthTable.innerHTML += `<tr class="border-b border-slate-50 hover:bg-slate-50"><td class="py-3 pl-3 font-medium text-slate-700">${monthName}</td><td class="text-right text-emerald-600">£${fmt(mInc)}</td><td class="text-right text-rose-600">£${fmt(mExp)}</td><td class="text-right pr-3 font-bold ${netColor}">£${fmt(net)}</td></tr>`; } } if(monthTable.innerHTML === '') monthTable.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400 text-xs">No data for ${targetYear}</td></tr>`; document.getElementById('rptInc').innerText = `£${fmt(annInc)}`; document.getElementById('rptExp').innerText = `£${fmt(annExp)}`; document.getElementById('rptSav').innerText = `£${fmt(annInc - annExp)}`; const catList = document.getElementById('rptCatList'); catList.innerHTML = ''; const sortedCats = Object.entries(annCat).sort(([,a], [,b]) => b - a); if(sortedCats.length === 0) { catList.innerHTML = `<p class="text-slate-400 text-xs text-center py-4">No spending data yet.</p>`; } else { const maxVal = sortedCats[0][1]; sortedCats.forEach(([cat, val]) => { const pct = (val / maxVal) * 100; const color = getCatColor(cat); catList.innerHTML += `<div><div class="flex justify-between text-xs font-bold mb-1.5"><span class="text-slate-700">${cat}</span><span class="text-slate-500">£${fmt(val)}</span></div><div class="progress-bar-bg"><div class="progress-bar-fill shadow-sm" style="width:${pct}%; background-color:${color}"></div></div></div>`; }); } const ctxYear = document.getElementById('chartYearly').getContext('2d'); if(yearlyChart) yearlyChart.destroy(); yearlyChart = new Chart(ctxYear, { type: 'line', data: { labels: chLabels, datasets: [ { label: 'Income', data: chIncData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.05)', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 }, { label: 'Expense', data: chExpData, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.05)', tension: 0.4, fill: true, pointRadius: 0, pointHoverRadius: 6, borderWidth: 2 } ] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }, datalabels: { display: false }, tooltip: { backgroundColor: '#1e293b', padding: 10, cornerRadius: 8 } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9', drawBorder: false }, ticks: { display: false } }, x: { grid: { display: false } } } } }); const activeMonths = chExpData.filter(v => v > 0); const rptText = document.getElementById('rptInsightText'); if(activeMonths.length < 2) { rptText.innerText = "Add more transaction data to unlock insights."; } else { const lastMonthVal = activeMonths[activeMonths.length - 1]; const prevMonths = activeMonths.slice(0, activeMonths.length - 1); const avg = prevMonths.reduce((a,b)=>a+b, 0) / prevMonths.length; if(lastMonthVal > avg) { const pct = ((lastMonthVal - avg) / avg * 100).toFixed(0); rptText.innerHTML = `⚠️ Your recent spending is <span class="text-orange-400 font-bold">${pct}% higher</span> than your monthly average (£${fmt(avg)}).`; } else { const pct = ((avg - lastMonthVal) / avg * 100).toFixed(0); rptText.innerHTML = `✅ Excellent! Your recent spending is <span class="text-emerald-400 font-bold">${pct}% lower</span> than average (£${fmt(avg)}).`; } } }
+        function downloadCSV() { const rows = [['Date', 'Description', 'Category', 'Type', 'Amount']]; Object.keys(db.transactions).forEach(dateKey => { db.transactions[dateKey].forEach(t => { rows.push([dateKey, t.desc, t.category, t.type, t.amount]); }); }); const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n"); const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", "finance_portfolio.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+        function renderDropdowns() { const select = document.getElementById('txCat'); const currentVal = select.value; select.innerHTML = ''; db.categories.forEach(c => { select.innerHTML += `<option value="${c}">${c}</option>`; }); select.innerHTML += `<option value="ADD_NEW_CAT" class="font-bold text-indigo-600">+ Add New...</option>`; if(db.categories.includes(currentVal)) select.value = currentVal; }
+        function checkNewCategory(select) { if(select.value === 'ADD_NEW_CAT') { const newCat = prompt("Enter new Category Name:"); if(newCat && newCat.trim() !== "") { db.categories.push(newCat.trim()); save(); renderDropdowns(); select.value = newCat.trim(); } else { select.value = db.categories[0]; } } }
+        function setTxType(type) { currentTxType = type; document.getElementById('btnExp').className = type === 'expense' ? "flex-1 py-2 bg-rose-100 text-rose-600 rounded-lg font-bold text-sm transition shadow-inner" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; document.getElementById('btnInc').className = type === 'income' ? "flex-1 py-2 bg-emerald-100 text-emerald-600 rounded-lg font-bold text-sm transition shadow-inner" : "flex-1 py-2 text-slate-400 hover:bg-slate-50 rounded-lg font-bold text-sm transition"; }
+        document.getElementById('formTx').addEventListener('submit', e => { e.preventDefault(); const k = monthPicker.value; if(!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push({ id: genId(), updatedAt: Date.now(), desc: document.getElementById('txDesc').value, amount: math(document.getElementById('txAmt').value), category: document.getElementById('txCat').value, type: currentTxType }); document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = ''; save(); });
+        window.switchView = (id) => { document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden')); document.getElementById(`view-${id}`).classList.remove('hidden'); document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active')); document.getElementById(`nav-${id}`).classList.add('active'); if(id === 'reports') renderReports(); if(id === 'bills') renderCalendar(); if(id === 'wealth') renderWealth(); };
+        window.delTx = (id, key) => { if(confirm("Delete this transaction?")) { db.deletedIds.push(id); db.transactions[key] = db.transactions[key].filter(t => t.id !== id); save(); } };
+        window.editAnnualIncome = () => { const v = prompt("Enter Annual Salary Target (£):", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
+        window.resetData = () => { if(confirm("⚠️ Are you sure? This will delete ALL data.")) { localStorage.removeItem('infinityDB'); location.reload(); } };
+        
+        // --- WEALTH ---
+        function renderWealth() {
+            const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); const netWorth = totalAssets - totalDebts;
+            document.getElementById('wealthNet').innerText = `£${fmt(netWorth)}`; document.getElementById('wealthAssetsTotal').innerText = `£${fmt(totalAssets)}`; document.getElementById('wealthDebtTotal').innerText = `£${fmt(totalDebts)}`;
+            const ctxWealth = document.getElementById('chartWealth').getContext('2d'); if(wealthChart) wealthChart.destroy(); wealthChart = new Chart(ctxWealth, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: ['Assets', 'Debt'], datasets: [{ data: [totalAssets, totalDebts], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (value, ctx) => { let sum = 0; ctx.chart.data.datasets[0].data.map(data => { sum += data; }); if(sum === 0) return ""; let percentage = (value * 100 / sum).toFixed(0) + "%"; return `£${(value/1000).toFixed(1)}k\n(${percentage})`; }, textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.5)', textShadowBlur: 4 }, tooltip: { callbacks: { label: function(context) { return ` ${context.label}: £${fmt(context.raw)}`; } } } } } });
+            const listAssets = document.getElementById('listAssets'); const listDebts = document.getElementById('listDebts'); listAssets.innerHTML = ''; listDebts.innerHTML = '';
+            const getWealthIcon = (type) => { const map = { 'Savings': 'fa-piggy-bank', 'Investment': 'fa-chart-line', 'Property': 'fa-home', 'Vehicle': 'fa-car', 'Cash': 'fa-money-bill-wave', 'Other': 'fa-gem', 'Mortgage': 'fa-home', 'Loan': 'fa-hand-holding-usd', 'Credit Card': 'fa-credit-card', 'Student Loan': 'fa-graduation-cap' }; return map[type] || 'fa-circle'; };
+            if(db.wealth.assets.length === 0) listAssets.innerHTML = `<p class="text-xs text-slate-400 italic">No assets added.</p>`; db.wealth.assets.forEach((item, index) => { const type = item.type || 'Other'; listAssets.innerHTML += `<div class="flex justify-between items-center bg-white border border-slate-100 p-3 rounded-lg shadow-sm hover:shadow-md transition"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600"><i class="fas ${getWealthIcon(type)}"></i></div><div><div class="font-bold text-slate-700 text-sm leading-tight">${item.name}</div><div class="text-[10px] font-bold text-emerald-600 uppercase tracking-wide bg-emerald-50 px-1.5 py-0.5 rounded w-fit mt-0.5">${type}</div></div></div><div class="flex items-center gap-3"><span class="font-bold text-emerald-600 text-sm">£${fmt(item.value)}</span><button onclick="delWealthItem('assets', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+            if(db.wealth.debts.length === 0) listDebts.innerHTML = `<p class="text-xs text-slate-400 italic">No liabilities added.</p>`; db.wealth.debts.forEach((item, index) => { const type = item.type || 'Other'; listDebts.innerHTML += `<div class="flex justify-between items-center bg-white border border-slate-100 p-3 rounded-lg shadow-sm hover:shadow-md transition"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600"><i class="fas ${getWealthIcon(type)}"></i></div><div><div class="font-bold text-slate-700 text-sm leading-tight">${item.name}</div><div class="text-[10px] font-bold text-rose-600 uppercase tracking-wide bg-rose-50 px-1.5 py-0.5 rounded w-fit mt-0.5">${type}</div></div></div><div class="flex items-center gap-3"><span class="font-bold text-rose-600 text-sm">£${fmt(item.value)}</span><button onclick="delWealthItem('debts', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+            const expData = []; let d = new Date(); d.setMonth(d.getMonth() - 5); for(let i=0; i<6; i++) { const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; const txs = db.transactions[k] || []; let _e = 0; txs.forEach(t => { if(t.type !== 'income') _e += t.amount; }); if(_e > 0) expData.push(_e); d.setMonth(d.getMonth() + 1); }
+            if(expData.length > 0) { const avgMonthlyExp = expData.reduce((a,b)=>a+b, 0) / expData.length; const annualExp = avgMonthlyExp * 12; const fireTarget = annualExp * 25; const progress = Math.min((netWorth / fireTarget) * 100, 100); document.getElementById('wealthFireNumber').innerText = `£${fmt(fireTarget)}`; document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; document.getElementById('wealthFireBar').style.width = `${progress}%`; document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% of the way to financial independence!`; } else { document.getElementById('wealthFireMsg').innerText = "Add more expense data to calculate retirement target."; }
+        }
+        document.getElementById('formAsset').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('assetName').value; const type = document.getElementById('assetType').value; const val = math(document.getElementById('assetVal').value); if(name && val) { db.wealth.assets.push({ name, value: val, type }); document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = ''; save(); } });
+        document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('debtName').value; const type = document.getElementById('debtType').value; const val = math(document.getElementById('debtVal').value); if(name && val) { db.wealth.debts.push({ name, value: val, type }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); } });
+        function delWealthItem(type, index) { if(confirm("Remove this item?")) { db.wealth[type].splice(index, 1); save(); } }
 
         // START
         const now = new Date();
         monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
         monthPicker.addEventListener('change', render);
-        updateCloudStatus();
-        render();
+        
+        // AUTO-SYNC ON LOAD
+        window.addEventListener('DOMContentLoaded', () => {
+            render(); 
+            if(db.cloudURL) {
+                updateCloudStatus();
+                // Silent sync on load
+                setTimeout(() => manualSync(false), 500); 
+            }
+        });
     </script>
 </body>
 </html>
