@@ -81,8 +81,12 @@
             </nav>
         </div>
         <div class="mt-auto pt-6 border-t border-slate-800">
-            <button onclick="manualSync()" id="btnSync" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
-                <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Cloud
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-[10px] font-bold text-slate-500 uppercase">Auto-Sync</span>
+                <span id="syncIndicator" class="text-[10px] text-emerald-500 font-bold hidden"><i class="fas fa-check"></i> Saved</span>
+            </div>
+            <button onclick="manualSync(true)" id="btnSync" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
+                <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now
             </button>
             <div id="syncStatusWrapper" class="text-[10px] text-center text-slate-500 font-medium mt-1">
                 <span id="statusDot" class="status-dot inactive"></span>
@@ -206,6 +210,9 @@
         };
         
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
+        let isDirty = false; // Flag for Auto-Sync
+
+        // Init Migration
         if(Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
@@ -221,13 +228,18 @@
         // HELPERS
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const save = () => { localStorage.setItem('infinityDB', JSON.stringify(db)); render(); updateCloudStatus(); };
+        const save = (skipSync = false) => { 
+            localStorage.setItem('infinityDB', JSON.stringify(db)); 
+            render(); 
+            updateCloudStatus(); 
+            if(!skipSync) isDirty = true; // Mark as needed for background sync
+        };
         const getCatColor = (c) => { if(c === 'Debt') return '#f43f5e'; if(c === 'Bills') return '#64748b'; const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1' }; if(map[c]) return map[c]; let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${45 + (Math.abs(hash) % 255)}, 80%, 60%)`; };
         const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
         // --- RENDER ---
         function render() {
-            Object.keys(db.transactions).forEach(k => { db.transactions[k].forEach(t => { if(!t.id) { t.id = genId(); t.updatedAt = Date.now(); } }); }); // Migrate
+            Object.keys(db.transactions).forEach(k => { db.transactions[k].forEach(t => { if(!t.id) { t.id = genId(); t.updatedAt = Date.now(); } }); }); // Migrate IDs
             const key = monthPicker.value;
             const data = db.transactions[key] || [];
             let inc = 0, exp = 0, cats = {};
@@ -265,17 +277,26 @@
             renderWealth(); 
         }
 
-        // --- SYNC ENGINE v4.0 (FIXED BILL STATUS SYNC) ---
+        // --- BACKGROUND SYNC ENGINE ---
         function updateCloudStatus() { const dot = document.getElementById('statusDot'); const text = document.getElementById('statusText'); if(db.cloudURL && db.cloudURL.length > 10) { dot.className = 'status-dot active'; text.innerText = 'Cloud Active'; document.getElementById('cloudInput').value = db.cloudURL; } else { dot.className = 'status-dot inactive'; text.innerText = 'Local Mode'; } }
         document.getElementById('formCloud').addEventListener('submit', e => { e.preventDefault(); const url = document.getElementById('cloudInput').value.trim(); if(url) { db.cloudURL = url; save(); alert("Connected! The status light should now be green."); } });
 
-        async function manualSync() {
-            if(!db.cloudURL) { alert("Please configure Cloud URL in Settings first."); return; }
-            const btn = document.getElementById('btnSync'); const dot = document.getElementById('statusDot'); const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; btn.disabled = true; dot.className = 'status-dot syncing';
+        async function manualSync(showLoading = false) {
+            if(!db.cloudURL) { if(showLoading) alert("Please configure Cloud URL in Settings first."); return; }
+            
+            const btn = document.getElementById('btnSync'); 
+            const indicator = document.getElementById('syncIndicator');
+            const originalText = btn.innerHTML;
+            
+            if(showLoading) {
+                btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; btn.disabled = true;
+            } else {
+                indicator.className = "text-[10px] text-amber-500 font-bold block animate-pulse";
+                indicator.innerHTML = `<i class="fas fa-sync fa-spin"></i> Saving...`;
+            }
 
             try {
-                // 1. Download (Cache Buster added)
+                // 1. Download
                 const response = await fetch(db.cloudURL + "?t=" + Date.now());
                 const cloud = await response.json();
 
@@ -284,18 +305,9 @@
                     const allDeleted = new Set([...db.deletedIds, ...(cloud.deletedIds || [])]);
                     db.deletedIds = Array.from(allDeleted);
 
-                    // B. Bills (Timestamp Logic)
+                    // B. Bills
                     const billMap = new Map();
-                    const allBills = [...db.bills, ...(cloud.bills || [])];
-                    allBills.forEach(b => {
-                        if (!allDeleted.has(b.id)) {
-                            // If exists, keep newest
-                            const existing = billMap.get(b.id);
-                            if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) {
-                                billMap.set(b.id, b);
-                            }
-                        }
-                    });
+                    [...db.bills, ...(cloud.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } });
                     db.bills = Array.from(billMap.values());
 
                     // C. Wealth
@@ -311,61 +323,54 @@
                     db.transactions = {};
                     allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
 
-                    // E. Bill Status (FIXED TIMESTAMP LOGIC)
-                    // We need to merge carefully.
-                    // Structure: key -> billID -> { paid: bool, updated: ms }
-                    // If old structure (bool only), convert.
-                    
+                    // E. Bill Status (MERGE WITH TIMESTAMPS)
                     const mergeStatus = (local, remote) => {
                         const merged = { ...local };
                         Object.keys(remote || {}).forEach(bid => {
-                            const lVal = local[bid];
-                            const rVal = remote[bid];
-                            
-                            // Normalize to objects
+                            const lVal = local[bid]; const rVal = remote[bid];
                             const lObj = (typeof lVal === 'object') ? lVal : { paid: !!lVal, updated: 0 };
                             const rObj = (typeof rVal === 'object') ? rVal : { paid: !!rVal, updated: 0 };
-
-                            if (rObj.updated > lObj.updated) {
-                                merged[bid] = rObj; // Remote wins
-                            } else if (!lVal) {
-                                merged[bid] = rObj; // Local didn't exist, take remote
-                            }
-                            // Else keep local (it's newer)
+                            if (rObj.updated > lObj.updated) merged[bid] = rObj; else if (!lVal) merged[bid] = rObj;
                         });
                         return merged;
                     };
-
-                    Object.keys(cloud.billStatus || {}).forEach(date => {
-                        db.billStatus[date] = mergeStatus(db.billStatus[date] || {}, cloud.billStatus[date]);
-                    });
+                    Object.keys(cloud.billStatus || {}).forEach(date => { db.billStatus[date] = mergeStatus(db.billStatus[date] || {}, cloud.billStatus[date]); });
                 }
 
                 // 2. Upload
                 await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db) });
-                save(); alert("Sync Complete!");
+                save(true); // Save to local without triggering isDirty
+                if(showLoading) alert("Sync Complete!");
 
-            } catch (err) { alert("Sync Error: " + err.message); console.error(err); } 
-            finally { btn.innerHTML = originalText; btn.disabled = false; updateCloudStatus(); render(); }
+            } catch (err) { console.error(err); if(showLoading) alert("Sync Error: " + err.message); } 
+            finally { 
+                if(showLoading) { btn.innerHTML = originalText; btn.disabled = false; }
+                indicator.className = "text-[10px] text-emerald-500 font-bold block";
+                indicator.innerHTML = `<i class="fas fa-check"></i> Synced`;
+                setTimeout(() => indicator.classList.add('hidden'), 3000);
+                render(); 
+            }
         }
+
+        // BACKGROUND LOOP (Every 10s check for changes)
+        setInterval(() => { if(isDirty && db.cloudURL) { manualSync(false); isDirty = false; } }, 10000);
+        // ON FOCUS (Check for updates from other devices)
+        window.addEventListener('focus', () => { if(db.cloudURL) manualSync(false); });
 
         // --- CALENDAR RENDER ---
         function renderCalendar() {
-            const key = monthPicker.value; const [y, m] = key.split('-').map(Number); 
-            
-            // Normalize Status Access
-            const getStatus = (bid) => {
-                const s = (db.billStatus[key] || {})[bid];
-                if (!s) return false;
-                return (typeof s === 'object') ? s.paid : s; // Handle old boolean vs new object
-            };
-
-            const currentDate = new Date(); const currentDayNum = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
+            const key = monthPicker.value; const [y, m] = key.split('-').map(Number); const status = db.billStatus[key] || {}; const currentDate = new Date(); const currentDayNum = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
             let total = 0, paid = 0, unpaidBillTotal = 0; const firstDay = new Date(y, m - 1, 1).getDay(); const daysInMonth = new Date(y, m, 0).getDate(); const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-            const billMap = {}; db.bills.forEach(b => { let day = b.day; if(day > daysInMonth) day = daysInMonth; if(!billMap[day]) billMap[day] = []; billMap[day].push(b); total += b.amount; if(getStatus(b.id)) paid += b.amount; else unpaidBillTotal += b.amount; });
+            const billMap = {}; db.bills.forEach(b => { let day = b.day; if(day > daysInMonth) day = daysInMonth; if(!billMap[day]) billMap[day] = []; billMap[day].push(b); total += b.amount; 
+                // Status Check
+                const s = (db.billStatus[key] || {})[b.id];
+                const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount; 
+            });
             const grid = document.getElementById('calendarCells'); grid.innerHTML = ''; for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 min-h-[100px]"></div>`;
             for(let d=1; d<=daysInMonth; d++) { const dayBills = billMap[d] || []; let billsHtml = ''; dayBills.forEach(b => { 
-                const isPaid = getStatus(b.id); 
+                const s = (db.billStatus[key] || {})[b.id];
+                const isPaid = (typeof s === 'object') ? s.paid : !!s;
                 let cls = isPaid ? 'paid' : 'unpaid'; if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue'; const icon = isPaid ? '<i class="fas fa-check"></i>' : ''; 
                 billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}', '${b.name}', ${b.amount})"><span class="truncate">${b.name} ${icon}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`; 
             }); const isToday = isCurrentMonth && d === currentDayNum ? 'current-day' : ''; grid.innerHTML += `<div class="calendar-day ${isToday}"><div class="day-number">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`; }
@@ -377,18 +382,12 @@
             const safe = incomeMonth - expenseMonth - unpaidBillTotal; document.getElementById('billSafe').innerText = `£${fmt(safe)}`; document.getElementById('billSafe').className = safe >= 0 ? "text-2xl font-bold text-emerald-700 mt-1" : "text-2xl font-bold text-rose-700 mt-1";
         }
 
-        // --- NEW TOGGLE LOGIC WITH TIMESTAMPS ---
         function toggleBill(id, name, amount) { 
-            const key = monthPicker.value; 
-            if(!db.billStatus[key]) db.billStatus[key] = {}; 
-            
-            // Get current
+            const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; 
             const s = db.billStatus[key][id];
             const isCurrentlyPaid = (typeof s === 'object') ? s.paid : !!s;
+            const newState = { paid: !isCurrentlyPaid, updated: Date.now() }; // Timestamp it!
 
-            // Set new state object with timestamp
-            const newState = { paid: !isCurrentlyPaid, updated: Date.now() };
-            
             if(!isCurrentlyPaid) { 
                 if(confirm(`Mark '${name}' as paid?\n\nThis will automatically add a £${amount} transaction to your main dashboard.`)) { 
                     db.billStatus[key][id] = newState; 
@@ -396,10 +395,7 @@
                     db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: name, amount: math(amount), category: 'Bills', type: 'expense' }); 
                     save(); 
                 } 
-            } else { 
-                db.billStatus[key][id] = newState; 
-                save(); 
-            } 
+            } else { db.billStatus[key][id] = newState; save(); } 
         }
         
         document.getElementById('formBill').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('billName').value; const amt = math(document.getElementById('billAmt').value); const day = parseInt(document.getElementById('billDay').value); if(name && amt && day) { db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day }); document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = ''; save(); } });
