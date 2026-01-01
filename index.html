@@ -14,26 +14,23 @@
     <style>
         /* CORE LAYOUT */
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; display: flex; height: 100vh; overflow: hidden; }
-        
-        /* SIDEBAR - Increased Z-Index to fix clicking issues */
         #sidebar { width: 260px; background-color: #0f172a; color: white; display: flex; flex-direction: column; padding: 24px; flex-shrink: 0; z-index: 50; position: relative; }
-        
         #main-content { flex-grow: 1; overflow-y: auto; padding: 32px; background-color: #f1f5f9; position: relative; z-index: 10; }
 
         /* UI ELEMENTS */
         .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; font-weight: 600; color: #94a3b8; cursor: pointer; transition: all 0.2s ease; margin-bottom: 4px; }
         .nav-item:hover { background-color: #1e293b; color: white; transform: translateX(4px); }
         .nav-item.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transform: translateX(0); }
-        
         .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.2s ease; }
         .input-std { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; background-color: #fff; }
         .input-std:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
-        
         .chart-container { position: relative; height: 260px; width: 100%; }
         .chart-container-sm { position: relative; height: 180px; width: 100%; }
         .hidden { display: none !important; }
+        .progress-bar-bg { background-color: #f1f5f9; border-radius: 999px; height: 6px; width: 100%; overflow: hidden; margin-top: 6px; }
+        .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease-in-out; }
         
-        /* CALENDAR STYLES */
+        /* CALENDAR */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: #e2e8f0; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
         .calendar-header { background-color: #f8fafc; padding: 12px 0; text-align: center; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
         .calendar-day { background-color: white; min-height: 100px; padding: 8px; position: relative; transition: background-color 0.2s; }
@@ -44,20 +41,19 @@
         /* BILL CHIPS */
         .bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
         .bill-chip.unpaid { background-color: #f1f5f9; color: #475569; border-left-color: #cbd5e1; }
+        .bill-chip.unpaid:hover { background-color: #e2e8f0; }
         .bill-chip.paid { background-color: #dcfce7; color: #166534; border-left-color: #22c55e; text-decoration: line-through; opacity: 0.8; }
+        .bill-chip.paid:hover { opacity: 1; }
         .bill-chip.overdue { border: 1px solid #fca5a5; background-color: #fef2f2; border-left: 3px solid #ef4444; }
         .btn-delete-bill { opacity: 0; transition: opacity 0.2s; padding: 2px; margin-left: 4px; color: #94a3b8; }
         .bill-chip:hover .btn-delete-bill { opacity: 1; }
 
-        /* STATUS DOT */
+        /* STATUS */
         .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
         .status-dot.active { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
         .status-dot.inactive { background-color: #94a3b8; }
         .status-dot.syncing { background-color: #f59e0b; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        
-        .progress-bar-bg { background-color: #f1f5f9; border-radius: 999px; height: 6px; width: 100%; overflow: hidden; margin-top: 6px; }
-        .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease-in-out; }
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -71,12 +67,10 @@
                 <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg transform rotate-3"><i class="fas fa-wallet text-white"></i></div>
                 <h1 class="font-bold text-lg leading-tight">Finance<br>Portfolio</h1>
             </div>
-            
             <div class="mb-8">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Timeline</label>
                 <input type="month" id="monthPicker" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg font-bold text-white text-sm outline-none focus:border-indigo-500 transition">
             </div>
-
             <nav>
                 <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item active"><i class="fas fa-chart-pie w-5"></i> Dashboard</div>
                 <div onclick="switchView('bills')" id="nav-bills" class="nav-item"><i class="fas fa-calendar-alt w-5"></i> Bills</div>
@@ -85,7 +79,6 @@
                 <div onclick="switchView('settings')" id="nav-settings" class="nav-item"><i class="fas fa-sliders-h w-5"></i> Settings</div>
             </nav>
         </div>
-
         <div class="mt-auto pt-6 border-t border-slate-800">
             <div class="flex justify-between items-center mb-2 px-1">
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Auto-Sync</span>
@@ -114,7 +107,10 @@
                         <span><i class="fas fa-clock text-indigo-400"></i> Avg: <span id="kpiAvg" class="text-white">£0</span></span>
                     </div>
                 </div>
-                <div class="card border-l-4 border-emerald-500"><p class="text-xs text-slate-400 font-bold uppercase">Income (Month)</p><h3 class="text-2xl font-bold text-emerald-600 mt-1" id="kpiInc">£0.00</h3></div>
+                <div class="card border-l-4 border-emerald-500">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Total Available (Month)</p>
+                    <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="kpiInc">£0.00</h3>
+                </div>
                 <div class="card border-l-4 border-rose-500"><p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p><h3 class="text-2xl font-bold text-rose-600 mt-1" id="kpiExp">£0.00</h3></div>
                 <div class="card border-l-4 border-violet-500 md:col-span-2 lg:col-span-1"><div class="overflow-hidden"><p class="text-xs text-slate-400 font-bold uppercase">Top Spending</p><h3 class="text-xl font-bold text-violet-600 mt-1 truncate" id="kpiMaxCat">N/A</h3><p class="text-xs text-slate-500 font-medium mt-1" id="kpiMaxVal">£0.00</p></div></div>
             </div>
@@ -137,7 +133,7 @@
                             <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" placeholder="0.00" step="0.01" class="input-std mt-1" required></div>
                             <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="input-std mt-1 bg-white cursor-pointer" onchange="checkNewCategory(this)"></select></div>
                         </div>
-                        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow-md hover:shadow-lg transition mt-2"><i class="fas fa-plus mr-1"></i> Add Transaction</button>
+                        <button type="submit" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-bold text-sm shadow-md transition mt-2"><i class="fas fa-plus mr-1"></i> Add Transaction</button>
                     </form>
                 </div>
                 <div class="card lg:col-span-2 min-h-[400px]">
@@ -153,7 +149,7 @@
                 <div class="card border-l-4 border-slate-500"><p class="text-xs text-slate-400 font-bold uppercase">Monthly Bills</p><h3 class="text-2xl font-bold text-slate-700 mt-1" id="billTotal">£0.00</h3></div>
                 <div class="card border-l-4 border-sky-500"><p class="text-xs text-slate-400 font-bold uppercase">Yearly Cost</p><h3 class="text-2xl font-bold text-sky-600 mt-1" id="billYearly">£0.00</h3></div>
                 <div class="card border-l-4 border-indigo-500"><p class="text-xs text-slate-400 font-bold uppercase">Bill-to-Income</p><h3 class="text-2xl font-bold text-indigo-600 mt-1" id="billRatio">0%</h3></div>
-                <div class="card border-l-4 border-emerald-500 bg-emerald-50 border-none"><p class="text-xs text-emerald-600 font-bold uppercase">Real-Time Safe</p><h3 class="text-2xl font-bold text-emerald-700 mt-1" id="billSafe">£0.00</h3><p class="text-[10px] text-emerald-600 mt-1">Income - Exp - Unpaid</p></div>
+                <div class="card border-l-4 border-emerald-500 bg-emerald-50 border-none"><p class="text-xs text-emerald-600 font-bold uppercase">Real-Time Safe</p><h3 class="text-2xl font-bold text-emerald-700 mt-1" id="billSafe">£0.00</h3><p class="text-[10px] text-emerald-600 mt-1">Available (Inc. Rollover) - Exp - Unpaid</p></div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="card h-fit"><h3 class="font-bold text-lg mb-4 text-slate-800">Add Recurring Bill</h3><p class="text-xs text-slate-400 mb-4">Bills repeat automatically every month.</p><form id="formBill" class="space-y-4"><div><label class="text-[10px] font-bold text-slate-400 uppercase">Bill Name</label><input type="text" id="billName" placeholder="e.g. Rent" class="input-std mt-1" required></div><div class="flex gap-3"><div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="billAmt" placeholder="0.00" step="0.01" class="input-std mt-1" required></div><div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Due Day</label><input type="number" id="billDay" placeholder="1-31" min="1" max="31" class="input-std mt-1" required></div></div><button type="submit" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold text-sm shadow-md transition mt-2"><i class="fas fa-plus-circle mr-1"></i> Add Bill</button></form><div class="mt-8 pt-6 border-t border-slate-100"><div class="flex justify-between items-end mb-2"><span class="text-xs font-bold text-slate-400 uppercase">Paid Status</span><span class="text-sm font-bold text-indigo-600" id="billProgressText">0%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill bg-indigo-500" id="billProgressBar" style="width: 0%"></div></div></div></div>
@@ -199,7 +195,7 @@
     </div>
 
     <script>
-        // --- CONFIG & INIT ---
+        // CONFIG
         Chart.register(ChartDataLabels);
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#64748b';
@@ -217,8 +213,8 @@
         
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
         let isDirty = false;
-        
-        // --- MIGRATION SAFEGUARDS ---
+
+        // Init Migration
         if(Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
@@ -231,7 +227,7 @@
         let trendChart, spendingChart, yearlyChart, wealthChart;
         const monthPicker = document.getElementById('monthPicker');
         
-        // --- HELPERS ---
+        // HELPERS
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const save = (skipSync = false) => { 
@@ -243,9 +239,25 @@
         const getCatColor = (c) => { if(c === 'Debt') return '#f43f5e'; if(c === 'Bills') return '#64748b'; const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1' }; if(map[c]) return map[c]; let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${45 + (Math.abs(hash) % 255)}, 80%, 60%)`; };
         const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-        // --- CORE RENDER FUNCTION ---
+        // NEW: ROLLOVER CALCULATION
+        function getRollover(currentKey) {
+            let balance = 0;
+            const sortedKeys = Object.keys(db.transactions).sort();
+            for (let k of sortedKeys) {
+                if (k >= currentKey) break;
+                let mInc = 0, mExp = 0;
+                db.transactions[k].forEach(t => {
+                    if(t.type === 'income') mInc += math(t.amount);
+                    else mExp += math(t.amount);
+                });
+                balance += (mInc - mExp);
+            }
+            return balance;
+        }
+
+        // --- RENDER ---
         function render() {
-            Object.keys(db.transactions).forEach(k => { db.transactions[k].forEach(t => { if(!t.id) { t.id = genId(); t.updatedAt = Date.now(); } }); }); // Migrate IDs
+            Object.keys(db.transactions).forEach(k => { db.transactions[k].forEach(t => { if(!t.id) { t.id = genId(); t.updatedAt = Date.now(); } }); }); // Migrate
             const key = monthPicker.value;
             const data = db.transactions[key] || [];
             let inc = 0, exp = 0, cats = {};
@@ -260,8 +272,15 @@
                 list.insertAdjacentHTML('afterbegin', `<tr class="border-b border-slate-50 hover:bg-slate-50 transition group"><td class="py-3 pl-2"><div class="font-bold text-slate-700">${t.desc}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-500">${t.category}</div></td><td class="text-right font-bold ${colorClass}">${sign}£${fmt(val)}</td><td class="text-right pr-2"><button onclick="delTx('${t.id}', '${key}')" class="text-slate-300 hover:text-rose-500 transition px-2 opacity-0 group-hover:opacity-100"><i class="fas fa-trash-alt"></i></button></td></tr>`);
             });
 
+            // UPDATED INCOME CARD LOGIC
+            const rollover = getRollover(key);
+            const totalAvailable = inc + rollover;
             document.getElementById('emptyState').classList.toggle('hidden', data.length > 0);
-            document.getElementById('kpiInc').innerText = `£${fmt(inc)}`;
+            
+            // Format Rollover Display
+            const rolloverHtml = `<span class='text-[10px] text-slate-400 block font-bold uppercase tracking-wider mt-2 pt-2 border-t border-slate-100'>Earned: £${fmt(inc)} &bull; B/F: £${fmt(rollover)}</span>`;
+            document.getElementById('kpiInc').innerHTML = `£${fmt(totalAvailable)} ${rolloverHtml}`;
+            
             document.getElementById('kpiExp').innerText = `£${fmt(exp)}`;
             document.getElementById('kpiSalary').innerText = `£${fmt(db.annualIncome)}`;
             
@@ -283,147 +302,53 @@
             renderWealth(); 
         }
 
-        // --- BACKGROUND SYNC ENGINE (v5.0) ---
+        // --- SYNC ENGINE ---
         function updateCloudStatus() { const dot = document.getElementById('statusDot'); const text = document.getElementById('statusText'); if(db.cloudURL && db.cloudURL.length > 10) { dot.className = 'status-dot active'; text.innerText = 'Cloud Active'; document.getElementById('cloudInput').value = db.cloudURL; } else { dot.className = 'status-dot inactive'; text.innerText = 'Local Mode'; } }
         document.getElementById('formCloud').addEventListener('submit', e => { e.preventDefault(); const url = document.getElementById('cloudInput').value.trim(); if(url) { db.cloudURL = url; save(); alert("Connected! The status light should now be green."); manualSync(true); } });
 
         async function manualSync(showLoading = false) {
             if(!db.cloudURL) { if(showLoading) alert("Please configure Cloud URL in Settings first."); return; }
-            
-            const btn = document.getElementById('btnSync'); 
-            const indicator = document.getElementById('syncIndicator');
-            const originalText = btn.innerHTML;
-            
-            if(showLoading) {
-                btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; btn.disabled = true;
-            } else {
-                indicator.className = "text-[10px] text-amber-500 font-bold block animate-pulse";
-                indicator.innerHTML = `<i class="fas fa-sync fa-spin"></i> Checking...`;
-                indicator.classList.remove('hidden');
-            }
-
+            const btn = document.getElementById('btnSync'); const indicator = document.getElementById('syncIndicator'); const originalText = btn.innerHTML;
+            if(showLoading) { btn.innerHTML = `<i class="fas fa-sync fa-spin mr-2"></i> Syncing...`; btn.disabled = true; } else { indicator.className = "text-[10px] text-amber-500 font-bold block animate-pulse"; indicator.innerHTML = `<i class="fas fa-sync fa-spin"></i> Checking...`; indicator.classList.remove('hidden'); }
             try {
-                // 1. Download with CORS mode and headers to satisfy new GAS requirements
-                // We use 'text/plain' to avoid Preflight OPTIONS issues
-                const response = await fetch(db.cloudURL + "?t=" + Date.now(), {
-                    method: 'GET',
-                    redirect: 'follow'
-                });
-                
+                const response = await fetch(db.cloudURL + "?t=" + Date.now(), { method: 'GET', redirect: 'follow' });
                 const cloudData = await response.json();
-
                 if (cloudData.status !== 'new') {
-                    // A. Deleted
-                    const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]);
-                    db.deletedIds = Array.from(allDeleted);
-
-                    // B. Bills
-                    const billMap = new Map();
-                    [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } });
-                    db.bills = Array.from(billMap.values());
-
-                    // C. Wealth
-                    if (cloudData.wealth) {
-                        const assetMap = new Map(); [...db.wealth.assets, ...cloudData.wealth.assets].forEach(a => assetMap.set(a.name, a)); db.wealth.assets = Array.from(assetMap.values());
-                        const debtMap = new Map(); [...db.wealth.debts, ...cloudData.wealth.debts].forEach(d => debtMap.set(d.name, d)); db.wealth.debts = Array.from(debtMap.values());
-                    }
-
-                    // D. Transactions
-                    const allTx = new Map();
-                    Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); });
-                    Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); });
-                    db.transactions = {};
-                    allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
-
-                    // E. Bill Status
-                    // Use timestamp based merging
-                    const mergeStatus = (local, remote) => {
-                        const merged = { ...local };
-                        Object.keys(remote || {}).forEach(bid => {
-                            const lVal = local[bid]; const rVal = remote[bid];
-                            const lObj = (typeof lVal === 'object') ? lVal : { paid: !!lVal, updated: 0 };
-                            const rObj = (typeof rVal === 'object') ? rVal : { paid: !!rVal, updated: 0 };
-                            // Remote is newer? Take it.
-                            if (rObj.updated > lObj.updated) merged[bid] = rObj; 
-                            else if (!lVal) merged[bid] = rObj;
-                        });
-                        return merged;
-                    };
-                    Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = mergeStatus(db.billStatus[date] || {}, cloudData.billStatus[date]); });
+                    const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted);
+                    const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values());
+                    if (cloudData.wealth) { const assetMap = new Map(); [...db.wealth.assets, ...cloudData.wealth.assets].forEach(a => assetMap.set(a.name, a)); db.wealth.assets = Array.from(assetMap.values()); const debtMap = new Map(); [...db.wealth.debts, ...cloudData.wealth.debts].forEach(d => debtMap.set(d.name, d)); db.wealth.debts = Array.from(debtMap.values()); }
+                    const allTx = new Map(); Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); }); db.transactions = {}; allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
+                    const mergeStatus = (local, remote) => { const merged = { ...local }; Object.keys(remote || {}).forEach(bid => { const lVal = local[bid]; const rVal = remote[bid]; const lObj = (typeof lVal === 'object') ? lVal : { paid: !!lVal, updated: 0 }; const rObj = (typeof rVal === 'object') ? rVal : { paid: !!rVal, updated: 0 }; if (rObj.updated > lObj.updated) merged[bid] = rObj; else if (!lVal) merged[bid] = rObj; }); return merged; }; Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = mergeStatus(db.billStatus[date] || {}, cloudData.billStatus[date]); });
                 }
-
-                // 2. Upload
-                await fetch(db.cloudURL, { 
-                    method: 'POST', 
-                    body: JSON.stringify(db),
-                    headers: { "Content-Type": "text/plain;charset=utf-8" } // Important for CORS
-                });
-                
-                save(true); // Save to local
-                if(showLoading) alert("Sync Complete!");
-
+                await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+                save(true); if(showLoading) alert("Sync Complete!");
             } catch (err) { console.error(err); if(showLoading) alert("Sync Error: " + err.message); } 
-            finally { 
-                if(showLoading) { btn.innerHTML = originalText; btn.disabled = false; }
-                indicator.className = "text-[10px] text-emerald-500 font-bold block";
-                indicator.innerHTML = `<i class="fas fa-check"></i> Updated`;
-                setTimeout(() => indicator.classList.add('hidden'), 4000);
-                render(); 
-            }
+            finally { if(showLoading) { btn.innerHTML = originalText; btn.disabled = false; } indicator.className = "text-[10px] text-emerald-500 font-bold block"; indicator.innerHTML = `<i class="fas fa-check"></i> Updated`; setTimeout(() => indicator.classList.add('hidden'), 4000); render(); }
         }
-
-        // BACKGROUND LOOP (20s)
         setInterval(() => { if(db.cloudURL) manualSync(false); }, 20000);
-        
-        // SYNC ON LOAD
-        window.addEventListener('DOMContentLoaded', () => {
-            render(); // Initial Render
-            if(db.cloudURL) {
-                updateCloudStatus();
-                setTimeout(() => manualSync(false), 500); // Trigger auto-sync shortly after load
-            }
-        });
+        window.addEventListener('DOMContentLoaded', () => { render(); if(db.cloudURL) { updateCloudStatus(); setTimeout(() => manualSync(false), 500); } });
 
         // --- CALENDAR RENDER ---
         function renderCalendar() {
-            const key = monthPicker.value; const [y, m] = key.split('-').map(Number); const status = db.billStatus[key] || {}; const currentDate = new Date(); const currentDayNum = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
+            const key = monthPicker.value; const [y, m] = key.split('-').map(Number); const currentDate = new Date(); const currentDayNum = currentDate.getDate(); const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
             let total = 0, paid = 0, unpaidBillTotal = 0; const firstDay = new Date(y, m - 1, 1).getDay(); const daysInMonth = new Date(y, m, 0).getDate(); const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-            const billMap = {}; db.bills.forEach(b => { let day = b.day; if(day > daysInMonth) day = daysInMonth; if(!billMap[day]) billMap[day] = []; billMap[day].push(b); total += b.amount; 
-                const s = (db.billStatus[key] || {})[b.id];
-                const isPaid = (typeof s === 'object') ? s.paid : !!s;
-                if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount; 
-            });
+            const billMap = {}; db.bills.forEach(b => { let day = b.day; if(day > daysInMonth) day = daysInMonth; if(!billMap[day]) billMap[day] = []; billMap[day].push(b); total += b.amount; const s = (db.billStatus[key] || {})[b.id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount; });
             const grid = document.getElementById('calendarCells'); grid.innerHTML = ''; for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 min-h-[100px]"></div>`;
-            for(let d=1; d<=daysInMonth; d++) { const dayBills = billMap[d] || []; let billsHtml = ''; dayBills.forEach(b => { 
-                const s = (db.billStatus[key] || {})[b.id];
-                const isPaid = (typeof s === 'object') ? s.paid : !!s;
-                let cls = isPaid ? 'paid' : 'unpaid'; if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue'; const icon = isPaid ? '<i class="fas fa-check"></i>' : ''; 
-                billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}', '${b.name}', ${b.amount})"><span class="truncate">${b.name} ${icon}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`; 
-            }); const isToday = isCurrentMonth && d === currentDayNum ? 'current-day' : ''; grid.innerHTML += `<div class="calendar-day ${isToday}"><div class="day-number">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`; }
+            for(let d=1; d<=daysInMonth; d++) { const dayBills = billMap[d] || []; let billsHtml = ''; dayBills.forEach(b => { const s = (db.billStatus[key] || {})[b.id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; let cls = isPaid ? 'paid' : 'unpaid'; if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue'; const icon = isPaid ? '<i class="fas fa-check"></i>' : ''; billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}', '${b.name}', ${b.amount})"><span class="truncate">${b.name} ${icon}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`; }); const isToday = isCurrentMonth && d === currentDayNum ? 'current-day' : ''; grid.innerHTML += `<div class="calendar-day ${isToday}"><div class="day-number">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`; }
             const totalCells = startOffset + daysInMonth; const remaining = (7 - (totalCells % 7)) % 7; for(let i=0; i<remaining; i++) grid.innerHTML += `<div class="bg-slate-50 min-h-[100px]"></div>`;
             document.getElementById('calendarMonthLabel').innerText = new Date(y, m-1).toLocaleString('default', { month: 'long', year: 'numeric' }); document.getElementById('billTotal').innerText = `£${fmt(total)}`; document.getElementById('billYearly').innerText = `£${fmt(total * 12)}`; 
             const pct = total > 0 ? (paid / total) * 100 : 0; document.getElementById('billProgressBar').style.width = `${pct}%`; document.getElementById('billProgressText').innerText = `${pct.toFixed(0)}%`;
+            
+            // UPDATED BILL SAFE LOGIC (Using Total Available)
             const txs = db.transactions[key] || []; let incomeMonth = 0; let expenseMonth = 0; txs.forEach(t => { if(t.type === 'income') incomeMonth += math(t.amount); else expenseMonth += math(t.amount); });
+            const rollover = getRollover(key);
+            const totalLiquidity = incomeMonth + rollover;
+            
             if(incomeMonth > 0) { const ratio = (total / incomeMonth) * 100; document.getElementById('billRatio').innerText = `${ratio.toFixed(0)}%`; const ratioEl = document.getElementById('billRatio'); if(ratio < 30) ratioEl.className = "text-2xl font-bold text-emerald-600"; else if(ratio < 50) ratioEl.className = "text-2xl font-bold text-amber-500"; else ratioEl.className = "text-2xl font-bold text-rose-600"; } else { document.getElementById('billRatio').innerText = "N/A"; }
-            const safe = incomeMonth - expenseMonth - unpaidBillTotal; document.getElementById('billSafe').innerText = `£${fmt(safe)}`; document.getElementById('billSafe').className = safe >= 0 ? "text-2xl font-bold text-emerald-700 mt-1" : "text-2xl font-bold text-rose-700 mt-1";
+            const safe = totalLiquidity - expenseMonth - unpaidBillTotal; document.getElementById('billSafe').innerText = `£${fmt(safe)}`; document.getElementById('billSafe').className = safe >= 0 ? "text-2xl font-bold text-emerald-700 mt-1" : "text-2xl font-bold text-rose-700 mt-1";
         }
 
-        function toggleBill(id, name, amount) { 
-            const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; 
-            const s = db.billStatus[key][id];
-            const isCurrentlyPaid = (typeof s === 'object') ? s.paid : !!s;
-            const newState = { paid: !isCurrentlyPaid, updated: Date.now() };
-
-            if(!isCurrentlyPaid) { 
-                if(confirm(`Mark '${name}' as paid?\n\nThis will automatically add a £${amount} transaction to your main dashboard.`)) { 
-                    db.billStatus[key][id] = newState; 
-                    if(!db.transactions[key]) db.transactions[key] = []; 
-                    db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: name, amount: math(amount), category: 'Bills', type: 'expense' }); 
-                    save(); 
-                } 
-            } else { db.billStatus[key][id] = newState; save(); } 
-        }
-        
+        function toggleBill(id, name, amount) { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const s = db.billStatus[key][id]; const isCurrentlyPaid = (typeof s === 'object') ? s.paid : !!s; const newState = { paid: !isCurrentlyPaid, updated: Date.now() }; if(!isCurrentlyPaid) { if(confirm(`Mark '${name}' as paid?\n\nThis will automatically add a £${amount} transaction to your main dashboard.`)) { db.billStatus[key][id] = newState; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: name, amount: math(amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = newState; save(); } }
         document.getElementById('formBill').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('billName').value; const amt = math(document.getElementById('billAmt').value); const day = parseInt(document.getElementById('billDay').value); if(name && amt && day) { db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day }); document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = ''; save(); } });
         window.delBill = (id) => { if(confirm("Delete this recurring bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); } };
 
@@ -439,7 +364,7 @@
         window.editAnnualIncome = () => { const v = prompt("Enter Annual Salary Target (£):", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("⚠️ Are you sure? This will delete ALL data.")) { localStorage.removeItem('infinityDB'); location.reload(); } };
         
-        // --- WEALTH ---
+        // --- WEALTH & RETIREMENT LOGIC ---
         function renderWealth() {
             const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); const netWorth = totalAssets - totalDebts;
             document.getElementById('wealthNet').innerText = `£${fmt(netWorth)}`; document.getElementById('wealthAssetsTotal').innerText = `£${fmt(totalAssets)}`; document.getElementById('wealthDebtTotal').innerText = `£${fmt(totalDebts)}`;
