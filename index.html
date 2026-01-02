@@ -24,6 +24,10 @@
         .nav-item:hover { transform: translateX(4px); }
         .nav-item.active { box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transform: translateX(0); }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; border-radius: 12px; overflow: hidden; }
+        
+        /* UPDATED: INCREASED HEIGHT */
+        .calendar-day { min-height: 130px; padding: 8px; position: relative; transition: background-color 0.2s; }
+        
         .bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; border-left: 3px solid transparent; }
         .bill-chip.paid { text-decoration: line-through; opacity: 0.6; }
         .bill-chip:hover .btn-delete-bill { opacity: 1; }
@@ -453,7 +457,32 @@
                 dInc.push(_i); dExp.push(_e);
                 d.setMonth(d.getMonth() + 1);
             }
-            trendChart = new Chart(ctxTrend, { type: 'bar', data: { labels, datasets: [{ label: 'Inc', data: dInc, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Exp', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } } });
+            
+            // CUSTOM PLUGIN FOR TOP-LEFT TOTALS
+            const customTotals = {
+                id: 'customTotals',
+                afterDraw: (chart) => {
+                    const { ctx, chartArea: { top, left } } = chart;
+                    ctx.save();
+                    ctx.font = "bold 12px Inter";
+                    ctx.textAlign = 'left';
+                    const data = chart.data.datasets;
+                    const totalInc = data[0].data.reduce((a, b) => a + b, 0);
+                    const totalExp = data[1].data.reduce((a, b) => a + b, 0);
+                    ctx.fillStyle = '#10b981'; 
+                    ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 10, top + 20);
+                    ctx.fillStyle = '#f43f5e'; 
+                    ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 10, top + 40);
+                    ctx.restore();
+                }
+            };
+
+            trendChart = new Chart(ctxTrend, { 
+                type: 'bar', 
+                data: { labels, datasets: [{ label: 'Inc', data: dInc, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Exp', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4 }] }, 
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } },
+                plugins: [customTotals]
+            });
         }
 
         // BUDGET LOGIC
@@ -560,7 +589,7 @@
             });
 
             const grid = document.getElementById('calendarCells'); grid.innerHTML = '';
-            for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 dark:bg-slate-900 min-h-[100px]"></div>`;
+            for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 dark:bg-slate-900 min-h-[130px]"></div>`;
             
             for(let d=1; d<=daysInMonth; d++) {
                 let billsHtml = '';
