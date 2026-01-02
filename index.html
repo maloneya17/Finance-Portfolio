@@ -3,165 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Portfolio</title>
+    <title>Finance Portfolio (Tabbed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
-        .card { background-color: #1e293b; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; padding-bottom: 80px; }
+        .card { background-color: #1e293b; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 1rem; }
         .btn { transition: all 0.2s; }
         .btn:active { transform: scale(0.95); }
-        input, select { background-color: #334155; border: none; color: white; padding: 0.5rem; border-radius: 6px; width: 100%; }
+        input, select { background-color: #334155; border: none; color: white; padding: 0.8rem; border-radius: 8px; width: 100%; margin-bottom: 0.5rem; }
         input:focus, select:focus { outline: 2px solid #3b82f6; }
+        
+        /* Bottom Navigation Bar */
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background-color: #1e293b; display: flex; justify-content: space-around; padding: 10px; border-top: 1px solid #334155; z-index: 50; }
+        .nav-item { color: #64748b; text-align: center; font-size: 0.8rem; background: none; border: none; flex: 1; }
+        .nav-item.active { color: #3b82f6; }
+        .nav-item i { display: block; font-size: 1.2rem; margin-bottom: 2px; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
-<body class="p-4 md:p-8 max-w-7xl mx-auto">
+<body class="p-4 md:p-6 max-w-3xl mx-auto">
 
-    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+    <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-white"><i class="fas fa-wallet text-blue-500 mr-2"></i>Finance Portfolio</h1>
-            <p class="text-slate-400 text-sm">Centralized Cloud System</p>
+            <h1 class="text-2xl font-bold text-white"><i class="fas fa-wallet text-blue-500 mr-2"></i>My Finance</h1>
         </div>
-        <div class="flex gap-2">
-            <button onclick="toggleSettings()" class="btn bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-white">
-                <i class="fas fa-cog"></i>
-            </button>
-            <button onclick="syncData()" id="syncBtn" class="btn bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded text-white font-bold flex items-center gap-2">
-                <i class="fas fa-sync-alt" id="syncIcon"></i> <span id="syncText">Sync Now</span>
-            </button>
-        </div>
+        <button onclick="syncData()" id="syncBtn" class="btn bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-white font-bold text-sm flex items-center gap-2">
+            <i class="fas fa-sync-alt" id="syncIcon"></i> <span id="syncText">Sync</span>
+        </button>
     </div>
 
-    <div id="settingsPanel" class="hidden mb-6 card border-l-4 border-blue-500">
-        <h3 class="font-bold text-lg mb-2">Cloud Connection</h3>
-        <p class="text-sm text-slate-400 mb-2">Paste your Google Script URL here:</p>
-        <input type="text" id="cloudUrlInput" placeholder="https://script.google.com/..." class="mb-2">
-        <button onclick="saveSettings()" class="bg-green-600 text-white px-4 py-1 rounded text-sm mt-2">Save URL</button>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div class="card">
-            <h3 class="text-slate-400 text-sm font-bold uppercase mb-2">Annual Income Target</h3>
-            <div class="flex items-center gap-2">
+    <div id="tab-dashboard" class="tab-content active">
+        <div class="card border-l-4 border-green-500">
+            <h3 class="text-slate-400 text-xs font-bold uppercase">Annual Income Target</h3>
+            <div class="flex items-center gap-2 mt-1">
                 <span class="text-2xl font-bold text-green-400">£</span>
-                <input type="number" id="annualIncomeInput" value="27000" onchange="updateIncomeTarget(this.value)" class="text-2xl font-bold bg-transparent border-b border-slate-600 focus:border-green-500 w-full p-0">
+                <input type="number" id="annualIncomeInput" value="27000" onchange="updateIncomeTarget(this.value)" class="text-2xl font-bold bg-transparent border-none p-0 focus:ring-0 w-full">
             </div>
-            <p class="text-xs text-slate-500 mt-2">Target for the year</p>
         </div>
 
-        <div class="card">
-            <h3 class="text-slate-400 text-sm font-bold uppercase mb-2">This Month's Spend</h3>
-            <div class="text-3xl font-bold text-red-400" id="monthSpendDisplay">£0.00</div>
+        <div class="card border-l-4 border-red-500">
+            <h3 class="text-slate-400 text-xs font-bold uppercase">This Month's Spend</h3>
+            <div class="text-3xl font-bold text-red-400 mt-1" id="monthSpendDisplay">£0.00</div>
             <p class="text-xs text-slate-500 mt-1" id="monthNameDisplay">Current Month</p>
         </div>
 
-        <div class="card">
-            <h3 class="text-slate-400 text-sm font-bold uppercase mb-2">Net Wealth</h3>
-            <div class="text-3xl font-bold text-blue-400" id="netWealthDisplay">£0.00</div>
-            <div class="flex justify-between text-xs mt-2">
+        <div class="card border-l-4 border-blue-500">
+            <h3 class="text-slate-400 text-xs font-bold uppercase">Net Wealth</h3>
+            <div class="text-3xl font-bold text-blue-400 mt-1" id="netWealthDisplay">£0.00</div>
+            <div class="flex justify-between text-xs mt-2 pt-2 border-t border-slate-700">
                 <span class="text-green-500">Assets: <span id="totalAssets">£0</span></span>
                 <span class="text-red-500">Debts: <span id="totalDebts">£0</span></span>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
+    <div id="tab-transactions" class="tab-content">
         <div class="card">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-exchange-alt text-yellow-500"></i> New Transaction</h2>
-            <div class="grid grid-cols-2 gap-3 mb-3">
+            <h2 class="text-lg font-bold mb-4">Add Transaction</h2>
+            <div class="grid grid-cols-2 gap-2">
                 <input type="date" id="tDate">
                 <select id="tType">
                     <option value="expense">Expense</option>
                     <option value="income">Income</option>
                 </select>
             </div>
-            <input type="text" id="tDesc" placeholder="Description (e.g., Tesco, Fuel)" class="mb-3">
-            <div class="grid grid-cols-2 gap-3 mb-3">
+            <input type="text" id="tDesc" placeholder="Description (e.g. Tesco)">
+            <div class="grid grid-cols-2 gap-2">
                 <input type="number" id="tAmount" placeholder="Amount (0.00)" step="0.01">
                 <select id="tCategory">
                     <option value="Food">Food</option>
                     <option value="Bills">Bills</option>
                     <option value="Transport">Transport</option>
-                    <option value="Entertainment">Entertainment</option>
+                    <option value="Entertainment">Fun</option>
                     <option value="Housing">Housing</option>
                     <option value="Health">Health</option>
                     <option value="Savings">Savings</option>
                     <option value="Debt">Debt</option>
-                    <option value="Investments">Investments</option>
-                    <option value="Subscription">Subscription</option>
+                    <option value="Investments">Invest</option>
+                    <option value="Subscription">Subs</option>
                     <option value="Payslip">Payslip</option>
-                    <option value="Loan">Loan</option>
                     <option value="Tech">Tech</option>
-                    <option value="Eating/Drinking Out">Eating Out</option>
-                    <option value="Bday/Xmas">Gifts</option>
+                    <option value="Eating/Drinking Out">Dining Out</option>
                 </select>
             </div>
-            <button onclick="addTransaction()" class="btn w-full bg-blue-600 py-2 rounded font-bold">Add Transaction</button>
-
-            <h3 class="font-bold mt-6 mb-2 text-sm text-slate-400">Recent Activity</h3>
-            <div id="transactionList" class="space-y-2 max-h-64 overflow-y-auto pr-2">
-                </div>
+            <button onclick="addTransaction()" class="btn w-full bg-blue-600 py-3 rounded font-bold mt-2">Add Transaction</button>
         </div>
 
+        <h3 class="font-bold mb-2 ml-1 text-slate-400 text-sm">History</h3>
+        <div id="transactionList" class="space-y-2 pb-20">
+            </div>
+    </div>
+
+    <div id="tab-wealth" class="tab-content">
         <div class="card">
-            <h2 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-landmark text-purple-500"></i> Assets & Debts</h2>
-            
-            <div class="flex gap-2 mb-3">
-                <input type="text" id="wName" placeholder="Name (e.g. Monzo Loan)">
+            <h2 class="text-lg font-bold mb-4">Manage Assets & Debts</h2>
+            <div class="flex gap-2">
+                <input type="text" id="wName" placeholder="Name (e.g. Loan)">
                 <input type="number" id="wValue" placeholder="Value">
             </div>
-            <div class="flex gap-2 mb-3">
+            <div class="flex gap-2">
                 <select id="wType">
-                    <option value="asset">Asset (Savings/House)</option>
-                    <option value="debt">Debt (Loan/Credit Card)</option>
+                    <option value="asset">Asset (+)</option>
+                    <option value="debt">Debt (-)</option>
                 </select>
-                <button onclick="addWealthItem()" class="btn bg-purple-600 px-4 rounded font-bold">+</button>
+                <button onclick="addWealthItem()" class="btn bg-purple-600 px-6 rounded font-bold mb-2">+</button>
             </div>
+        </div>
 
-            <div class="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                    <h4 class="text-green-500 font-bold text-sm mb-2">Assets</h4>
-                    <ul id="assetList" class="text-sm space-y-1"></ul>
-                </div>
-                <div>
-                    <h4 class="text-red-500 font-bold text-sm mb-2">Debts</h4>
-                    <ul id="debtList" class="text-sm space-y-1"></ul>
-                </div>
+        <div class="grid grid-cols-1 gap-4">
+            <div>
+                <h4 class="text-green-500 font-bold text-sm mb-2 ml-1">Assets</h4>
+                <ul id="assetList" class="space-y-2"></ul>
+            </div>
+            <div>
+                <h4 class="text-red-500 font-bold text-sm mb-2 ml-1">Debts</h4>
+                <ul id="debtList" class="space-y-2"></ul>
             </div>
         </div>
     </div>
 
+    <div id="tab-settings" class="tab-content">
+        <div class="card">
+            <h2 class="text-lg font-bold mb-4">Settings</h2>
+            <p class="text-sm text-slate-400 mb-2">Cloud URL (Google Script):</p>
+            <input type="text" id="cloudUrlInput" placeholder="https://script.google.com/..." class="text-xs">
+            <button onclick="saveSettings()" class="btn bg-green-600 w-full py-2 rounded font-bold mt-2">Save Connection</button>
+        </div>
+    </div>
+
+    <nav class="nav-bar">
+        <button class="nav-item active" onclick="switchTab('dashboard', this)">
+            <i class="fas fa-chart-pie"></i> Dash
+        </button>
+        <button class="nav-item" onclick="switchTab('transactions', this)">
+            <i class="fas fa-list"></i> Trans
+        </button>
+        <button class="nav-item" onclick="switchTab('wealth', this)">
+            <i class="fas fa-landmark"></i> Wealth
+        </button>
+        <button class="nav-item" onclick="switchTab('settings', this)">
+            <i class="fas fa-cog"></i> Set
+        </button>
+    </nav>
+
     <script>
+        // --- CONFIG: Colors for Categories ---
+        const categoryColors = {
+            "Housing": "border-blue-500",
+            "Food": "border-orange-500",
+            "Transport": "border-yellow-500",
+            "Utilities": "border-red-400",
+            "Entertainment": "border-purple-500",
+            "Health": "border-pink-500",
+            "Savings": "border-emerald-500",
+            "Debt": "border-slate-500",
+            "Payslip": "border-green-600",
+            "Loan": "border-indigo-500",
+            "Investments": "border-teal-400",
+            "Eating/Drinking Out": "border-amber-500",
+            "Subscription": "border-violet-400",
+            "Bills": "border-red-600",
+            "Tech": "border-cyan-400"
+        };
+
+        // --- STATE ---
         let db = {
             transactions: {},
             wealth: { assets: [], debts: [] },
-            bills: [],
             annualIncome: 27000,
             cloudURL: localStorage.getItem('finance_cloud_url') || ""
         };
 
+        // --- INIT ---
         window.onload = function() {
             document.getElementById('tDate').valueAsDate = new Date();
             document.getElementById('cloudUrlInput').value = db.cloudURL;
             renderAll();
-            if(db.cloudURL) syncData(); 
+            if(db.cloudURL) syncData();
         };
 
-        // --- HELPER FUNCTIONS ---
-
-        function toggleSettings() {
-            document.getElementById('settingsPanel').classList.toggle('hidden');
+        // --- TABS LOGIC ---
+        function switchTab(tabName, btnElement) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            // Show selected
+            document.getElementById('tab-' + tabName).classList.add('active');
+            btnElement.classList.add('active');
         }
 
+        // --- ACTIONS ---
         function saveSettings() {
             const url = document.getElementById('cloudUrlInput').value.trim();
             if(url) {
                 db.cloudURL = url;
                 localStorage.setItem('finance_cloud_url', url);
-                alert("URL Saved! Syncing...");
-                toggleSettings();
+                alert("Saved! Syncing...");
                 syncData();
             }
         }
@@ -177,7 +218,7 @@
             const type = document.getElementById('tType').value;
             const cat = document.getElementById('tCategory').value;
 
-            if (!desc || isNaN(amount)) return alert("Please enter description and amount");
+            if (!desc || isNaN(amount)) return alert("Enter details");
 
             const monthKey = date.substring(0, 7); 
             if (!db.transactions[monthKey]) db.transactions[monthKey] = [];
@@ -188,14 +229,15 @@
                 desc: desc,
                 amount: amount,
                 type: type,
-                category: cat,
-                updatedAt: Date.now()
+                category: cat
             };
 
             db.transactions[monthKey].unshift(newTx);
             renderAll();
+            
             document.getElementById('tDesc').value = '';
             document.getElementById('tAmount').value = '';
+            alert("Added!");
         }
 
         function addWealthItem() {
@@ -205,7 +247,7 @@
 
             if (!name || isNaN(val)) return;
 
-            const item = { name: name, value: val, type: type, id: Date.now().toString() };
+            const item = { name: name, value: val, type: type };
             if (type === 'asset') db.wealth.assets.push(item);
             else db.wealth.debts.push(item);
 
@@ -220,15 +262,17 @@
             renderAll();
         }
 
-        // --- RENDER UI ---
-
+        // --- RENDER ---
         function renderAll() {
-            // Annual Income
-            if (db.annualIncome) {
+            // Fix Income Display
+            if (db.annualIncome && db.annualIncome > 0) {
                 document.getElementById('annualIncomeInput').value = db.annualIncome;
+            } else {
+                db.annualIncome = 27000;
+                document.getElementById('annualIncomeInput').value = 27000;
             }
 
-            // Transactions
+            // Render Transactions (with Colors!)
             const currentMonth = new Date().toISOString().substring(0, 7);
             const monthTx = db.transactions[currentMonth] || [];
             
@@ -238,19 +282,14 @@
             monthTx.forEach(tx => {
                 if (tx.type === 'expense') totalSpend += tx.amount;
                 
-                // --- ORIGINAL COLOR LOGIC ---
-                const borderClass = tx.type === 'income' ? 'border-green-500' : 'border-red-500';
-                const amountClass = tx.type === 'income' ? 'text-green-400' : 'text-slate-200';
-                const icon = tx.type === 'income' ? '<i class="fas fa-arrow-down text-green-500"></i>' : '<i class="fas fa-arrow-up text-red-500"></i>';
-
+                const borderClass = categoryColors[tx.category] || "border-slate-500";
+                const amountClass = tx.type === 'income' ? 'text-green-400' : 'text-white';
+                
                 txHtml += `
-                    <div class="flex justify-between items-center bg-slate-800 p-2 rounded border-l-4 ${borderClass} mb-2">
-                        <div class="flex items-center gap-2">
-                            ${icon}
-                            <div>
-                                <div class="font-bold text-sm ${amountClass}">${tx.desc}</div>
-                                <div class="text-xs text-slate-500">${tx.date} • ${tx.category}</div>
-                            </div>
+                    <div class="flex justify-between items-center bg-slate-800 p-3 rounded border-l-4 ${borderClass} shadow-sm">
+                        <div>
+                            <div class="font-bold text-sm text-slate-200">${tx.desc}</div>
+                            <div class="text-xs text-slate-500">${tx.date} • ${tx.category}</div>
                         </div>
                         <div class="font-bold ${amountClass}">£${tx.amount.toFixed(2)}</div>
                     </div>
@@ -258,41 +297,38 @@
             });
 
             document.getElementById('monthSpendDisplay').innerText = `£${totalSpend.toFixed(2)}`;
-            document.getElementById('monthNameDisplay').innerText = `Total Expenses in ${currentMonth}`;
             document.getElementById('transactionList').innerHTML = txHtml;
 
-            // Wealth
+            // Render Wealth
             let assetsTotal = 0;
             let debtsTotal = 0;
             
             document.getElementById('assetList').innerHTML = db.wealth.assets.map((a, i) => {
                 assetsTotal += a.value;
-                return `<li class="flex justify-between bg-slate-800 p-1 px-2 rounded mb-1"><span>${a.name}</span> <span class="text-green-400">£${a.value} <i onclick="deleteWealth('asset', ${i})" class="fas fa-times text-slate-600 cursor-pointer ml-2"></i></span></li>`;
+                return `<li class="flex justify-between bg-slate-800 p-2 rounded border-l-2 border-green-500"><span>${a.name}</span> <span class="text-green-400">£${a.value} <i onclick="deleteWealth('asset', ${i})" class="fas fa-times ml-2 text-slate-500"></i></span></li>`;
             }).join('');
 
             document.getElementById('debtList').innerHTML = db.wealth.debts.map((d, i) => {
                 debtsTotal += d.value;
-                return `<li class="flex justify-between bg-slate-800 p-1 px-2 rounded mb-1"><span>${d.name}</span> <span class="text-red-400">£${d.value} <i onclick="deleteWealth('debt', ${i})" class="fas fa-times text-slate-600 cursor-pointer ml-2"></i></span></li>`;
+                return `<li class="flex justify-between bg-slate-800 p-2 rounded border-l-2 border-red-500"><span>${d.name}</span> <span class="text-red-400">£${d.value} <i onclick="deleteWealth('debt', ${i})" class="fas fa-times ml-2 text-slate-500"></i></span></li>`;
             }).join('');
 
             document.getElementById('totalAssets').innerText = `£${assetsTotal.toFixed(0)}`;
             document.getElementById('totalDebts').innerText = `£${debtsTotal.toFixed(0)}`;
-            const netWorth = assetsTotal - debtsTotal;
-            document.getElementById('netWealthDisplay').innerText = `£${netWorth.toFixed(2)}`;
+            document.getElementById('netWealthDisplay').innerText = `£${(assetsTotal - debtsTotal).toFixed(2)}`;
         }
 
-        // --- CLOUD SYNC ---
-
+        // --- SYNC ---
         async function syncData() {
-            if (!db.cloudURL) return alert("Set Cloud URL in settings!");
+            if (!db.cloudURL) return alert("Go to Settings tab and save URL!");
             
             const btn = document.getElementById('syncBtn');
-            const icon = document.getElementById('syncIcon');
             const txt = document.getElementById('syncText');
+            const icon = document.getElementById('syncIcon');
             
             btn.classList.add('bg-yellow-500');
             icon.classList.add('fa-spin');
-            txt.innerText = "Syncing...";
+            txt.innerText = "...";
 
             try {
                 // PULL
@@ -302,28 +338,31 @@
                 if (cloudData.status === "new" || cloudData.transactions) {
                     if(cloudData.transactions) db.transactions = cloudData.transactions;
                     if(cloudData.wealth) db.wealth = cloudData.wealth;
-                    if(cloudData.annualIncome) db.annualIncome = cloudData.annualIncome;
+                    
+                    // Force Fix Income
+                    if (cloudData.annualIncome && cloudData.annualIncome > 0) {
+                        db.annualIncome = cloudData.annualIncome;
+                    } else {
+                        db.annualIncome = 27000;
+                    }
 
                     renderAll();
 
                     // PUSH
-                    await fetch(db.cloudURL, {
-                        method: 'POST',
-                        body: JSON.stringify(db)
-                    });
+                    await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db) });
 
                     btn.classList.remove('bg-yellow-500');
                     btn.classList.add('bg-green-600');
                     icon.classList.remove('fa-spin');
-                    txt.innerText = "Synced";
-                    setTimeout(() => { btn.classList.remove('bg-green-600'); btn.classList.add('bg-blue-600'); txt.innerText = "Sync Now"; }, 2000);
+                    txt.innerText = "Done";
+                    setTimeout(() => { btn.classList.remove('bg-green-600'); btn.classList.add('bg-blue-600'); txt.innerText = "Sync"; }, 2000);
                 }
             } catch (err) {
                 console.error(err);
                 btn.classList.remove('bg-yellow-500');
                 btn.classList.add('bg-red-600');
                 icon.classList.remove('fa-spin');
-                txt.innerText = "Error";
+                txt.innerText = "Err";
             }
         }
     </script>
