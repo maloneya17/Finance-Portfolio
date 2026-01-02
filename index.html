@@ -667,7 +667,6 @@
         document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); db.wealth.debts.push({ name: document.getElementById('debtName').value, value: math(document.getElementById('debtVal').value) }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); renderWealth(); });
         window.delWealthItem = (type, index) => { if(confirm("Remove?")) { db.wealth[type].splice(index, 1); save(); renderWealth(); } };
         
-        // SYNC FIX
         function updateCloudStatus() { 
             const dot = document.getElementById('statusDot'); 
             const txt = document.getElementById('statusText'); 
@@ -735,7 +734,7 @@
             render();
         };
 
-        renderDropdowns(); applyTheme(); render(); renderSettingsCats();
+        renderDropdowns(); applyTheme(); render(); renderSettingsCats(); updateCloudStatus();
         window.editAnnualIncome = () => { const v = prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
         document.getElementById('formCloud').addEventListener('submit', e=>{ 
