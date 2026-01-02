@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Portfolio</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif; }
@@ -100,7 +101,7 @@
             <button onclick="addTransaction()" class="btn w-full bg-blue-600 py-2 rounded font-bold">Add Transaction</button>
 
             <h3 class="font-bold mt-6 mb-2 text-sm text-slate-400">Recent Activity</h3>
-            <div id="transactionList" class="space-y-2 max-h-96 overflow-y-auto pr-2">
+            <div id="transactionList" class="space-y-2 max-h-64 overflow-y-auto pr-2">
                 </div>
         </div>
 
@@ -222,12 +223,9 @@
         // --- RENDER UI ---
 
         function renderAll() {
-            // FIX: Ensure Annual Income never stays empty
-            if (db.annualIncome && db.annualIncome > 0) {
+            // Annual Income
+            if (db.annualIncome) {
                 document.getElementById('annualIncomeInput').value = db.annualIncome;
-            } else {
-                db.annualIncome = 27000;
-                document.getElementById('annualIncomeInput').value = 27000;
             }
 
             // Transactions
@@ -240,12 +238,10 @@
             monthTx.forEach(tx => {
                 if (tx.type === 'expense') totalSpend += tx.amount;
                 
-                // Simple Red/Green Logic (Previous Style)
+                // --- ORIGINAL COLOR LOGIC ---
                 const borderClass = tx.type === 'income' ? 'border-green-500' : 'border-red-500';
                 const amountClass = tx.type === 'income' ? 'text-green-400' : 'text-slate-200';
-                const icon = tx.type === 'income' 
-                    ? '<i class="fas fa-arrow-down text-green-500"></i>' 
-                    : '<i class="fas fa-arrow-up text-red-500"></i>';
+                const icon = tx.type === 'income' ? '<i class="fas fa-arrow-down text-green-500"></i>' : '<i class="fas fa-arrow-up text-red-500"></i>';
 
                 txHtml += `
                     <div class="flex justify-between items-center bg-slate-800 p-2 rounded border-l-4 ${borderClass} mb-2">
@@ -306,13 +302,7 @@
                 if (cloudData.status === "new" || cloudData.transactions) {
                     if(cloudData.transactions) db.transactions = cloudData.transactions;
                     if(cloudData.wealth) db.wealth = cloudData.wealth;
-                    
-                    // SAFETY NET FOR ANNUAL INCOME
-                    if (cloudData.annualIncome && cloudData.annualIncome > 0) {
-                        db.annualIncome = cloudData.annualIncome;
-                    } else {
-                        db.annualIncome = 27000; 
-                    }
+                    if(cloudData.annualIncome) db.annualIncome = cloudData.annualIncome;
 
                     renderAll();
 
