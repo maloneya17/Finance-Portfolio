@@ -38,10 +38,12 @@
         /* CALENDAR */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; border-radius: 12px; overflow: hidden; }
         .calendar-day { min-height: 100px; padding: 8px; position: relative; transition: background-color 0.2s; }
+        .day-number { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        .current-day .day-number { color: #0284c7; font-weight: 800; }
         
         /* BILL CHIPS */
         .bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; border-left: 3px solid transparent; }
-        .bill-chip.paid { text-decoration: line-through; opacity: 0.7; }
+        .bill-chip.paid { text-decoration: line-through; opacity: 0.6; }
         .bill-chip:hover .btn-delete-bill { opacity: 1; }
         .btn-delete-bill { opacity: 0; transition: opacity 0.2s; }
 
@@ -225,8 +227,15 @@
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-0 lg:col-span-2 overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="calendarMonthLabel"></h3></div>
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="calendarMonthLabel"></h3><div class="flex items-center gap-2 text-[10px] font-bold uppercase"><span class="flex items-center gap-1 text-emerald-600"><div class="w-3 h-3 bg-emerald-200"></div> Paid</span><span class="flex items-center gap-1 text-slate-500 ml-2"><div class="w-3 h-3 bg-slate-300"></div> Unpaid</span></div></div>
                     <div class="calendar-grid bg-slate-200 dark:bg-slate-800 gap-[1px] border border-slate-200 dark:border-slate-800">
+                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Mon</div>
+                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Tue</div>
+                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Wed</div>
+                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Thu</div>
+                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Fri</div>
+                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-rose-400">Sat</div>
+                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-rose-400">Sun</div>
                         <div id="calendarCells" class="contents"></div> 
                     </div>
                 </div>
@@ -238,23 +247,24 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="card bg-slate-900 text-white flex flex-col justify-center rounded-2xl p-6 shadow-lg"><p class="text-xs text-slate-400 font-bold uppercase">Net Worth</p><h2 class="text-4xl font-extrabold" id="wealthNet">£0.00</h2></div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 flex items-center justify-center"><div class="h-[180px] w-full relative"><canvas id="chartWealth"></canvas></div></div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6"><div class="flex justify-between items-end mb-4"><div><h3 class="font-bold text-slate-800 dark:text-white">Retirement (FIRE)</h3><p class="text-xs text-slate-500 mt-1">4% Rule Target</p></div><h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400" id="wealthFireNumber">£0.00</h3></div><div class="relative pt-2"><div class="flex justify-between text-xs font-bold mb-2"><span class="text-slate-500">0%</span><span class="text-indigo-600" id="wealthFirePct">0%</span><span class="text-slate-500">100%</span></div><div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" id="wealthFireBar" style="width: 0%"></div></div><p class="text-xs text-center text-slate-400 mt-3" id="wealthFireMsg">Loading...</p></div></div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <h3 class="font-bold text-emerald-600 mb-4">Assets</h3>
-                    <form id="formAsset" class="flex gap-2 mb-4"><input id="assetName" placeholder="Name" class="w-full p-2 border rounded bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><input id="assetVal" placeholder="Value" type="number" class="w-24 p-2 border rounded bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><button class="px-4 bg-emerald-600 text-white rounded font-bold">+</button></form>
+                    <form id="formAsset" class="flex gap-2 mb-4"><input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><input id="assetVal" placeholder="Value" type="number" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><button class="px-4 bg-emerald-600 text-white rounded-lg font-bold">+</button></form>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <h3 class="font-bold text-rose-600 mb-4">Liabilities</h3>
-                    <form id="formDebt" class="flex gap-2 mb-4"><input id="debtName" placeholder="Name" class="w-full p-2 border rounded bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><input id="debtVal" placeholder="Value" type="number" class="w-24 p-2 border rounded bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><button class="px-4 bg-rose-600 text-white rounded font-bold">+</button></form>
+                    <form id="formDebt" class="flex gap-2 mb-4"><input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><input id="debtVal" placeholder="Value" type="number" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><button class="px-4 bg-rose-600 text-white rounded-lg font-bold">+</button></form>
                     <div id="listDebts" class="space-y-2"></div>
                 </div>
             </div>
         </div>
 
         <div id="view-reports" class="view-section hidden fade-in max-w-7xl mx-auto">
-             <div class="flex justify-between items-center mb-8"><h2 class="text-2xl font-extrabold text-slate-800 dark:text-white">Analytics</h2><div class="flex gap-2"><select id="reportYearSelect" class="bg-transparent dark:text-white font-bold" onchange="renderReports()"></select></div></div>
+             <div class="flex justify-between items-center mb-8"><h2 class="text-2xl font-extrabold text-slate-800 dark:text-white">Analytics</h2><div class="flex gap-2"><select id="reportYearSelect" class="bg-transparent dark:text-white font-bold cursor-pointer" onchange="renderReports()"></select></div></div>
              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                  <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 lg:col-span-2">
                      <h3 class="font-bold mb-4 text-slate-800 dark:text-white">Yearly Trend</h3>
@@ -307,10 +317,13 @@
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
         if(Array.isArray(db.transactions)) db.transactions = {}; // Migration
         if(!db.theme) db.theme = 'light';
+        if(!db.bills) db.bills = [];
+        if(!db.billStatus) db.billStatus = {};
+        if(!db.wealth) db.wealth = { assets: [], debts: [] };
         
         // GLOBAL VARS
         let currentTxType = 'expense';
-        let editingTxId = null; // FOR EDIT FEATURE
+        let editingTxId = null; 
         let trendChart, spendingChart, yearlyChart, wealthChart;
         const monthPicker = document.getElementById('monthPicker');
 
@@ -329,8 +342,9 @@
                 Chart.defaults.color = '#64748b';
                 Chart.defaults.borderColor = '#e2e8f0';
             }
-            // Re-render charts if they exist to update colors
             if(trendChart) { trendChart.destroy(); updateDashboardCharts(getCurrentCats()); }
+            if(yearlyChart) renderReports();
+            if(wealthChart) renderWealth();
         }
         function toggleTheme() {
             db.theme = db.theme === 'dark' ? 'light' : 'dark';
@@ -347,7 +361,6 @@
             localStorage.setItem('infinityDB', JSON.stringify(db)); 
             render(); 
             updateCloudStatus();
-            // In a real app, you would debounce this
         }
 
         function getRollover(currentKey) {
@@ -366,7 +379,6 @@
         }
 
         function getCurrentCats() {
-             // Helper to get current month categories for chart re-render
              const key = monthPicker.value;
              const data = db.transactions[key] || [];
              let cats = {};
@@ -386,7 +398,7 @@
 
             // Filter & Sort
             const filteredData = data.filter(t => t.desc.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm));
-            filteredData.sort((a,b) => b.updatedAt - a.updatedAt); // Newest first
+            filteredData.sort((a,b) => b.updatedAt - a.updatedAt); 
 
             filteredData.forEach(t => {
                 const val = math(t.amount);
@@ -437,12 +449,11 @@
             renderSettingsCats();
         }
 
-        // --- TRANSACTION LOGIC (ADD/EDIT) ---
+        // --- TRANSACTION LOGIC ---
         function setTxType(type) { 
             currentTxType = type; 
             const activeClass = type === 'expense' ? "bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300";
             const inactiveClass = "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700";
-            
             document.getElementById('btnExp').className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'expense' ? activeClass : inactiveClass}`;
             document.getElementById('btnInc').className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'income' ? activeClass : inactiveClass}`;
         }
@@ -455,14 +466,12 @@
             const cat = document.getElementById('txCat').value;
 
             if(editingTxId) {
-                // UPDATE EXISTING
                 const txIndex = db.transactions[k].findIndex(t => t.id === editingTxId);
                 if(txIndex > -1) {
                     db.transactions[k][txIndex] = { ...db.transactions[k][txIndex], desc, amount: amt, category: cat, type: currentTxType, updatedAt: Date.now() };
                 }
                 resetTxForm();
             } else {
-                // CREATE NEW
                 if(!db.transactions[k]) db.transactions[k] = [];
                 db.transactions[k].push({ id: genId(), updatedAt: Date.now(), desc, amount: amt, category: cat, type: currentTxType });
                 document.getElementById('txDesc').value = '';
@@ -475,19 +484,15 @@
             const k = monthPicker.value;
             const tx = db.transactions[k].find(t => t.id === id);
             if(!tx) return;
-            
             editingTxId = id;
             document.getElementById('txDesc').value = tx.desc;
             document.getElementById('txAmt').value = tx.amount;
             document.getElementById('txCat').value = tx.category;
             setTxType(tx.type);
-            
             document.getElementById('txFormTitle').innerText = "Edit Transaction";
             document.getElementById('btnSubmitTx').innerHTML = `<i class="fas fa-save mr-1"></i> Update Transaction`;
             document.getElementById('btnSubmitTx').classList.replace('bg-slate-900', 'bg-indigo-600');
             document.getElementById('btnCancelEdit').classList.remove('hidden');
-            
-            // Scroll to form
             document.getElementById('formTx').scrollIntoView({ behavior: 'smooth' });
         };
 
@@ -534,11 +539,8 @@
                 }
             });
 
-            // TREND CHART (Same logic as before but with theme awareness)
             const ctxTrend = document.getElementById('chartTrend').getContext('2d');
             if(trendChart) trendChart.destroy();
-            // ... (Simplified chart logic for brevity - assumes standard bar chart construction) ...
-            // Re-creating the trend chart data
             const labels = [], dInc = [], dExp = [];
             let d = new Date(); d.setMonth(d.getMonth() - 5);
             for(let i=0; i<6; i++) {
@@ -556,6 +558,146 @@
                 data: { labels, datasets: [{ label: 'Inc', data: dInc, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Exp', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4 }] },
                 options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } }
             });
+        }
+
+        // --- CALENDAR LOGIC (RESTORED) ---
+        function renderCalendar() {
+            const key = monthPicker.value;
+            const [y, m] = key.split('-').map(Number);
+            const currentDate = new Date();
+            const currentDayNum = currentDate.getDate();
+            const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
+            
+            let total = 0, paid = 0, unpaidBillTotal = 0;
+            const firstDay = new Date(y, m - 1, 1).getDay();
+            const daysInMonth = new Date(y, m, 0).getDate();
+            const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+            const billMap = {};
+            db.bills.forEach(b => {
+                let day = b.day; if(day > daysInMonth) day = daysInMonth;
+                if(!billMap[day]) billMap[day] = [];
+                billMap[day].push(b);
+                total += b.amount;
+                const s = (db.billStatus[key] || {})[b.id];
+                const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount;
+            });
+
+            const grid = document.getElementById('calendarCells');
+            grid.innerHTML = '';
+            
+            // Empty Slots
+            for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 dark:bg-slate-900 min-h-[100px]"></div>`;
+            
+            // Days
+            for(let d=1; d<=daysInMonth; d++) {
+                const dayBills = billMap[d] || [];
+                let billsHtml = '';
+                dayBills.forEach(b => {
+                    const s = (db.billStatus[key] || {})[b.id];
+                    const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                    let cls = isPaid ? 'paid bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300' : 'unpaid bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300';
+                    if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-300';
+                    
+                    billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')"><span class="truncate font-bold">${b.name}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
+                });
+                
+                const isToday = isCurrentMonth && d === currentDayNum ? 'current-day bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-slate-900/50';
+                grid.innerHTML += `<div class="calendar-day ${isToday} border-b border-r border-slate-200 dark:border-slate-800"><div class="day-number text-slate-400 dark:text-slate-500">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`;
+            }
+            
+            // Stats
+            document.getElementById('calendarMonthLabel').innerText = new Date(y, m-1).toLocaleString('default', { month: 'long', year: 'numeric' });
+            document.getElementById('billTotal').innerText = `£${fmt(total)}`;
+            
+            const rollover = getRollover(key);
+            const inc = (db.transactions[key]||[]).filter(t=>t.type==='income').reduce((a,b)=>a+math(b.amount),0);
+            const exp = (db.transactions[key]||[]).filter(t=>t.type==='expense').reduce((a,b)=>a+math(b.amount),0);
+            const safe = (inc + rollover) - exp - unpaidBillTotal;
+            document.getElementById('billSafe').innerText = `£${fmt(safe)}`;
+        }
+
+        window.toggleBill = (id) => {
+            const key = monthPicker.value;
+            if(!db.billStatus[key]) db.billStatus[key] = {};
+            const bill = db.bills.find(b => b.id === id);
+            const s = db.billStatus[key][id];
+            const isPaid = (typeof s === 'object') ? s.paid : !!s;
+            
+            if(!isPaid) {
+                if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) {
+                    db.billStatus[key][id] = { paid: true, updated: Date.now() };
+                    if(!db.transactions[key]) db.transactions[key] = [];
+                    db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' });
+                    save();
+                }
+            } else {
+                db.billStatus[key][id] = { paid: false, updated: Date.now() };
+                save();
+            }
+        };
+
+        document.getElementById('formBill').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('billName').value; const amt = math(document.getElementById('billAmt').value); const day = parseInt(document.getElementById('billDay').value); if(name && amt && day) { db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day }); document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = ''; save(); } });
+        window.delBill = (id) => { if(confirm("Delete recurring bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); } };
+
+        // --- WEALTH LOGIC (RESTORED) ---
+        function renderWealth() {
+            const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); 
+            const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); 
+            const netWorth = totalAssets - totalDebts;
+            document.getElementById('wealthNet').innerText = `£${fmt(netWorth)}`;
+            
+            // Chart
+            const ctxWealth = document.getElementById('chartWealth').getContext('2d');
+            if(wealthChart) wealthChart.destroy();
+            wealthChart = new Chart(ctxWealth, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: ['Assets', 'Debt'], datasets: [{ data: [totalAssets, totalDebts], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (value, ctx) => { let sum = 0; ctx.chart.data.datasets[0].data.map(data => { sum += data; }); if(sum === 0) return ""; let percentage = (value * 100 / sum).toFixed(0) + "%"; return `${percentage}`; } } } } });
+
+            // Lists
+            const listAssets = document.getElementById('listAssets'); const listDebts = document.getElementById('listDebts'); listAssets.innerHTML = ''; listDebts.innerHTML = '';
+            if(db.wealth.assets.length === 0) listAssets.innerHTML = `<p class="text-xs text-slate-400 italic">No assets added.</p>`; 
+            db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold">£${fmt(item.value)}</span><button onclick="delWealthItem('assets', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+            if(db.wealth.debts.length === 0) listDebts.innerHTML = `<p class="text-xs text-slate-400 italic">No liabilities added.</p>`; 
+            db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold">£${fmt(item.value)}</span><button onclick="delWealthItem('debts', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+
+            // FIRE Calc
+            const expData = []; let d = new Date(); d.setMonth(d.getMonth() - 5); for(let i=0; i<6; i++) { const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; const txs = db.transactions[k] || []; let _e = 0; txs.forEach(t => { if(t.type !== 'income') _e += t.amount; }); if(_e > 0) expData.push(_e); d.setMonth(d.getMonth() + 1); }
+            if(expData.length > 0) { const avg = expData.reduce((a,b)=>a+b, 0) / expData.length; const target = avg * 12 * 25; const progress = Math.min((netWorth / target) * 100, 100); document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; document.getElementById('wealthFireBar').style.width = `${progress}%`; document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% to financial independence.`; } 
+            else { document.getElementById('wealthFireMsg').innerText = "Add expense data to calculate."; }
+        }
+
+        document.getElementById('formAsset').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('assetName').value; const val = math(document.getElementById('assetVal').value); if(name && val) { db.wealth.assets.push({ name, value: val }); document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = ''; save(); } });
+        document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('debtName').value; const val = math(document.getElementById('debtVal').value); if(name && val) { db.wealth.debts.push({ name, value: val }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); } });
+        function delWealthItem(type, index) { if(confirm("Remove item?")) { db.wealth[type].splice(index, 1); save(); } }
+
+        // --- REPORTS LOGIC (RESTORED) ---
+        function renderReports() {
+            const years = new Set([new Date().getFullYear()]); Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0]))); 
+            const sel = document.getElementById('reportYearSelect'); 
+            if(sel.options.length === 0) Array.from(years).sort((a,b)=>b-a).forEach(y => sel.innerHTML += `<option value="${y}">${y}</option>`);
+            
+            const targetYear = sel.value; 
+            const monthTable = document.getElementById('rptMonthTable'); monthTable.innerHTML = '';
+            const chLabels = [], chInc = [], chExp = [];
+
+            for(let m=1; m<=12; m++) {
+                const mk = `${targetYear}-${String(m).padStart(2,'0')}`;
+                const txs = db.transactions[mk] || [];
+                let mInc = 0, mExp = 0;
+                txs.forEach(t => { if(t.type === 'income') mInc += math(t.amount); else mExp += math(t.amount); });
+                
+                chLabels.push(new Date(targetYear, m-1).toLocaleString('default', { month: 'short' }));
+                chInc.push(mInc); chExp.push(mExp);
+                
+                if(mInc > 0 || mExp > 0) {
+                    const net = mInc - mExp; const netColor = net >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400';
+                    monthTable.innerHTML += `<tr class="border-b border-slate-50 dark:border-slate-800"><td class="py-3 pl-3 font-medium text-slate-700 dark:text-slate-300">${new Date(targetYear, m-1).toLocaleString('default', { month: 'long' })}</td><td class="text-right text-emerald-600 dark:text-emerald-400">£${fmt(mInc)}</td><td class="text-right text-rose-600 dark:text-rose-400">£${fmt(mExp)}</td><td class="text-right pr-3 font-bold ${netColor}">£${fmt(net)}</td></tr>`;
+                }
+            }
+
+            const ctxYear = document.getElementById('chartYearly').getContext('2d');
+            if(yearlyChart) yearlyChart.destroy();
+            yearlyChart = new Chart(ctxYear, { type: 'line', data: { labels: chLabels, datasets: [ { label: 'Income', data: chInc, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 }, { label: 'Expense', data: chExp, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', fill: true, tension: 0.4 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: db.theme==='dark'?'#334155':'#f1f5f9' } }, x: { grid: { display: false } } } } });
         }
 
         // --- UTILS & CATEGORIES ---
@@ -586,31 +728,13 @@
             const div = document.getElementById('settingsCatList');
             div.innerHTML = '';
             db.categories.forEach(c => {
-                if(c === 'Bills') return; // Protect system cat
+                if(c === 'Bills') return; 
                 div.innerHTML += `<div class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300">${c} <span onclick="delCat('${c}')" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span></div>`;
             });
         }
         
         window.delCat = (c) => { if(confirm(`Delete category '${c}'?`)) { db.categories = db.categories.filter(x => x !== c); save(); } };
         window.addCatPrompt = () => { const n = prompt("Category Name:"); if(n) { db.categories.push(n); save(); } };
-
-        // --- CALENDAR & BILLS (Simplified for brevity, same logic as before) ---
-        function renderCalendar() {
-             const key = monthPicker.value;
-             // ... [Logic identical to previous, just ensure classes like 'bg-white' use dark variants] ...
-             // For the sake of the snippet, simply ensuring the grid clears and renders:
-             const grid = document.getElementById('calendarCells');
-             grid.innerHTML = ''; // Full calendar logic would be here, utilizing `calendar-day` class which now has dark mode support via CSS.
-             // Updating bill totals:
-             let total = 0, paid = 0;
-             db.bills.forEach(b => total += b.amount);
-             document.getElementById('billTotal').innerText = `£${fmt(total)}`;
-             // Safe math...
-             const rollover = getRollover(key);
-             const income = (db.transactions[key]||[]).filter(t=>t.type==='income').reduce((a,b)=>a+math(b.amount),0);
-             const expense = (db.transactions[key]||[]).filter(t=>t.type==='expense').reduce((a,b)=>a+math(b.amount),0);
-             document.getElementById('billSafe').innerText = `£${fmt((income+rollover) - expense - (total - paid))}`; // Approximation for snippet
-        }
 
         // --- SYNC & INIT ---
         function updateCloudStatus() {
@@ -625,10 +749,23 @@
             const ind = document.getElementById('syncIndicator');
             ind.classList.remove('hidden');
             try {
-                // MOCK SYNC LOGIC for structure (Actual fetch would go here)
-                // await fetch(db.cloudURL, ...);
-                save(true); // Persist
-            } catch(e) { console.error(e); }
+                const response = await fetch(db.cloudURL + "?t=" + Date.now());
+                const cloudData = await response.json();
+                if (cloudData.status !== 'new') {
+                    // Sync logic
+                    const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted);
+                    // Bills
+                    const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values());
+                    // Wealth
+                    if(cloudData.wealth) { db.wealth = cloudData.wealth; } // Simple overwrite for wealth for now
+                    // Transactions
+                    const allTx = new Map(); Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); }); db.transactions = {}; allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
+                    // Bill Status
+                     Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = { ...db.billStatus[date], ...cloudData.billStatus[date] }; });
+                }
+                await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db) });
+                save(true);
+            } catch(e) { console.error(e); if(ui) alert("Sync failed"); }
             finally { setTimeout(() => ind.classList.add('hidden'), 2000); }
         }
 
@@ -656,10 +793,6 @@
         window.editAnnualIncome = () => { const v = prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
         document.getElementById('formCloud').addEventListener('submit', e=>{ e.preventDefault(); db.cloudURL=document.getElementById('cloudInput').value; save(); manualSync(true); });
-        
-        // Wealth & Reports logic omitted for brevity but container divs exist and would be populated by similar render functions
-        function renderWealth() { /* Same ChartJS logic as previous version */ }
-        function renderReports() { /* Same ChartJS logic as previous version */ }
 
     </script>
 </body>
