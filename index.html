@@ -667,6 +667,7 @@
         document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); db.wealth.debts.push({ name: document.getElementById('debtName').value, value: math(document.getElementById('debtVal').value) }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); renderWealth(); });
         window.delWealthItem = (type, index) => { if(confirm("Remove?")) { db.wealth[type].splice(index, 1); save(); renderWealth(); } };
         
+        // SYNC FIX
         function updateCloudStatus() { 
             const dot = document.getElementById('statusDot'); 
             const txt = document.getElementById('statusText'); 
@@ -696,8 +697,20 @@
                 if (cloudData.status !== 'new') { 
                     const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted); 
                     const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values()); 
-                    if(cloudData.wealth) db.wealth = cloudData.wealth; 
-                    if(cloudData.budgets) db.budgets = cloudData.budgets; 
+                    
+                    // Merge Wealth (Assets)
+                    const assetMap = new Map();
+                    if (cloudData.wealth && cloudData.wealth.assets) cloudData.wealth.assets.forEach(a => assetMap.set(a.name, a));
+                    db.wealth.assets.forEach(a => assetMap.set(a.name, a));
+                    db.wealth.assets = Array.from(assetMap.values());
+
+                    // Merge Wealth (Debts)
+                    const debtMap = new Map();
+                    if (cloudData.wealth && cloudData.wealth.debts) cloudData.wealth.debts.forEach(d => debtMap.set(d.name, d));
+                    db.wealth.debts.forEach(d => debtMap.set(d.name, d));
+                    db.wealth.debts = Array.from(debtMap.values());
+
+                    if(cloudData.budgets) db.budgets = { ...cloudData.budgets, ...db.budgets };
                     
                     const allTx = new Map(); 
                     Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); 
