@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infinity Finance</title>
+    <title>Finance Portfolio</title>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -19,42 +19,22 @@
     </script>
     
     <style>
-        /* CORE LAYOUT */
         body { transition: background-color 0.3s, color 0.3s; }
-        #sidebar { transition: width 0.3s; z-index: 50; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        
-        /* DARK MODE TRANSITIONS */
-        .card, .input-std, .nav-item { transition: all 0.2s ease; }
-        
-        /* UI ELEMENTS */
+        .nav-item { transition: all 0.2s ease; }
         .nav-item:hover { transform: translateX(4px); }
         .nav-item.active { box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transform: translateX(0); }
-        
-        /* PROGRESS BARS */
-        .progress-bar-bg { border-radius: 999px; height: 6px; width: 100%; overflow: hidden; margin-top: 6px; }
-        .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 1s ease-in-out; }
-        
-        /* CALENDAR */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; border-radius: 12px; overflow: hidden; }
-        .calendar-day { min-height: 100px; padding: 8px; position: relative; transition: background-color 0.2s; }
-        .day-number { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
-        .current-day .day-number { color: #0284c7; font-weight: 800; }
-        
-        /* BILL CHIPS */
         .bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; border-left: 3px solid transparent; }
         .bill-chip.paid { text-decoration: line-through; opacity: 0.6; }
         .bill-chip:hover .btn-delete-bill { opacity: 1; }
         .btn-delete-bill { opacity: 0; transition: opacity 0.2s; }
-
-        /* ANIMATIONS */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 h-screen flex overflow-hidden">
 
-    <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between">
+    <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between z-50">
         <div>
             <div class="flex items-center gap-3 mb-10">
                 <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg transform rotate-3"><i class="fas fa-wallet text-white"></i></div>
@@ -79,7 +59,6 @@
             <button onclick="toggleTheme()" class="w-full py-2 mb-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
                 <i class="fas fa-moon"></i> <span id="themeLabel">Dark Mode</span>
             </button>
-
             <div class="flex justify-between items-center mb-2 px-1">
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sync Status</span>
                 <span id="syncIndicator" class="hidden text-[10px] text-amber-500"><i class="fas fa-sync fa-spin"></i></span>
@@ -107,17 +86,14 @@
                         <span><i class="fas fa-clock text-indigo-400"></i> Avg: <span id="kpiAvg" class="text-white">£0</span></span>
                     </div>
                 </div>
-                
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-emerald-500 rounded-2xl p-6 shadow-sm">
                     <p class="text-xs text-slate-400 font-bold uppercase">Total Available</p>
                     <h3 class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1" id="kpiInc">£0.00</h3>
                 </div>
-
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-rose-500 rounded-2xl p-6 shadow-sm">
                     <p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p>
                     <h3 class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1" id="kpiExp">£0.00</h3>
                 </div>
-
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-violet-500 md:col-span-2 lg:col-span-1 rounded-2xl p-6 shadow-sm">
                     <div class="overflow-hidden">
                         <p class="text-xs text-slate-400 font-bold uppercase">Top Category</p>
@@ -147,63 +123,26 @@
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="txFormTitle">Add Transaction</h3>
                         <button onclick="resetTxForm()" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
-                    
                     <form id="formTx" class="space-y-4">
                         <input type="hidden" id="txId">
                         <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
                             <button type="button" onclick="setTxType('expense')" id="btnExp" class="py-2 rounded-md text-sm font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
                             <button type="button" onclick="setTxType('income')" id="btnInc" class="py-2 rounded-md text-sm font-bold text-slate-400 transition">Income</button>
                         </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">Description</label>
-                            <input type="text" id="txDesc" placeholder="e.g. Grocery Shop" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required>
-                        </div>
+                        <div><label class="text-[10px] font-bold text-slate-400 uppercase">Description</label><input type="text" id="txDesc" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required></div>
                         <div class="flex gap-3">
-                            <div class="w-1/2">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label>
-                                <input type="number" id="txAmt" placeholder="0.00" step="0.01" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required>
-                            </div>
-                            <div class="w-1/2">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase">Category</label>
-                                <select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer" onchange="checkNewCategory(this)"></select>
-                            </div>
+                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" step="0.01" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required></div>
+                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer" onchange="checkNewCategory(this)"></select></div>
                         </div>
-                        <button type="submit" id="btnSubmitTx" class="w-full py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">
-                            <i class="fas fa-plus mr-1"></i> Add Transaction
-                        </button>
+                        <button type="submit" id="btnSubmitTx" class="w-full py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">Add Transaction</button>
                     </form>
                 </div>
-
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm lg:col-span-2 min-h-[400px]">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white">Transactions</h3>
-                        <div class="flex gap-2 w-full sm:w-auto">
-                            <div class="relative w-full sm:w-48">
-                                <input type="text" id="txSearch" onkeyup="render()" placeholder="Search..." class="w-full pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition">
-                                <i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1.5 rounded flex items-center">Month View</span>
-                        </div>
+                        <div class="relative w-full sm:w-48"><input type="text" id="txSearch" onkeyup="render()" placeholder="Search..." class="w-full pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition"><i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs"></i></div>
                     </div>
-                    
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="text-xs text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800">
-                                    <th class="py-2 font-bold pl-2">Description</th>
-                                    <th class="py-2 font-bold text-right">Amount</th>
-                                    <th class="py-2 font-bold text-right pr-2">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="listTx" class="text-sm text-slate-700 dark:text-slate-300"></tbody>
-                        </table>
-                        <div id="emptyState" class="hidden py-12 text-center">
-                            <div class="inline-block p-4 rounded-full bg-slate-50 dark:bg-slate-800 mb-3">
-                                <i class="fas fa-receipt text-slate-300 dark:text-slate-600 text-2xl"></i>
-                            </div>
-                            <p class="text-slate-400 font-medium text-sm">No transactions found.</p>
-                        </div>
-                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800"><th class="py-2 font-bold pl-2">Description</th><th class="py-2 font-bold text-right">Amount</th><th class="py-2 font-bold text-right pr-2">Actions</th></tr></thead><tbody id="listTx" class="text-sm text-slate-700 dark:text-slate-300"></tbody></table><div id="emptyState" class="hidden py-12 text-center"><p class="text-slate-400 font-medium text-sm">No transactions found.</p></div></div>
                 </div>
             </div>
         </div>
@@ -219,23 +158,13 @@
                     <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Add Recurring Bill</h3>
                     <form id="formBill" class="space-y-4">
                         <input type="text" id="billName" placeholder="Bill Name" class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required>
-                        <div class="flex gap-2">
-                            <input type="number" id="billAmt" placeholder="£0.00" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required>
-                            <input type="number" id="billDay" placeholder="Day (1-31)" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required>
-                        </div>
+                        <div class="flex gap-2"><input type="number" id="billAmt" placeholder="£0.00" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required><input type="number" id="billDay" placeholder="Day (1-31)" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required></div>
                         <button class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-0 lg:col-span-2 overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="calendarMonthLabel"></h3><div class="flex items-center gap-2 text-[10px] font-bold uppercase"><span class="flex items-center gap-1 text-emerald-600"><div class="w-3 h-3 bg-emerald-200"></div> Paid</span><span class="flex items-center gap-1 text-slate-500 ml-2"><div class="w-3 h-3 bg-slate-300"></div> Unpaid</span></div></div>
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="calendarMonthLabel"></h3></div>
                     <div class="calendar-grid bg-slate-200 dark:bg-slate-800 gap-[1px] border border-slate-200 dark:border-slate-800">
-                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Mon</div>
-                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Tue</div>
-                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Wed</div>
-                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Thu</div>
-                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-slate-500">Fri</div>
-                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-rose-400">Sat</div>
-                        <div class="calendar-header bg-slate-50 dark:bg-slate-900 p-2 text-center text-xs font-bold text-rose-400">Sun</div>
                         <div id="calendarCells" class="contents"></div> 
                     </div>
                 </div>
@@ -264,7 +193,7 @@
         </div>
 
         <div id="view-reports" class="view-section hidden fade-in max-w-7xl mx-auto">
-             <div class="flex justify-between items-center mb-8"><h2 class="text-2xl font-extrabold text-slate-800 dark:text-white">Analytics</h2><div class="flex gap-2"><select id="reportYearSelect" class="bg-transparent dark:text-white font-bold cursor-pointer" onchange="renderReports()"></select></div></div>
+             <div class="flex justify-between items-center mb-8"><h2 class="text-2xl font-extrabold text-slate-800 dark:text-white">Analytics</h2><div class="flex gap-2"><select id="reportYearSelect" class="bg-transparent dark:text-white font-bold cursor-pointer outline-none border-b border-slate-300 dark:border-slate-700" onchange="renderReports()"></select></div></div>
              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                  <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 lg:col-span-2">
                      <h3 class="font-bold mb-4 text-slate-800 dark:text-white">Yearly Trend</h3>
@@ -279,22 +208,16 @@
 
         <div id="view-settings" class="view-section hidden fade-in max-w-7xl mx-auto">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Settings</h2>
-            
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Cloud Sync</h3>
                 <p class="text-xs text-slate-500 mb-4">Paste your Google Script URL to enable cross-device syncing.</p>
-                <form id="formCloud" class="flex gap-2">
-                    <input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white">
-                    <button class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button>
-                </form>
+                <form id="formCloud" class="flex gap-2"><input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white"><button class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button></form>
             </div>
-
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Manage Categories</h3>
                 <div id="settingsCatList" class="flex flex-wrap gap-2 mb-4"></div>
                 <button onclick="addCatPrompt()" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
             </div>
-
             <div class="card bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-6 max-w-md">
                 <h3 class="font-bold text-rose-600 mb-2">Danger Zone</h3>
                 <button onclick="resetData()" class="text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-lg font-bold text-xs transition">Reset All Data</button>
@@ -304,7 +227,7 @@
     </div>
 
     <script>
-        // --- CONFIG & STATE ---
+        // CONFIG
         Chart.register(ChartDataLabels);
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.color = '#94a3b8';
@@ -315,44 +238,36 @@
         };
         
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
-        if(Array.isArray(db.transactions)) db.transactions = {}; // Migration
+        if(Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.theme) db.theme = 'light';
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
         if(!db.wealth) db.wealth = { assets: [], debts: [] };
         
-        // GLOBAL VARS
+        // GLOBALS
         let currentTxType = 'expense';
         let editingTxId = null; 
         let trendChart, spendingChart, yearlyChart, wealthChart;
         const monthPicker = document.getElementById('monthPicker');
 
-        // --- THEME ENGINE ---
+        // THEME
         function applyTheme() {
             const html = document.documentElement;
             const label = document.getElementById('themeLabel');
             if(db.theme === 'dark') {
-                html.classList.add('dark');
-                label.innerText = "Light Mode";
-                Chart.defaults.color = '#cbd5e1';
-                Chart.defaults.borderColor = '#334155';
+                html.classList.add('dark'); label.innerText = "Light Mode";
+                Chart.defaults.color = '#cbd5e1'; Chart.defaults.borderColor = '#334155';
             } else {
-                html.classList.remove('dark');
-                label.innerText = "Dark Mode";
-                Chart.defaults.color = '#64748b';
-                Chart.defaults.borderColor = '#e2e8f0';
+                html.classList.remove('dark'); label.innerText = "Dark Mode";
+                Chart.defaults.color = '#64748b'; Chart.defaults.borderColor = '#e2e8f0';
             }
             if(trendChart) { trendChart.destroy(); updateDashboardCharts(getCurrentCats()); }
-            if(yearlyChart) renderReports();
-            if(wealthChart) renderWealth();
+            // Force redraw reports if visible
+            if(!document.getElementById('view-reports').classList.contains('hidden')) renderReports();
         }
-        function toggleTheme() {
-            db.theme = db.theme === 'dark' ? 'light' : 'dark';
-            save();
-            applyTheme();
-        }
+        function toggleTheme() { db.theme = db.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); }
 
-        // --- CORE FUNCTIONS ---
+        // UTILS
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -369,10 +284,7 @@
             for (let k of sortedKeys) {
                 if (k >= currentKey) break;
                 let mInc = 0, mExp = 0;
-                db.transactions[k].forEach(t => {
-                    if(t.type === 'income') mInc += math(t.amount);
-                    else mExp += math(t.amount);
-                });
+                db.transactions[k].forEach(t => { if(t.type === 'income') mInc += math(t.amount); else mExp += math(t.amount); });
                 balance += (mInc - mExp);
             }
             return balance;
@@ -386,7 +298,7 @@
              return cats;
         }
 
-        // --- RENDER ENGINE ---
+        // RENDER DASHBOARD
         function render() {
             const key = monthPicker.value;
             const searchTerm = document.getElementById('txSearch').value.toLowerCase();
@@ -396,7 +308,6 @@
             const list = document.getElementById('listTx');
             list.innerHTML = '';
 
-            // Filter & Sort
             const filteredData = data.filter(t => t.desc.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm));
             filteredData.sort((a,b) => b.updatedAt - a.updatedAt); 
 
@@ -404,52 +315,37 @@
                 const val = math(t.amount);
                 if(t.type === 'income') inc += val; 
                 else { exp += val; cats[t.category] = (cats[t.category] || 0) + val; }
-                
                 const colorClass = t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
                 const sign = t.type === 'income' ? '+' : '-';
                 
                 list.insertAdjacentHTML('beforeend', `
                     <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
-                        <td class="py-3 pl-2">
-                            <div class="font-bold text-slate-700 dark:text-slate-200">${t.desc}</div>
-                            <div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${t.category}</div>
-                        </td>
+                        <td class="py-3 pl-2"><div class="font-bold text-slate-700 dark:text-slate-200">${t.desc}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${t.category}</div></td>
                         <td class="text-right font-bold ${colorClass}">${sign}£${fmt(val)}</td>
-                        <td class="text-right pr-2">
-                            <button onclick="editTx('${t.id}')" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button>
-                            <button onclick="delTx('${t.id}')" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button>
-                        </td>
-                    </tr>
-                `);
+                        <td class="text-right pr-2"><button onclick="editTx('${t.id}')" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button><button onclick="delTx('${t.id}')" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button></td>
+                    </tr>`);
             });
 
-            // Update KPIs
             document.getElementById('emptyState').classList.toggle('hidden', filteredData.length > 0);
             const rollover = getRollover(key);
             document.getElementById('kpiInc').innerHTML = `£${fmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: £${fmt(rollover)}</span>`;
             document.getElementById('kpiExp').innerText = `£${fmt(exp)}`;
             document.getElementById('kpiSalary').innerText = `£${fmt(db.annualIncome)}`;
             
-            // YTD & Avg
             const year = key.split('-')[0];
             let ytd = 0;
             Object.keys(db.transactions).forEach(k => { if(k.startsWith(year)) db.transactions[k].forEach(t => { if(t.type === 'income') ytd += math(t.amount); }); });
             document.getElementById('kpiYTD').innerText = `£${fmt(ytd)}`;
             document.getElementById('kpiAvg').innerText = `£${fmt(ytd / (parseInt(key.split('-')[1]) || 1))}`;
 
-            // Top Cat
             let maxCat = 'N/A', maxVal = 0;
             for(const [c, v] of Object.entries(cats)) { if(v > maxVal) { maxVal = v; maxCat = c; } }
             document.getElementById('kpiMaxCat').innerText = maxCat;
             document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
 
             updateDashboardCharts(cats);
-            renderCalendar();
-            renderWealth();
-            renderSettingsCats();
         }
 
-        // --- TRANSACTION LOGIC ---
         function setTxType(type) { 
             currentTxType = type; 
             const activeClass = type === 'expense' ? "bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300";
@@ -459,85 +355,40 @@
         }
 
         document.getElementById('formTx').addEventListener('submit', e => {
-            e.preventDefault();
-            const k = monthPicker.value;
-            const desc = document.getElementById('txDesc').value;
-            const amt = math(document.getElementById('txAmt').value);
-            const cat = document.getElementById('txCat').value;
-
+            e.preventDefault(); const k = monthPicker.value;
+            const desc = document.getElementById('txDesc').value; const amt = math(document.getElementById('txAmt').value); const cat = document.getElementById('txCat').value;
             if(editingTxId) {
                 const txIndex = db.transactions[k].findIndex(t => t.id === editingTxId);
-                if(txIndex > -1) {
-                    db.transactions[k][txIndex] = { ...db.transactions[k][txIndex], desc, amount: amt, category: cat, type: currentTxType, updatedAt: Date.now() };
-                }
+                if(txIndex > -1) db.transactions[k][txIndex] = { ...db.transactions[k][txIndex], desc, amount: amt, category: cat, type: currentTxType, updatedAt: Date.now() };
                 resetTxForm();
             } else {
                 if(!db.transactions[k]) db.transactions[k] = [];
                 db.transactions[k].push({ id: genId(), updatedAt: Date.now(), desc, amount: amt, category: cat, type: currentTxType });
-                document.getElementById('txDesc').value = '';
-                document.getElementById('txAmt').value = '';
+                document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = '';
             }
             save();
         });
 
         window.editTx = (id) => {
-            const k = monthPicker.value;
-            const tx = db.transactions[k].find(t => t.id === id);
-            if(!tx) return;
-            editingTxId = id;
-            document.getElementById('txDesc').value = tx.desc;
-            document.getElementById('txAmt').value = tx.amount;
-            document.getElementById('txCat').value = tx.category;
-            setTxType(tx.type);
+            const k = monthPicker.value; const tx = db.transactions[k].find(t => t.id === id); if(!tx) return;
+            editingTxId = id; document.getElementById('txDesc').value = tx.desc; document.getElementById('txAmt').value = tx.amount; document.getElementById('txCat').value = tx.category; setTxType(tx.type);
             document.getElementById('txFormTitle').innerText = "Edit Transaction";
-            document.getElementById('btnSubmitTx').innerHTML = `<i class="fas fa-save mr-1"></i> Update Transaction`;
-            document.getElementById('btnSubmitTx').classList.replace('bg-slate-900', 'bg-indigo-600');
+            document.getElementById('btnSubmitTx').innerHTML = "Update Transaction";
             document.getElementById('btnCancelEdit').classList.remove('hidden');
-            document.getElementById('formTx').scrollIntoView({ behavior: 'smooth' });
         };
 
         window.resetTxForm = () => {
-            editingTxId = null;
-            document.getElementById('txDesc').value = '';
-            document.getElementById('txAmt').value = '';
-            document.getElementById('txFormTitle').innerText = "Add Transaction";
-            document.getElementById('btnSubmitTx').innerHTML = `<i class="fas fa-plus mr-1"></i> Add Transaction`;
-            document.getElementById('btnSubmitTx').classList.replace('bg-indigo-600', 'bg-slate-900');
-            document.getElementById('btnCancelEdit').classList.add('hidden');
-            setTxType('expense');
+            editingTxId = null; document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = '';
+            document.getElementById('txFormTitle').innerText = "Add Transaction"; document.getElementById('btnSubmitTx').innerHTML = "Add Transaction";
+            document.getElementById('btnCancelEdit').classList.add('hidden'); setTxType('expense');
         };
 
-        window.delTx = (id) => { 
-            if(confirm("Delete transaction?")) { 
-                const k = monthPicker.value;
-                db.deletedIds.push(id); 
-                db.transactions[k] = db.transactions[k].filter(t => t.id !== id); 
-                if(editingTxId === id) resetTxForm();
-                save(); 
-            } 
-        };
+        window.delTx = (id) => { if(confirm("Delete transaction?")) { const k = monthPicker.value; db.deletedIds.push(id); db.transactions[k] = db.transactions[k].filter(t => t.id !== id); if(editingTxId === id) resetTxForm(); save(); } };
 
-        // --- CHARTS ---
         function updateDashboardCharts(cats) {
             const ctxSpend = document.getElementById('chartSpend').getContext('2d');
             if(spendingChart) spendingChart.destroy();
-            spendingChart = new Chart(ctxSpend, {
-                type: 'doughnut',
-                plugins: [ChartDataLabels],
-                data: {
-                    labels: Object.keys(cats),
-                    datasets: [{ 
-                        data: Object.values(cats), 
-                        backgroundColor: Object.keys(cats).map(c => getCatColor(c)), 
-                        borderWidth: db.theme === 'dark' ? 0 : 2,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, cutout: '70%',
-                    plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (v, ctx) => { let sum = ctx.dataset.data.reduce((a,b)=>a+b,0); let pct = (v*100/sum); return pct<5?'':pct.toFixed(0)+'%'; } } }
-                }
-            });
+            spendingChart = new Chart(ctxSpend, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(c => getCatColor(c)), borderWidth: db.theme === 'dark' ? 0 : 2, borderColor: '#ffffff' }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (v, ctx) => { let sum = ctx.dataset.data.reduce((a,b)=>a+b,0); let pct = (v*100/sum); return pct<5?'':pct.toFixed(0)+'%'; } } } } });
 
             const ctxTrend = document.getElementById('chartTrend').getContext('2d');
             if(trendChart) trendChart.destroy();
@@ -552,133 +403,31 @@
                 dInc.push(_i); dExp.push(_e);
                 d.setMonth(d.getMonth() + 1);
             }
-            
-            trendChart = new Chart(ctxTrend, {
-                type: 'bar',
-                data: { labels, datasets: [{ label: 'Inc', data: dInc, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Exp', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } }
-            });
+            trendChart = new Chart(ctxTrend, { type: 'bar', data: { labels, datasets: [{ label: 'Inc', data: dInc, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Exp', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } } });
         }
 
-        // --- CALENDAR LOGIC (RESTORED) ---
-        function renderCalendar() {
-            const key = monthPicker.value;
-            const [y, m] = key.split('-').map(Number);
-            const currentDate = new Date();
-            const currentDayNum = currentDate.getDate();
-            const isCurrentMonth = (y === currentDate.getFullYear() && (m - 1) === currentDate.getMonth());
-            
-            let total = 0, paid = 0, unpaidBillTotal = 0;
-            const firstDay = new Date(y, m - 1, 1).getDay();
-            const daysInMonth = new Date(y, m, 0).getDate();
-            const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-
-            const billMap = {};
-            db.bills.forEach(b => {
-                let day = b.day; if(day > daysInMonth) day = daysInMonth;
-                if(!billMap[day]) billMap[day] = [];
-                billMap[day].push(b);
-                total += b.amount;
-                const s = (db.billStatus[key] || {})[b.id];
-                const isPaid = (typeof s === 'object') ? s.paid : !!s;
-                if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount;
-            });
-
-            const grid = document.getElementById('calendarCells');
-            grid.innerHTML = '';
-            
-            // Empty Slots
-            for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 dark:bg-slate-900 min-h-[100px]"></div>`;
-            
-            // Days
-            for(let d=1; d<=daysInMonth; d++) {
-                const dayBills = billMap[d] || [];
-                let billsHtml = '';
-                dayBills.forEach(b => {
-                    const s = (db.billStatus[key] || {})[b.id];
-                    const isPaid = (typeof s === 'object') ? s.paid : !!s;
-                    let cls = isPaid ? 'paid bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300' : 'unpaid bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300';
-                    if(!isPaid && isCurrentMonth && d < currentDayNum) cls = 'overdue bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-300';
-                    
-                    billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')"><span class="truncate font-bold">${b.name}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
-                });
-                
-                const isToday = isCurrentMonth && d === currentDayNum ? 'current-day bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-slate-900/50';
-                grid.innerHTML += `<div class="calendar-day ${isToday} border-b border-r border-slate-200 dark:border-slate-800"><div class="day-number text-slate-400 dark:text-slate-500">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`;
-            }
-            
-            // Stats
-            document.getElementById('calendarMonthLabel').innerText = new Date(y, m-1).toLocaleString('default', { month: 'long', year: 'numeric' });
-            document.getElementById('billTotal').innerText = `£${fmt(total)}`;
-            
-            const rollover = getRollover(key);
-            const inc = (db.transactions[key]||[]).filter(t=>t.type==='income').reduce((a,b)=>a+math(b.amount),0);
-            const exp = (db.transactions[key]||[]).filter(t=>t.type==='expense').reduce((a,b)=>a+math(b.amount),0);
-            const safe = (inc + rollover) - exp - unpaidBillTotal;
-            document.getElementById('billSafe').innerText = `£${fmt(safe)}`;
-        }
-
-        window.toggleBill = (id) => {
-            const key = monthPicker.value;
-            if(!db.billStatus[key]) db.billStatus[key] = {};
-            const bill = db.bills.find(b => b.id === id);
-            const s = db.billStatus[key][id];
-            const isPaid = (typeof s === 'object') ? s.paid : !!s;
-            
-            if(!isPaid) {
-                if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) {
-                    db.billStatus[key][id] = { paid: true, updated: Date.now() };
-                    if(!db.transactions[key]) db.transactions[key] = [];
-                    db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' });
-                    save();
-                }
-            } else {
-                db.billStatus[key][id] = { paid: false, updated: Date.now() };
-                save();
-            }
-        };
-
-        document.getElementById('formBill').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('billName').value; const amt = math(document.getElementById('billAmt').value); const day = parseInt(document.getElementById('billDay').value); if(name && amt && day) { db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day }); document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = ''; save(); } });
-        window.delBill = (id) => { if(confirm("Delete recurring bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); } };
-
-        // --- WEALTH LOGIC (RESTORED) ---
-        function renderWealth() {
-            const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); 
-            const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); 
-            const netWorth = totalAssets - totalDebts;
-            document.getElementById('wealthNet').innerText = `£${fmt(netWorth)}`;
-            
-            // Chart
-            const ctxWealth = document.getElementById('chartWealth').getContext('2d');
-            if(wealthChart) wealthChart.destroy();
-            wealthChart = new Chart(ctxWealth, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: ['Assets', 'Debt'], datasets: [{ data: [totalAssets, totalDebts], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (value, ctx) => { let sum = 0; ctx.chart.data.datasets[0].data.map(data => { sum += data; }); if(sum === 0) return ""; let percentage = (value * 100 / sum).toFixed(0) + "%"; return `${percentage}`; } } } } });
-
-            // Lists
-            const listAssets = document.getElementById('listAssets'); const listDebts = document.getElementById('listDebts'); listAssets.innerHTML = ''; listDebts.innerHTML = '';
-            if(db.wealth.assets.length === 0) listAssets.innerHTML = `<p class="text-xs text-slate-400 italic">No assets added.</p>`; 
-            db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold">£${fmt(item.value)}</span><button onclick="delWealthItem('assets', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
-            if(db.wealth.debts.length === 0) listDebts.innerHTML = `<p class="text-xs text-slate-400 italic">No liabilities added.</p>`; 
-            db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold">£${fmt(item.value)}</span><button onclick="delWealthItem('debts', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
-
-            // FIRE Calc
-            const expData = []; let d = new Date(); d.setMonth(d.getMonth() - 5); for(let i=0; i<6; i++) { const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; const txs = db.transactions[k] || []; let _e = 0; txs.forEach(t => { if(t.type !== 'income') _e += t.amount; }); if(_e > 0) expData.push(_e); d.setMonth(d.getMonth() + 1); }
-            if(expData.length > 0) { const avg = expData.reduce((a,b)=>a+b, 0) / expData.length; const target = avg * 12 * 25; const progress = Math.min((netWorth / target) * 100, 100); document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; document.getElementById('wealthFireBar').style.width = `${progress}%`; document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% to financial independence.`; } 
-            else { document.getElementById('wealthFireMsg').innerText = "Add expense data to calculate."; }
-        }
-
-        document.getElementById('formAsset').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('assetName').value; const val = math(document.getElementById('assetVal').value); if(name && val) { db.wealth.assets.push({ name, value: val }); document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = ''; save(); } });
-        document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); const name = document.getElementById('debtName').value; const val = math(document.getElementById('debtVal').value); if(name && val) { db.wealth.debts.push({ name, value: val }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); } });
-        function delWealthItem(type, index) { if(confirm("Remove item?")) { db.wealth[type].splice(index, 1); save(); } }
-
-        // --- REPORTS LOGIC (RESTORED) ---
+        // RENDER REPORTS
         function renderReports() {
-            const years = new Set([new Date().getFullYear()]); Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0]))); 
-            const sel = document.getElementById('reportYearSelect'); 
-            if(sel.options.length === 0) Array.from(years).sort((a,b)=>b-a).forEach(y => sel.innerHTML += `<option value="${y}">${y}</option>`);
+            // 1. Get Years
+            const years = new Set([new Date().getFullYear()]);
+            Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0])));
             
+            // 2. Populate Dropdown
+            const sel = document.getElementById('reportYearSelect');
+            if(sel.options.length === 0 || sel.innerHTML === '') {
+                sel.innerHTML = '';
+                Array.from(years).sort((a,b)=>b-a).forEach(y => sel.innerHTML += `<option value="${y}">${y}</option>`);
+                
+                // AUTO-SELECT current dashboard year if available
+                const currentDashYear = parseInt(monthPicker.value.split('-')[0]);
+                if(years.has(currentDashYear)) sel.value = currentDashYear;
+            }
+
             const targetYear = sel.value; 
-            const monthTable = document.getElementById('rptMonthTable'); monthTable.innerHTML = '';
+            const monthTable = document.getElementById('rptMonthTable'); 
+            monthTable.innerHTML = '';
             const chLabels = [], chInc = [], chExp = [];
+            let hasData = false;
 
             for(let m=1; m<=12; m++) {
                 const mk = `${targetYear}-${String(m).padStart(2,'0')}`;
@@ -690,110 +439,127 @@
                 chInc.push(mInc); chExp.push(mExp);
                 
                 if(mInc > 0 || mExp > 0) {
+                    hasData = true;
                     const net = mInc - mExp; const netColor = net >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400';
                     monthTable.innerHTML += `<tr class="border-b border-slate-50 dark:border-slate-800"><td class="py-3 pl-3 font-medium text-slate-700 dark:text-slate-300">${new Date(targetYear, m-1).toLocaleString('default', { month: 'long' })}</td><td class="text-right text-emerald-600 dark:text-emerald-400">£${fmt(mInc)}</td><td class="text-right text-rose-600 dark:text-rose-400">£${fmt(mExp)}</td><td class="text-right pr-3 font-bold ${netColor}">£${fmt(net)}</td></tr>`;
                 }
             }
+            
+            if(!hasData) monthTable.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 text-xs">No data for ${targetYear}</td></tr>`;
 
             const ctxYear = document.getElementById('chartYearly').getContext('2d');
             if(yearlyChart) yearlyChart.destroy();
-            yearlyChart = new Chart(ctxYear, { type: 'line', data: { labels: chLabels, datasets: [ { label: 'Income', data: chInc, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 }, { label: 'Expense', data: chExp, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', fill: true, tension: 0.4 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: db.theme==='dark'?'#334155':'#f1f5f9' } }, x: { grid: { display: false } } } } });
-        }
-
-        // --- UTILS & CATEGORIES ---
-        const getCatColor = (c) => { 
-            const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1', 'Bills': '#64748b' }; 
-            if(map[c]) return map[c];
-            let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
-        };
-
-        function renderDropdowns() {
-            const select = document.getElementById('txCat');
-            const current = select.value;
-            select.innerHTML = '';
-            db.categories.forEach(c => select.innerHTML += `<option value="${c}">${c}</option>`);
-            select.innerHTML += `<option value="ADD_NEW">+ New Category...</option>`;
-            if(db.categories.includes(current)) select.value = current;
-        }
-
-        function checkNewCategory(select) {
-            if(select.value === 'ADD_NEW') {
-                const n = prompt("New Category Name:");
-                if(n) { db.categories.push(n); save(); renderDropdowns(); select.value = n; }
-                else select.value = db.categories[0];
-            }
-        }
-        
-        function renderSettingsCats() {
-            const div = document.getElementById('settingsCatList');
-            div.innerHTML = '';
-            db.categories.forEach(c => {
-                if(c === 'Bills') return; 
-                div.innerHTML += `<div class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300">${c} <span onclick="delCat('${c}')" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span></div>`;
+            
+            yearlyChart = new Chart(ctxYear, { 
+                type: 'line', 
+                data: { labels: chLabels, datasets: [ { label: 'Income', data: chInc, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 }, { label: 'Expense', data: chExp, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', fill: true, tension: 0.4 } ] }, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false }, datalabels: { display: false } }, // HIDE LABELS ON LINE CHART
+                    scales: { y: { beginAtZero: true, grid: { color: db.theme==='dark'?'#334155':'#f1f5f9' } }, x: { grid: { display: false } } } 
+                } 
             });
         }
-        
-        window.delCat = (c) => { if(confirm(`Delete category '${c}'?`)) { db.categories = db.categories.filter(x => x !== c); save(); } };
-        window.addCatPrompt = () => { const n = prompt("Category Name:"); if(n) { db.categories.push(n); save(); } };
 
-        // --- SYNC & INIT ---
-        function updateCloudStatus() {
-            const dot = document.getElementById('statusDot');
-            const txt = document.getElementById('statusText');
-            if(db.cloudURL) { dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'; txt.innerText = "Cloud Linked"; }
-            else { dot.className = 'w-2 h-2 rounded-full bg-slate-400'; txt.innerText = "Local Mode"; }
-        }
-        
-        async function manualSync(ui=false) {
-            if(!db.cloudURL) return;
-            const ind = document.getElementById('syncIndicator');
-            ind.classList.remove('hidden');
-            try {
-                const response = await fetch(db.cloudURL + "?t=" + Date.now());
-                const cloudData = await response.json();
-                if (cloudData.status !== 'new') {
-                    // Sync logic
-                    const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted);
-                    // Bills
-                    const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values());
-                    // Wealth
-                    if(cloudData.wealth) { db.wealth = cloudData.wealth; } // Simple overwrite for wealth for now
-                    // Transactions
-                    const allTx = new Map(); Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); }); db.transactions = {}; allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
-                    // Bill Status
-                     Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = { ...db.billStatus[date], ...cloudData.billStatus[date] }; });
-                }
-                await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db) });
-                save(true);
-            } catch(e) { console.error(e); if(ui) alert("Sync failed"); }
-            finally { setTimeout(() => ind.classList.add('hidden'), 2000); }
+        // OTHER RENDERERS
+        function renderCalendar() {
+            const key = monthPicker.value;
+            const [y, m] = key.split('-').map(Number);
+            const daysInMonth = new Date(y, m, 0).getDate();
+            const firstDay = new Date(y, m - 1, 1).getDay();
+            const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+            const billMap = {};
+            let total = 0, paid = 0, unpaidBillTotal = 0;
+            db.bills.forEach(b => {
+                let day = b.day; if(day > daysInMonth) day = daysInMonth;
+                if(!billMap[day]) billMap[day] = []; billMap[day].push(b);
+                total += b.amount;
+                const s = (db.billStatus[key] || {})[b.id];
+                const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount;
+            });
+
+            const grid = document.getElementById('calendarCells'); grid.innerHTML = '';
+            for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 dark:bg-slate-900 min-h-[100px]"></div>`;
+            
+            for(let d=1; d<=daysInMonth; d++) {
+                let billsHtml = '';
+                (billMap[d] || []).forEach(b => {
+                    const s = (db.billStatus[key] || {})[b.id];
+                    const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                    const cls = isPaid ? 'paid bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300' : 'unpaid bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300';
+                    billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')"><span class="truncate font-bold">${b.name}</span><div class="flex items-center"><span class="bill-amt">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
+                });
+                grid.innerHTML += `<div class="calendar-day bg-white dark:bg-slate-900/50 border-b border-r border-slate-200 dark:border-slate-800"><div class="day-number text-slate-400 dark:text-slate-500">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`;
+            }
+            
+            document.getElementById('calendarMonthLabel').innerText = new Date(y, m-1).toLocaleString('default', { month: 'long', year: 'numeric' });
+            document.getElementById('billTotal').innerText = `£${fmt(total)}`;
+            const rollover = getRollover(key);
+            const inc = (db.transactions[key]||[]).filter(t=>t.type==='income').reduce((a,b)=>a+math(b.amount),0);
+            const exp = (db.transactions[key]||[]).filter(t=>t.type==='expense').reduce((a,b)=>a+math(b.amount),0);
+            document.getElementById('billSafe').innerText = `£${fmt((inc + rollover) - exp - unpaidBillTotal)}`;
         }
 
-        // --- INIT ---
-        const now = new Date();
-        monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-        monthPicker.addEventListener('change', render);
+        function renderWealth() {
+            const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); 
+            const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); 
+            document.getElementById('wealthNet').innerText = `£${fmt(totalAssets - totalDebts)}`;
+            
+            const ctxWealth = document.getElementById('chartWealth').getContext('2d');
+            if(wealthChart) wealthChart.destroy();
+            wealthChart = new Chart(ctxWealth, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: ['Assets', 'Debt'], datasets: [{ data: [totalAssets, totalDebts], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => { let sum = totalAssets+totalDebts; if(sum===0) return ''; return ((v/sum)*100).toFixed(0)+'%'; } } } } });
+
+            const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
+            db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold">£${fmt(item.value)}</span><button onclick="delWealthItem('assets', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+            const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
+            db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold">£${fmt(item.value)}</span><button onclick="delWealthItem('debts', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+
+            // FIRE Calc
+            const expData = []; let d = new Date(); d.setMonth(d.getMonth() - 5); for(let i=0; i<6; i++) { const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; const txs = db.transactions[k] || []; let _e = 0; txs.forEach(t => { if(t.type !== 'income') _e += t.amount; }); if(_e > 0) expData.push(_e); d.setMonth(d.getMonth() + 1); }
+            if(expData.length > 0) { const avg = expData.reduce((a,b)=>a+b, 0) / expData.length; const target = avg * 12 * 25; const progress = Math.min(((totalAssets-totalDebts) / target) * 100, 100); document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; document.getElementById('wealthFireBar').style.width = `${progress}%`; document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% to financial independence.`; } 
+            else { document.getElementById('wealthFireMsg').innerText = "Add expense data to calculate."; }
+        }
+
+        const getCatColor = (c) => { 
+            const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1', 'Bills': '#64748b' }; 
+            if(map[c]) return map[c]; let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
+        };
         
+        function renderDropdowns() { const sel = document.getElementById('txCat'); const cur = sel.value; sel.innerHTML = ''; db.categories.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`); sel.innerHTML += `<option value="ADD_NEW">+ New Category...</option>`; if(db.categories.includes(cur)) sel.value = cur; }
+        function checkNewCategory(sel) { if(sel.value === 'ADD_NEW') { const n = prompt("New Category Name:"); if(n) { db.categories.push(n); save(); renderDropdowns(); sel.value = n; } else sel.value = db.categories[0]; } }
+        function renderSettingsCats() { const div = document.getElementById('settingsCatList'); div.innerHTML = ''; db.categories.forEach(c => { if(c === 'Bills') return; div.innerHTML += `<div class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300">${c} <span onclick="delCat('${c}')" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span></div>`; }); }
+        
+        window.delCat = (c) => { if(confirm(`Delete '${c}'?`)) { db.categories = db.categories.filter(x => x !== c); save(); renderSettingsCats(); renderDropdowns(); } };
+        window.addCatPrompt = () => { const n = prompt("Category Name:"); if(n) { db.categories.push(n); save(); renderSettingsCats(); renderDropdowns(); } };
+        window.toggleBill = (id) => { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const bill = db.bills.find(b => b.id === id); const s = db.billStatus[key][id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; if(!isPaid) { if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) { db.billStatus[key][id] = { paid: true, updated: Date.now() }; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = { paid: false, updated: Date.now() }; save(); } };
+        window.delBill = (id) => { if(confirm("Delete bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); renderCalendar(); } };
+        document.getElementById('formAsset').addEventListener('submit', e => { e.preventDefault(); db.wealth.assets.push({ name: document.getElementById('assetName').value, value: math(document.getElementById('assetVal').value) }); document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = ''; save(); renderWealth(); });
+        document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); db.wealth.debts.push({ name: document.getElementById('debtName').value, value: math(document.getElementById('debtVal').value) }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); renderWealth(); });
+        window.delWealthItem = (type, index) => { if(confirm("Remove?")) { db.wealth[type].splice(index, 1); save(); renderWealth(); } };
+        
+        function updateCloudStatus() { const dot = document.getElementById('statusDot'); const txt = document.getElementById('statusText'); if(db.cloudURL) { dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'; txt.innerText = "Cloud Linked"; } else { dot.className = 'w-2 h-2 rounded-full bg-slate-400'; txt.innerText = "Local Mode"; } }
+        async function manualSync(ui=false) { if(!db.cloudURL) return; const ind = document.getElementById('syncIndicator'); ind.classList.remove('hidden'); try { const response = await fetch(db.cloudURL + "?t=" + Date.now()); const cloudData = await response.json(); if (cloudData.status !== 'new') { const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted); const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values()); if(cloudData.wealth) db.wealth = cloudData.wealth; const allTx = new Map(); Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); }); db.transactions = {}; allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); }); Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = { ...db.billStatus[date], ...cloudData.billStatus[date] }; }); } await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db) }); save(true); } catch(e) { console.error(e); if(ui) alert("Sync failed"); } finally { setTimeout(() => ind.classList.add('hidden'), 2000); } }
+        
+        // BOOT & NAVIGATION
+        const now = new Date(); monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; monthPicker.addEventListener('change', render);
         window.switchView = (id) => {
             document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));
             document.getElementById(`view-${id}`).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active', 'bg-indigo-600', 'text-white', 'shadow-lg'));
-            const nav = document.getElementById(`nav-${id}`);
-            nav.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-lg');
-            nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
+            const nav = document.getElementById(`nav-${id}`); nav.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-lg'); nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
+            // Force re-renders for tabs that depend on visibility or complex calcs
+            if(id === 'reports') renderReports(); 
+            if(id === 'bills') renderCalendar(); 
+            if(id === 'wealth') renderWealth();
             render();
         };
 
-        // BOOT
-        renderDropdowns();
-        applyTheme();
-        render();
-        
-        // OTHER MOCKS
+        renderDropdowns(); applyTheme(); render(); renderSettingsCats();
         window.editAnnualIncome = () => { const v = prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
         document.getElementById('formCloud').addEventListener('submit', e=>{ e.preventDefault(); db.cloudURL=document.getElementById('cloudInput').value; save(); manualSync(true); });
-
     </script>
 </body>
 </html>
