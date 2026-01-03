@@ -240,10 +240,7 @@
                     <div class="h-[180px] w-full relative"><canvas id="chartWealth"></canvas></div>
                 </div>
                 
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-800 dark:text-white">History Trend</h3><span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Past 12 Months</span></div>
-                    <div class="h-[160px] w-full relative"><canvas id="chartWealthTrend"></canvas></div>
-                </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6"><div class="flex justify-between items-end mb-4"><div><h3 class="font-bold text-slate-800 dark:text-white">Retirement (FIRE)</h3><p class="text-xs text-slate-500 mt-1">Target: 25x Annual Spending</p></div><h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 money-val" id="wealthFireNumber">£0.00</h3></div><div class="relative pt-2"><div class="flex justify-between text-xs font-bold mb-2"><span class="text-slate-500">0%</span><span class="text-indigo-600" id="wealthFirePct">0%</span><span class="text-slate-500">100%</span></div><div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" id="wealthFireBar" style="width: 0%"></div></div><p class="text-xs text-center text-slate-400 mt-3" id="wealthFireMsg">Loading...</p></div></div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -252,7 +249,7 @@
                     <form id="formAsset" class="flex gap-2 mb-4" onsubmit="return false;">
                         <input type="hidden" id="assetEditId">
                         <div class="w-1/4"><select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><option value="Savings">Savings</option><option value="Investment">Invest</option><option value="Property">Property</option><option value="Vehicle">Vehicle</option><option value="Cash">Cash</option><option value="Other">Other</option></select></div>
-                        <input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
+                        <input id="assetName" placeholder="Name (e.g. ISA)" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
                         <input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
                         <button type="button" onclick="saveAsset()" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs">+</button>
                     </form>
@@ -268,6 +265,13 @@
                         <button type="button" onclick="saveDebt()" id="btnSaveDebt" class="px-4 bg-rose-600 text-white rounded-lg font-bold text-xs">+</button>
                     </form>
                     <div id="listDebts" class="space-y-2"></div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 mt-6">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-800 dark:text-white">History Trend</h3><span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Past 12 Months</span></div>
+                    <div class="h-[200px] w-full relative"><canvas id="chartWealthTrend"></canvas></div>
                 </div>
             </div>
         </div>
@@ -337,18 +341,26 @@
             transactions: {}, bills: [], billStatus: {}, wealth: { assets: [], debts: [], history: {} }, deletedIds: [], annualIncome: 0, cloudURL: '', theme: 'light', budgets: {} 
         };
         
-        let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
+        // SAFELY LOAD DATA
+        let db;
+        try {
+            db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
+        } catch (e) {
+            console.error("Data corrupted, resetting", e);
+            db = DEFAULTS;
+        }
         
-        // MIGRATION & REPAIR
-        if(Array.isArray(db.transactions)) db.transactions = {}; 
+        // MIGRATION & DATA REPAIR
+        if(!db.transactions || Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.theme) db.theme = 'light';
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
-        if(!db.wealth) db.wealth = { assets: [], debts: [], history: {} };
+        if(!db.wealth) db.wealth = { assets: [], debts: [] };
         if(!db.wealth.assets) db.wealth.assets = [];
         if(!db.wealth.debts) db.wealth.debts = [];
         if(!db.wealth.history) db.wealth.history = {};
         if(!db.budgets) db.budgets = {};
+        if(!db.categories) db.categories = DEFAULTS.categories;
         if(!db.categories.includes('Imported')) db.categories.push('Imported');
         
         // GLOBALS
@@ -375,13 +387,13 @@
                 const key = a.name.trim().toLowerCase();
                 if (assetMap.has(key)) {
                     const existing = assetMap.get(key);
-                    existing.value += parseFloat(a.value);
+                    existing.value += parseFloat(a.value); // Add values
                     hasChanges = true;
                 } else {
-                    assetMap.set(key, { ...a, value: parseFloat(a.value) }); // Clone
+                    assetMap.set(key, { ...a, value: parseFloat(a.value) });
                 }
             });
-            
+
             // Merge Debts by Name
             const debtMap = new Map();
             db.wealth.debts.forEach(d => {
@@ -394,12 +406,12 @@
                     debtMap.set(key, { ...d, value: parseFloat(d.value) });
                 }
             });
-            
-            // Only update DB if changes occurred to prevent unnecessary writes
-            if (hasChanges || db.wealth.assets.length !== assetMap.size || db.wealth.debts.length !== debtMap.size) {
+
+            if (hasChanges) {
                 db.wealth.assets = Array.from(assetMap.values());
                 db.wealth.debts = Array.from(debtMap.values());
-                localStorage.setItem('infinityDB', JSON.stringify(db)); // Silent save
+                localStorage.setItem('infinityDB', JSON.stringify(db)); // Force save
+                console.log("Data consolidated");
             }
         }
 
@@ -931,7 +943,9 @@
 
         function renderWealth() {
             try {
-                // IMPORTANT: Since we auto-cleaned data on load, we can render directly
+                // AUTO-CONSOLIDATE
+                consolidateWealth();
+
                 const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); 
                 const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); 
                 
@@ -943,7 +957,6 @@
                 data.forEach(t => { if(t.type === 'income') inc += t.amount; else exp += t.amount; });
                 const operatingCash = (inc + rollover) - exp;
 
-                // Add Operating Cash to Total Assets View
                 const displayTotalAssets = totalAssets + operatingCash;
                 const liquidAssets = db.wealth.assets
                     .filter(a => ['Savings', 'Cash', 'Investment'].includes(a.type))
@@ -1002,19 +1015,45 @@
                     }
                 });
 
+                // DYNAMIC FIRE CALCULATION
+                // 1. Calculate Average Monthly Expense (Last 6 Months)
+                let totalSpent = 0;
+                let activeMonths = 0;
+                let d = new Date(); 
+                d.setMonth(d.getMonth() - 5); // Start 5 months ago
+
+                for(let i=0; i<6; i++) {
+                    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                    const txs = db.transactions[k] || [];
+                    let monthExp = 0;
+                    txs.forEach(t => { if(t.type === 'expense') monthExp += t.amount; });
+                    
+                    if(monthExp > 0) {
+                        totalSpent += monthExp;
+                        activeMonths++;
+                    }
+                    d.setMonth(d.getMonth() + 1);
+                }
+
+                // Default fallback if no data
+                const avgMonthlyExp = activeMonths > 0 ? (totalSpent / activeMonths) : 2000; 
+                const annualExp = avgMonthlyExp * 12;
+                const fireTarget = annualExp * 25; 
+                const currentNet = displayTotalAssets - totalDebts;
+                const progress = Math.min((currentNet / fireTarget) * 100, 100); 
+
+                document.getElementById('wealthFireNumber').innerText = `£${fmt(fireTarget)}`; 
+                document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; 
+                document.getElementById('wealthFireBar').style.width = `${progress}%`; 
+                document.getElementById('wealthFireMsg').innerText = activeMonths > 0 
+                    ? `Based on avg spending of £${fmt(avgMonthlyExp)}/mo` 
+                    : `Add expense data to calibrate target. (Default: £2k/mo)`;
+
                 const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
                 db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name} <span class="text-[9px] text-slate-400 uppercase ml-1">${item.type}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
                 const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
                 db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
 
-                const avgExp = 2000; 
-                const target = avgExp * 12 * 25; 
-                const progress = Math.min(((displayTotalAssets-totalDebts) / target) * 100, 100); 
-                document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; 
-                document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; 
-                document.getElementById('wealthFireBar').style.width = `${progress}%`; 
-                document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% to financial independence.`;
-                
             } catch(e) { console.error("Wealth error", e); }
         }
 
