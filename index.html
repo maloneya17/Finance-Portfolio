@@ -238,12 +238,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <h3 class="font-bold text-emerald-600 mb-4">Assets</h3>
-                    <form id="formAsset" class="flex gap-2 mb-4"><input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><button class="px-4 bg-emerald-600 text-white rounded-lg font-bold">+</button></form>
+                    <form id="formAsset" class="flex gap-2 mb-4"><input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button class="px-4 bg-emerald-600 text-white rounded-lg font-bold">+</button></form>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <h3 class="font-bold text-rose-600 mb-4">Liabilities</h3>
-                    <form id="formDebt" class="flex gap-2 mb-4"><input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><button class="px-4 bg-rose-600 text-white rounded-lg font-bold">+</button></form>
+                    <form id="formDebt" class="flex gap-2 mb-4"><input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button class="px-4 bg-rose-600 text-white rounded-lg font-bold">+</button></form>
                     <div id="listDebts" class="space-y-2"></div>
                 </div>
             </div>
@@ -265,6 +265,28 @@
 
         <div id="view-settings" class="view-section hidden fade-in max-w-7xl mx-auto">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Settings</h2>
+            
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-4">Bank Data Import (CSV)</h3>
+                <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
+                
+                <input type="file" id="csvFile" accept=".csv" class="w-full mb-4 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
+                
+                <div id="csvMapper" class="hidden space-y-4 mb-4">
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="text-[10px] uppercase font-bold text-slate-500">Date Col</label><select id="mapDate" class="w-full p-2 text-xs rounded border bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"></select></div>
+                        <div><label class="text-[10px] uppercase font-bold text-slate-500">Desc Col</label><select id="mapDesc" class="w-full p-2 text-xs rounded border bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"></select></div>
+                        <div><label class="text-[10px] uppercase font-bold text-slate-500">Amount Col</label><select id="mapAmt" class="w-full p-2 text-xs rounded border bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"></select></div>
+                    </div>
+                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded">
+                        <span class="text-xs text-slate-500">Invert amounts?</span>
+                        <input type="checkbox" id="mapInvert" class="accent-indigo-600">
+                    </div>
+                    <div class="text-xs text-slate-400 italic" id="csvPreview"></div>
+                    <button onclick="executeImport()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md">Import Transactions</button>
+                </div>
+            </div>
+
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Cloud Sync</h3>
                 <p class="text-xs text-slate-500 mb-4">Paste your Google Script URL to enable cross-device syncing.</p>
@@ -290,25 +312,119 @@
         Chart.defaults.color = '#94a3b8';
         
         const DEFAULTS = { 
-            categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt', 'Bills'], 
+            categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt', 'Bills', 'Imported'], 
             transactions: {}, bills: [], billStatus: {}, wealth: { assets: [], debts: [] }, deletedIds: [], annualIncome: 0, cloudURL: '', theme: 'light', budgets: {} 
         };
         
         let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
-        // MIGRATION
+        
+        // MIGRATION & REPAIR
         if(Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.theme) db.theme = 'light';
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
         if(!db.wealth) db.wealth = { assets: [], debts: [] };
+        if(!db.wealth.assets) db.wealth.assets = [];
+        if(!db.wealth.debts) db.wealth.debts = [];
         if(!db.budgets) db.budgets = {};
+        if(!db.categories.includes('Imported')) db.categories.push('Imported');
         
         // GLOBALS
         let currentTxType = 'expense';
         let editingTxId = null; 
         let trendChart, spendingChart, yearlyChart, wealthChart;
         let isPrivacyMode = false;
+        let csvData = [];
         const monthPicker = document.getElementById('monthPicker');
+
+        // CSV LOGIC
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const text = evt.target.result;
+                const rows = text.split('\n').map(r => r.split(',')); // Simple CSV parser
+                if(rows.length < 2) return alert("Invalid CSV");
+                
+                csvData = rows;
+                const headers = rows[0];
+                const selects = ['mapDate', 'mapDesc', 'mapAmt'];
+                
+                selects.forEach(id => {
+                    const sel = document.getElementById(id);
+                    sel.innerHTML = '';
+                    headers.forEach((h, i) => sel.innerHTML += `<option value="${i}">${h.replace(/"/g, '')}</option>`);
+                });
+                
+                // Auto-guess columns
+                headers.forEach((h, i) => {
+                    const lower = h.toLowerCase();
+                    if(lower.includes('date')) document.getElementById('mapDate').value = i;
+                    if(lower.includes('desc') || lower.includes('detail') || lower.includes('narrative')) document.getElementById('mapDesc').value = i;
+                    if(lower.includes('amount') || lower.includes('value') || lower.includes('debit')) document.getElementById('mapAmt').value = i;
+                });
+
+                document.getElementById('csvMapper').classList.remove('hidden');
+                document.getElementById('csvPreview').innerText = `Loaded ${rows.length - 1} rows. Select columns above.`;
+            };
+            reader.readAsText(file);
+        });
+
+        function executeImport() {
+            const dateIdx = parseInt(document.getElementById('mapDate').value);
+            const descIdx = parseInt(document.getElementById('mapDesc').value);
+            const amtIdx = parseInt(document.getElementById('mapAmt').value);
+            const invert = document.getElementById('mapInvert').checked;
+            let count = 0;
+
+            for(let i=1; i<csvData.length; i++) {
+                const row = csvData[i];
+                if(!row[dateIdx] || !row[amtIdx]) continue;
+
+                // CLEAN DATA
+                const cleanDesc = row[descIdx].replace(/"/g, '').trim();
+                let rawAmt = parseFloat(row[amtIdx].replace(/[^0-9.-]/g, ''));
+                if(isNaN(rawAmt)) continue;
+                if(invert) rawAmt = rawAmt * -1;
+
+                // TYPE DETERMINATION
+                const type = rawAmt > 0 ? 'income' : 'expense';
+                const finalAmt = Math.abs(rawAmt);
+
+                // DATE PARSING (DD/MM/YYYY or YYYY-MM-DD)
+                let dateStr = row[dateIdx].replace(/"/g, '').trim();
+                let parts = dateStr.split(/[-/]/);
+                let year, month;
+                
+                // Assume DD/MM/YYYY if first part > 12 (basic heuristic)
+                if (parseInt(parts[0]) > 2000) { year = parts[0]; month = parts[1]; } 
+                else { year = parts[2]; month = parts[1]; } // DD/MM/YYYY
+                
+                // If 2 digit year, assume 20xx
+                if(year && year.length === 2) year = '20' + year;
+                if(!year || !month) continue;
+
+                const monthKey = `${year}-${month.padStart(2, '0')}`;
+                
+                if(!db.transactions[monthKey]) db.transactions[monthKey] = [];
+                db.transactions[monthKey].push({
+                    id: genId(),
+                    updatedAt: Date.now(),
+                    desc: cleanDesc,
+                    amount: finalAmt,
+                    category: 'Imported',
+                    type: type
+                });
+                count++;
+            }
+            
+            save();
+            alert(`Successfully imported ${count} transactions.`);
+            document.getElementById('csvFile').value = '';
+            document.getElementById('csvMapper').classList.add('hidden');
+            render();
+        }
 
         // THEME & PRIVACY
         function applyTheme() {
@@ -667,7 +783,6 @@
         document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); db.wealth.debts.push({ name: document.getElementById('debtName').value, value: math(document.getElementById('debtVal').value) }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); renderWealth(); });
         window.delWealthItem = (type, index) => { if(confirm("Remove?")) { db.wealth[type].splice(index, 1); save(); renderWealth(); } };
         
-        // SYNC FIX
         function updateCloudStatus() { 
             const dot = document.getElementById('statusDot'); 
             const txt = document.getElementById('statusText'); 
