@@ -146,7 +146,7 @@
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="txFormTitle">Add Transaction</h3>
                         <button type="button" onclick="resetTxForm()" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
-                    <form id="formTx" class="space-y-4">
+                    <form id="formTx" class="space-y-4" onsubmit="return false;">
                         <input type="hidden" id="txId">
                         <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
                             <button type="button" onclick="setTxType('expense')" id="btnExp" class="py-2 rounded-md text-sm font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
@@ -157,7 +157,7 @@
                             <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" step="0.01" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required></div>
                             <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer" onchange="checkNewCategory(this)"></select></div>
                         </div>
-                        <button type="submit" id="btnSubmitTx" class="w-full py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">Add Transaction</button>
+                        <button type="button" onclick="saveTransaction()" id="btnSubmitTx" class="w-full py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">Add Transaction</button>
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm lg:col-span-2 min-h-[400px]">
@@ -198,10 +198,10 @@
              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 h-fit">
                     <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Add Recurring Bill</h3>
-                    <form id="formBill" class="space-y-4">
+                    <form id="formBill" class="space-y-4" onsubmit="return false;">
                         <input type="text" id="billName" placeholder="Bill Name" class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required>
                         <div class="flex gap-2"><input type="number" id="billAmt" placeholder="£0.00" step="0.01" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required><input type="number" id="billDay" placeholder="Day (1-31)" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required></div>
-                        <button type="submit" class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
+                        <button type="button" onclick="saveBill()" class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-0 lg:col-span-2 overflow-hidden">
@@ -222,8 +222,14 @@
                         <h2 class="text-4xl font-extrabold money-val" id="wealthNet">£0.00</h2>
                     </div>
                     <div class="flex justify-between border-t border-slate-700 pt-4 mt-2">
-                        <div><p class="text-[10px] text-slate-400 uppercase font-bold">Total Assets</p><p class="text-lg font-bold text-emerald-400 money-val" id="wealthTotalAssets">£0.00</p></div>
-                        <div class="text-right"><p class="text-[10px] text-slate-400 uppercase font-bold">Total Liabilities</p><p class="text-lg font-bold text-rose-400 money-val" id="wealthTotalDebts">£0.00</p></div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Total Assets</p>
+                            <p class="text-lg font-bold text-emerald-400 money-val" id="wealthTotalAssets">£0.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Total Liabilities</p>
+                            <p class="text-lg font-bold text-rose-400 money-val" id="wealthTotalDebts">£0.00</p>
+                        </div>
                     </div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 flex items-center justify-center"><div class="h-[180px] w-full relative"><canvas id="chartWealth"></canvas></div></div>
@@ -232,12 +238,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <h3 class="font-bold text-emerald-600 mb-4">Assets</h3>
-                    <form id="formAsset" class="flex gap-2 mb-4"><input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button class="px-4 bg-emerald-600 text-white rounded-lg font-bold">+</button></form>
+                    <form id="formAsset" class="flex gap-2 mb-4" onsubmit="return false;"><input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button type="button" onclick="saveAsset()" class="px-4 bg-emerald-600 text-white rounded-lg font-bold">+</button></form>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <h3 class="font-bold text-rose-600 mb-4">Liabilities</h3>
-                    <form id="formDebt" class="flex gap-2 mb-4"><input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button class="px-4 bg-rose-600 text-white rounded-lg font-bold">+</button></form>
+                    <form id="formDebt" class="flex gap-2 mb-4" onsubmit="return false;"><input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button type="button" onclick="saveDebt()" class="px-4 bg-rose-600 text-white rounded-lg font-bold">+</button></form>
                     <div id="listDebts" class="space-y-2"></div>
                 </div>
             </div>
@@ -282,7 +288,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Cloud Sync</h3>
                 <p class="text-xs text-slate-500 mb-4">Paste your Google Script URL to enable cross-device syncing.</p>
-                <form id="formCloud" class="flex gap-2"><input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white"><button class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button></form>
+                <form id="formCloud" class="flex gap-2" onsubmit="return false;"><input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white"><button type="button" onclick="saveCloudUrl()" class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button></form>
             </div>
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Manage Categories</h3>
@@ -308,17 +314,10 @@
             transactions: {}, bills: [], billStatus: {}, wealth: { assets: [], debts: [] }, deletedIds: [], annualIncome: 0, cloudURL: '', theme: 'light', budgets: {} 
         };
         
-        // SAFELY LOAD DATA
-        let db;
-        try {
-            db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
-        } catch (e) {
-            console.error("Data corrupted, resetting", e);
-            db = DEFAULTS;
-        }
+        let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
         
-        // MIGRATION & DATA REPAIR
-        if(!db.transactions || Array.isArray(db.transactions)) db.transactions = {}; 
+        // MIGRATION & REPAIR
+        if(Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.theme) db.theme = 'light';
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
@@ -326,7 +325,6 @@
         if(!db.wealth.assets) db.wealth.assets = [];
         if(!db.wealth.debts) db.wealth.debts = [];
         if(!db.budgets) db.budgets = {};
-        if(!db.categories) db.categories = DEFAULTS.categories;
         if(!db.categories.includes('Imported')) db.categories.push('Imported');
         
         // GLOBALS
@@ -433,7 +431,6 @@
                 Chart.defaults.color = '#64748b'; Chart.defaults.borderColor = '#e2e8f0';
             }
             if(trendChart) { trendChart.destroy(); updateDashboardCharts(getCurrentCats()); }
-            // Safe call for reports
             if(!document.getElementById('view-reports').classList.contains('hidden')) {
                 try { renderReports(); } catch(e) { console.log(e); }
             }
@@ -548,9 +545,15 @@
             document.getElementById('btnInc').className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'income' ? activeClass : inactiveClass}`;
         }
 
-        document.getElementById('formTx').addEventListener('submit', e => {
-            e.preventDefault(); const k = monthPicker.value;
-            const desc = document.getElementById('txDesc').value; const amt = math(document.getElementById('txAmt').value); const cat = document.getElementById('txCat').value;
+        // SAVE FUNCTIONS (NO FORM SUBMIT)
+        function saveTransaction() {
+            const k = monthPicker.value;
+            const desc = document.getElementById('txDesc').value; 
+            const amt = math(document.getElementById('txAmt').value); 
+            const cat = document.getElementById('txCat').value;
+            
+            if(!desc || !amt) return alert("Please enter description and amount");
+
             if(editingTxId) {
                 const txIndex = db.transactions[k].findIndex(t => t.id === editingTxId);
                 if(txIndex > -1) db.transactions[k][txIndex] = { ...db.transactions[k][txIndex], desc, amount: amt, category: cat, type: currentTxType, updatedAt: Date.now() };
@@ -561,7 +564,43 @@
                 document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = '';
             }
             save();
-        });
+        }
+
+        function saveBill() {
+            const name = document.getElementById('billName').value;
+            const amt = math(document.getElementById('billAmt').value);
+            const day = parseInt(document.getElementById('billDay').value);
+            if(name && amt && day) {
+                db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day });
+                document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = '';
+                save(); renderCalendar();
+            }
+        }
+
+        function saveAsset() {
+            const name = document.getElementById('assetName').value;
+            const val = math(document.getElementById('assetVal').value);
+            if(name && !isNaN(val)) {
+                db.wealth.assets.push({ name, value: val });
+                document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = '';
+                save(); renderWealth();
+            }
+        }
+
+        function saveDebt() {
+            const name = document.getElementById('debtName').value;
+            const val = math(document.getElementById('debtVal').value);
+            if(name && !isNaN(val)) {
+                db.wealth.debts.push({ name, value: val });
+                document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = '';
+                save(); renderWealth();
+            }
+        }
+
+        function saveCloudUrl() {
+            const url = document.getElementById('cloudInput').value.trim();
+            if(url) { db.cloudURL = url; save(); manualSync(true); }
+        }
 
         window.editTx = (id) => {
             const k = monthPicker.value; const tx = db.transactions[k].find(t => t.id === id); if(!tx) return;
@@ -768,8 +807,6 @@
         window.addCatPrompt = () => { const n = prompt("Category Name:"); if(n) { db.categories.push(n); save(); renderSettingsCats(); renderDropdowns(); } };
         window.toggleBill = (id) => { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const bill = db.bills.find(b => b.id === id); const s = db.billStatus[key][id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; if(!isPaid) { if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) { db.billStatus[key][id] = { paid: true, updated: Date.now() }; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = { paid: false, updated: Date.now() }; save(); } };
         window.delBill = (id) => { if(confirm("Delete bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); renderCalendar(); } };
-        document.getElementById('formAsset').addEventListener('submit', e => { e.preventDefault(); db.wealth.assets.push({ name: document.getElementById('assetName').value, value: math(document.getElementById('assetVal').value) }); document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = ''; save(); renderWealth(); });
-        document.getElementById('formDebt').addEventListener('submit', e => { e.preventDefault(); db.wealth.debts.push({ name: document.getElementById('debtName').value, value: math(document.getElementById('debtVal').value) }); document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = ''; save(); renderWealth(); });
         window.delWealthItem = (type, index) => { if(confirm("Remove?")) { db.wealth[type].splice(index, 1); save(); renderWealth(); } };
         
         function updateCloudStatus() { 
@@ -843,8 +880,7 @@
             document.getElementById(`view-${id}`).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active', 'bg-indigo-600', 'text-white', 'shadow-lg'));
             const nav = document.getElementById(`nav-${id}`); nav.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-lg'); nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
-            
-            // TRIGGERS
+            // Force re-renders for tabs that depend on visibility or complex calcs
             if(id === 'reports') renderReports(); 
             if(id === 'bills') renderCalendar(); 
             if(id === 'wealth') renderWealth();
@@ -855,11 +891,6 @@
         renderDropdowns(); applyTheme(); render(); renderSettingsCats(); updateCloudStatus();
         window.editAnnualIncome = () => { const v = prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
-        document.getElementById('formCloud').addEventListener('submit', e=>{ 
-            e.preventDefault(); 
-            const url = document.getElementById('cloudInput').value.trim();
-            if(url) { db.cloudURL = url; save(); manualSync(true); }
-        });
     </script>
 </body>
 </html>
