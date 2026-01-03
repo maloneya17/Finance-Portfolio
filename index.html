@@ -74,11 +74,11 @@
         </div>
 
         <div class="pt-6 border-t border-slate-800">
-            <button onclick="togglePrivacy()" class="w-full py-2 mb-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
+            <button type="button" onclick="togglePrivacy()" class="w-full py-2 mb-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
                 <i class="fas fa-eye-slash" id="privacyIcon"></i> <span id="privacyLabel">Hide Figures</span>
             </button>
             
-            <button onclick="toggleTheme()" class="w-full py-2 mb-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
+            <button type="button" onclick="toggleTheme()" class="w-full py-2 mb-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
                 <i class="fas fa-moon"></i> <span id="themeLabel">Dark Mode</span>
             </button>
 
@@ -86,7 +86,7 @@
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sync Status</span>
                 <span id="syncIndicator" class="hidden text-[10px] text-amber-500"><i class="fas fa-sync fa-spin"></i></span>
             </div>
-            <button onclick="manualSync(true)" id="btnSync" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
+            <button type="button" onclick="manualSync(true)" id="btnSync" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
                 <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now
             </button>
             <div class="text-[10px] text-center text-slate-500 font-medium mt-1 flex justify-center items-center gap-2">
@@ -144,7 +144,7 @@
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm h-fit sticky top-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="txFormTitle">Add Transaction</h3>
-                        <button onclick="resetTxForm()" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
+                        <button type="button" onclick="resetTxForm()" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
                     <form id="formTx" class="space-y-4">
                         <input type="hidden" id="txId">
@@ -201,7 +201,7 @@
                     <form id="formBill" class="space-y-4">
                         <input type="text" id="billName" placeholder="Bill Name" class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required>
                         <div class="flex gap-2"><input type="number" id="billAmt" placeholder="£0.00" step="0.01" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required><input type="number" id="billDay" placeholder="Day (1-31)" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required></div>
-                        <button class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
+                        <button type="submit" class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-0 lg:col-span-2 overflow-hidden">
@@ -222,14 +222,8 @@
                         <h2 class="text-4xl font-extrabold money-val" id="wealthNet">£0.00</h2>
                     </div>
                     <div class="flex justify-between border-t border-slate-700 pt-4 mt-2">
-                        <div>
-                            <p class="text-[10px] text-slate-400 uppercase font-bold">Total Assets</p>
-                            <p class="text-lg font-bold text-emerald-400 money-val" id="wealthTotalAssets">£0.00</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[10px] text-slate-400 uppercase font-bold">Total Liabilities</p>
-                            <p class="text-lg font-bold text-rose-400 money-val" id="wealthTotalDebts">£0.00</p>
-                        </div>
+                        <div><p class="text-[10px] text-slate-400 uppercase font-bold">Total Assets</p><p class="text-lg font-bold text-emerald-400 money-val" id="wealthTotalAssets">£0.00</p></div>
+                        <div class="text-right"><p class="text-[10px] text-slate-400 uppercase font-bold">Total Liabilities</p><p class="text-lg font-bold text-rose-400 money-val" id="wealthTotalDebts">£0.00</p></div>
                     </div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 flex items-center justify-center"><div class="h-[180px] w-full relative"><canvas id="chartWealth"></canvas></div></div>
@@ -269,9 +263,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-4">Bank Data Import (CSV)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
-                
                 <input type="file" id="csvFile" accept=".csv" class="w-full mb-4 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
-                
                 <div id="csvMapper" class="hidden space-y-4 mb-4">
                     <div class="grid grid-cols-3 gap-2">
                         <div><label class="text-[10px] uppercase font-bold text-slate-500">Date Col</label><select id="mapDate" class="w-full p-2 text-xs rounded border bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"></select></div>
@@ -283,7 +275,7 @@
                         <input type="checkbox" id="mapInvert" class="accent-indigo-600">
                     </div>
                     <div class="text-xs text-slate-400 italic" id="csvPreview"></div>
-                    <button onclick="executeImport()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md">Import Transactions</button>
+                    <button type="button" onclick="executeImport()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md">Import Transactions</button>
                 </div>
             </div>
 
@@ -295,11 +287,11 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Manage Categories</h3>
                 <div id="settingsCatList" class="flex flex-wrap gap-2 mb-4"></div>
-                <button onclick="addCatPrompt()" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
+                <button type="button" onclick="addCatPrompt()" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
             </div>
             <div class="card bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-6 max-w-md">
                 <h3 class="font-bold text-rose-600 mb-2">Danger Zone</h3>
-                <button onclick="resetData()" class="text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-lg font-bold text-xs transition">Reset All Data</button>
+                <button type="button" onclick="resetData()" class="text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-lg font-bold text-xs transition">Reset All Data</button>
             </div>
         </div>
 
@@ -357,7 +349,6 @@
                     headers.forEach((h, i) => sel.innerHTML += `<option value="${i}">${h.replace(/"/g, '')}</option>`);
                 });
                 
-                // Auto-guess columns
                 headers.forEach((h, i) => {
                     const lower = h.toLowerCase();
                     if(lower.includes('date')) document.getElementById('mapDate').value = i;
@@ -382,26 +373,21 @@
                 const row = csvData[i];
                 if(!row[dateIdx] || !row[amtIdx]) continue;
 
-                // CLEAN DATA
                 const cleanDesc = row[descIdx].replace(/"/g, '').trim();
                 let rawAmt = parseFloat(row[amtIdx].replace(/[^0-9.-]/g, ''));
                 if(isNaN(rawAmt)) continue;
                 if(invert) rawAmt = rawAmt * -1;
 
-                // TYPE DETERMINATION
                 const type = rawAmt > 0 ? 'income' : 'expense';
                 const finalAmt = Math.abs(rawAmt);
 
-                // DATE PARSING (DD/MM/YYYY or YYYY-MM-DD)
                 let dateStr = row[dateIdx].replace(/"/g, '').trim();
                 let parts = dateStr.split(/[-/]/);
                 let year, month;
                 
-                // Assume DD/MM/YYYY if first part > 12 (basic heuristic)
                 if (parseInt(parts[0]) > 2000) { year = parts[0]; month = parts[1]; } 
-                else { year = parts[2]; month = parts[1]; } // DD/MM/YYYY
+                else { year = parts[2]; month = parts[1]; } 
                 
-                // If 2 digit year, assume 20xx
                 if(year && year.length === 2) year = '20' + year;
                 if(!year || !month) continue;
 
@@ -418,7 +404,6 @@
                 });
                 count++;
             }
-            
             save();
             alert(`Successfully imported ${count} transactions.`);
             document.getElementById('csvFile').value = '';
@@ -510,7 +495,7 @@
                     <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
                         <td class="py-3 pl-2"><div class="font-bold text-slate-700 dark:text-slate-200">${t.desc}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${t.category}</div></td>
                         <td class="text-right font-bold ${colorClass} money-val">${sign}£${fmt(val)}</td>
-                        <td class="text-right pr-2"><button onclick="editTx('${t.id}')" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button><button onclick="delTx('${t.id}')" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button></td>
+                        <td class="text-right pr-2"><button type="button" onclick="editTx('${t.id}')" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delTx('${t.id}')" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button></td>
                     </tr>`);
             });
 
@@ -531,7 +516,11 @@
             document.getElementById('kpiMaxCat').innerText = maxCat;
             document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
 
-            updateDashboardCharts(cats);
+            // IMPORTANT: Only render dashboard charts if view is visible to prevent canvas errors/glitches
+            if(!document.getElementById('view-dashboard').classList.contains('hidden')) {
+                updateDashboardCharts(cats);
+            }
+            
             if(!document.getElementById('view-budget').classList.contains('hidden')) renderBudgets();
         }
 
@@ -593,22 +582,21 @@
                 d.setMonth(d.getMonth() + 1);
             }
             
-            // CUSTOM PLUGIN FOR TOP-LEFT TOTALS
             const customTotals = {
                 id: 'customTotals',
                 afterDraw: (chart) => {
                     const { ctx, chartArea: { top, left } } = chart;
-                    ctx.save();
-                    ctx.font = "bold 12px Inter";
-                    ctx.textAlign = 'left';
                     const data = chart.data.datasets;
-                    const totalInc = data[0].data.reduce((a, b) => a + b, 0);
-                    const totalExp = data[1].data.reduce((a, b) => a + b, 0);
-                    ctx.fillStyle = '#10b981'; 
-                    ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 10, top + 20);
-                    ctx.fillStyle = '#f43f5e'; 
-                    ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 10, top + 40);
-                    ctx.restore();
+                    if(data[0] && data[0].data) {
+                        const totalInc = data[0].data.reduce((a, b) => a + b, 0);
+                        const totalExp = data[1].data.reduce((a, b) => a + b, 0);
+                        ctx.save();
+                        ctx.font = "bold 12px Inter";
+                        ctx.textAlign = 'left';
+                        ctx.fillStyle = '#10b981'; ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 10, top + 20);
+                        ctx.fillStyle = '#f43f5e'; ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 10, top + 40);
+                        ctx.restore();
+                    }
                 }
             };
 
@@ -624,56 +612,30 @@
         function renderBudgets() {
             const inputsDiv = document.getElementById('budgetInputs');
             inputsDiv.innerHTML = '';
-            
-            // 1. Budget Inputs
             db.categories.forEach(c => {
                 if(c === 'Bills') return;
                 const val = db.budgets[c] || 0;
-                inputsDiv.innerHTML += `
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-slate-500 w-1/3 truncate">${c}</span>
-                        <input type="number" onchange="updateBudget('${c}', this.value)" value="${val > 0 ? val : ''}" placeholder="Not Set" class="w-full p-2 text-xs rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white outline-none">
-                    </div>`;
+                inputsDiv.innerHTML += `<div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500 w-1/3 truncate">${c}</span><input type="number" onchange="updateBudget('${c}', this.value)" value="${val > 0 ? val : ''}" placeholder="Not Set" class="w-full p-2 text-xs rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white outline-none"></div>`;
             });
-
-            // 2. Budget Bars
             const cats = getCurrentCats();
             const barsDiv = document.getElementById('budgetBars');
             barsDiv.innerHTML = '';
             let hasBudget = false;
-
             document.getElementById('budgetMonthLabel').innerText = monthPicker.value;
-
             Object.keys(db.budgets).forEach(c => {
                 const budget = db.budgets[c];
                 if(budget > 0) {
                     hasBudget = true;
                     const spent = cats[c] || 0;
                     const pct = Math.min((spent / budget) * 100, 100);
-                    let color = 'bg-emerald-500';
-                    if(pct > 75) color = 'bg-amber-500';
-                    if(pct >= 100) color = 'bg-rose-500';
-                    
-                    barsDiv.innerHTML += `
-                        <div>
-                            <div class="flex justify-between items-end mb-1">
-                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">${c}</span>
-                                <span class="text-xs font-bold text-slate-500"><span class="money-val">£${fmt(spent)}</span> / <span class="money-val">£${fmt(budget)}</span></span>
-                            </div>
-                            <div class="progress-bar-bg bg-slate-200 dark:bg-slate-800">
-                                <div class="progress-bar-fill ${color}" style="width: ${pct}%"></div>
-                            </div>
-                        </div>`;
+                    let color = 'bg-emerald-500'; if(pct > 75) color = 'bg-amber-500'; if(pct >= 100) color = 'bg-rose-500';
+                    barsDiv.innerHTML += `<div><div class="flex justify-between items-end mb-1"><span class="font-bold text-sm text-slate-700 dark:text-slate-200">${c}</span><span class="text-xs font-bold text-slate-500"><span class="money-val">£${fmt(spent)}</span> / <span class="money-val">£${fmt(budget)}</span></span></div><div class="progress-bar-bg bg-slate-200 dark:bg-slate-800"><div class="progress-bar-fill ${color}" style="width: ${pct}%"></div></div></div>`;
                 }
             });
             document.getElementById('budgetEmpty').classList.toggle('hidden', hasBudget);
         }
 
-        window.updateBudget = (cat, val) => {
-            db.budgets[cat] = math(val);
-            save();
-            renderBudgets();
-        };
+        window.updateBudget = (cat, val) => { db.budgets[cat] = math(val); save(); renderBudgets(); };
 
         // REPORTS
         function renderReports() {
@@ -757,9 +719,9 @@
             wealthChart = new Chart(ctxWealth, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: ['Assets', 'Debt'], datasets: [{ data: [totalAssets, totalDebts], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => { let sum = totalAssets+totalDebts; if(sum===0) return ''; return ((v/sum)*100).toFixed(0)+'%'; } } } } });
 
             const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
-            db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button onclick="delWealthItem('assets', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+            db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="delWealthItem('assets', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
             const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
-            db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button onclick="delWealthItem('debts', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+            db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="delWealthItem('debts', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
 
             const expData = []; let d = new Date(); d.setMonth(d.getMonth() - 5); for(let i=0; i<6; i++) { const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; const txs = db.transactions[k] || []; let _e = 0; txs.forEach(t => { if(t.type !== 'income') _e += t.amount; }); if(_e > 0) expData.push(_e); d.setMonth(d.getMonth() + 1); }
             if(expData.length > 0) { const avg = expData.reduce((a,b)=>a+b, 0) / expData.length; const target = avg * 12 * 25; const progress = Math.min(((totalAssets-totalDebts) / target) * 100, 100); document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; document.getElementById('wealthFireBar').style.width = `${progress}%`; document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% to financial independence.`; } 
@@ -787,7 +749,7 @@
             const dot = document.getElementById('statusDot'); 
             const txt = document.getElementById('statusText'); 
             const input = document.getElementById('cloudInput');
-            if(input && db.cloudURL) input.value = db.cloudURL; // Restore URL to input
+            if(input && db.cloudURL) input.value = db.cloudURL; 
             if(db.cloudURL) { 
                 dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'; 
                 txt.innerText = "Cloud Linked"; 
@@ -813,13 +775,11 @@
                     const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted); 
                     const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values()); 
                     
-                    // Merge Wealth (Assets)
                     const assetMap = new Map();
                     if (cloudData.wealth && cloudData.wealth.assets) cloudData.wealth.assets.forEach(a => assetMap.set(a.name, a));
                     db.wealth.assets.forEach(a => assetMap.set(a.name, a));
                     db.wealth.assets = Array.from(assetMap.values());
 
-                    // Merge Wealth (Debts)
                     const debtMap = new Map();
                     if (cloudData.wealth && cloudData.wealth.debts) cloudData.wealth.debts.forEach(d => debtMap.set(d.name, d));
                     db.wealth.debts.forEach(d => debtMap.set(d.name, d));
