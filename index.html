@@ -230,7 +230,7 @@
                         <div class="text-right"><p class="text-[10px] text-slate-400 uppercase font-bold">Total Liabilities</p><p class="text-lg font-bold text-rose-400 money-val" id="wealthTotalDebts">£0.00</p></div>
                     </div>
                     <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
-                        <p class="text-[10px] text-indigo-400 uppercase font-bold"><i class="fas fa-wallet mr-1"></i> Liquid Cash</p>
+                        <p class="text-[10px] text-indigo-400 uppercase font-bold"><i class="fas fa-wallet mr-1"></i> Liquid Cash (Auto)</p>
                         <p class="text-sm font-bold text-white money-val" id="wealthLiquid">£0.00</p>
                     </div>
                 </div>
@@ -258,6 +258,7 @@
                     </form>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
+                
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-rose-600">Liabilities</h3><button type="button" onclick="cancelWealthEdit()" id="btnCancelDebt" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button></div>
                     <form id="formDebt" class="flex gap-2 mb-4" onsubmit="return false;">
@@ -336,26 +337,18 @@
             transactions: {}, bills: [], billStatus: {}, wealth: { assets: [], debts: [], history: {} }, deletedIds: [], annualIncome: 0, cloudURL: '', theme: 'light', budgets: {} 
         };
         
-        // SAFELY LOAD DATA
-        let db;
-        try {
-            db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
-        } catch (e) {
-            console.error("Data corrupted, resetting", e);
-            db = DEFAULTS;
-        }
+        let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
         
-        // MIGRATION & DATA REPAIR
-        if(!db.transactions || Array.isArray(db.transactions)) db.transactions = {}; 
+        // MIGRATION & REPAIR
+        if(Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.theme) db.theme = 'light';
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
-        if(!db.wealth) db.wealth = { assets: [], debts: [] };
+        if(!db.wealth) db.wealth = { assets: [], debts: [], history: {} };
         if(!db.wealth.assets) db.wealth.assets = [];
         if(!db.wealth.debts) db.wealth.debts = [];
         if(!db.wealth.history) db.wealth.history = {};
         if(!db.budgets) db.budgets = {};
-        if(!db.categories) db.categories = DEFAULTS.categories;
         if(!db.categories.includes('Imported')) db.categories.push('Imported');
         
         // GLOBALS
@@ -367,6 +360,48 @@
         let isPrivacyMode = false;
         let csvData = [];
         const monthPicker = document.getElementById('monthPicker');
+
+        // CORE UTILS
+        const math = (v) => parseFloat(Number(v || 0).toFixed(2));
+        const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+        
+        // --- NEW CONSOLIDATION LOGIC ---
+        function consolidateWealth() {
+            let hasChanges = false;
+            // Merge Assets by Name
+            const assetMap = new Map();
+            db.wealth.assets.forEach(a => {
+                const key = a.name.trim().toLowerCase();
+                if (assetMap.has(key)) {
+                    const existing = assetMap.get(key);
+                    existing.value += parseFloat(a.value);
+                    hasChanges = true;
+                } else {
+                    assetMap.set(key, { ...a, value: parseFloat(a.value) }); // Clone
+                }
+            });
+            
+            // Merge Debts by Name
+            const debtMap = new Map();
+            db.wealth.debts.forEach(d => {
+                const key = d.name.trim().toLowerCase();
+                if (debtMap.has(key)) {
+                    const existing = debtMap.get(key);
+                    existing.value += parseFloat(d.value);
+                    hasChanges = true;
+                } else {
+                    debtMap.set(key, { ...d, value: parseFloat(d.value) });
+                }
+            });
+            
+            // Only update DB if changes occurred to prevent unnecessary writes
+            if (hasChanges || db.wealth.assets.length !== assetMap.size || db.wealth.debts.length !== debtMap.size) {
+                db.wealth.assets = Array.from(assetMap.values());
+                db.wealth.debts = Array.from(debtMap.values());
+                localStorage.setItem('infinityDB', JSON.stringify(db)); // Silent save
+            }
+        }
 
         // CSV LOGIC
         document.getElementById('csvFile').addEventListener('change', function(e) {
@@ -482,11 +517,6 @@
                 document.getElementById('privacyIcon').className = "fas fa-eye-slash";
             }
         }
-
-        // UTILS
-        const math = (v) => parseFloat(Number(v || 0).toFixed(2));
-        const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
         
         function save(skipSync = false) { 
             localStorage.setItem('infinityDB', JSON.stringify(db)); 
@@ -617,19 +647,27 @@
             
             if(!name || isNaN(val)) return;
 
+            // SMART ADD: Check if name exists, if so, add to existing
+            const existing = db.wealth.assets.find(a => a.name.trim().toLowerCase() === name.trim().toLowerCase());
+            
             if(editingAssetId) {
-                // EDIT EXISTING
+                // EDIT MODE = Overwrite value
                 const idx = db.wealth.assets.findIndex(a => a.id === editingAssetId);
-                if(idx > -1) {
-                    db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type };
-                }
+                if(idx > -1) db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type };
                 cancelWealthEdit();
             } else {
-                // CREATE NEW
-                db.wealth.assets.push({ id: genId(), name, value: val, type });
+                // ADD MODE
+                if (existing) {
+                    if(confirm(`"${existing.name}" exists. Add £${val} to it?`)) {
+                        existing.value += val;
+                    } else { return; }
+                } else {
+                    db.wealth.assets.push({ id: genId(), name, value: val, type });
+                }
                 document.getElementById('assetName').value = ''; 
                 document.getElementById('assetVal').value = '';
             }
+            consolidateWealth(); // Ensure clean DB
             save(); 
             renderWealth();
         }
@@ -640,19 +678,24 @@
             
             if(!name || isNaN(val)) return;
 
+            const existing = db.wealth.debts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase());
+
             if(editingDebtId) {
-                // EDIT EXISTING
                 const idx = db.wealth.debts.findIndex(d => d.id === editingDebtId);
-                if(idx > -1) {
-                    db.wealth.debts[idx] = { ...db.wealth.debts[idx], name, value: val };
-                }
+                if(idx > -1) db.wealth.debts[idx] = { ...db.wealth.debts[idx], name, value: val };
                 cancelWealthEdit();
             } else {
-                // CREATE NEW
-                db.wealth.debts.push({ id: genId(), name, value: val });
+                 if (existing) {
+                    if(confirm(`"${existing.name}" exists. Add £${val} to it?`)) {
+                        existing.value += val;
+                    } else { return; }
+                } else {
+                    db.wealth.debts.push({ id: genId(), name, value: val });
+                }
                 document.getElementById('debtName').value = ''; 
                 document.getElementById('debtVal').value = '';
             }
+            consolidateWealth();
             save(); 
             renderWealth();
         }
@@ -888,38 +931,9 @@
 
         function renderWealth() {
             try {
-                // DATA CLEANUP & REPAIR (Grouping Logic)
-                const assetMap = new Map();
-                const debtMap = new Map();
-
-                // Group Assets by Name
-                db.wealth.assets.forEach(a => {
-                    if (!a.id) a.id = genId(); // Ensure ID
-                    const existing = assetMap.get(a.name);
-                    if (existing) {
-                        existing.value += a.value;
-                    } else {
-                        assetMap.set(a.name, { ...a });
-                    }
-                });
-
-                // Group Debts by Name
-                db.wealth.debts.forEach(d => {
-                    if (!d.id) d.id = genId(); // Ensure ID
-                    const existing = debtMap.get(d.name);
-                    if (existing) {
-                        existing.value += d.value;
-                    } else {
-                        debtMap.set(d.name, { ...d });
-                    }
-                });
-
-                // Convert Maps back to Arrays for Rendering Only (Do not overwrite DB to preserve history if needed later)
-                const groupedAssets = Array.from(assetMap.values());
-                const groupedDebts = Array.from(debtMap.values());
-
-                const totalAssets = groupedAssets.reduce((a, b) => a + b.value, 0); 
-                const totalDebts = groupedDebts.reduce((a, b) => a + b.value, 0); 
+                // IMPORTANT: Since we auto-cleaned data on load, we can render directly
+                const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); 
+                const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); 
                 
                 // AUTO-CALCULATE OPERATING CASH (Income - Expense)
                 const key = monthPicker.value;
@@ -931,11 +945,14 @@
 
                 // Add Operating Cash to Total Assets View
                 const displayTotalAssets = totalAssets + operatingCash;
+                const liquidAssets = db.wealth.assets
+                    .filter(a => ['Savings', 'Cash', 'Investment'].includes(a.type))
+                    .reduce((a, b) => a + b.value, 0) + operatingCash;
 
                 document.getElementById('wealthNet').innerText = `£${fmt(displayTotalAssets - totalDebts)}`;
                 document.getElementById('wealthTotalAssets').innerText = `£${fmt(displayTotalAssets)}`;
                 document.getElementById('wealthTotalDebts').innerText = `£${fmt(totalDebts)}`;
-                document.getElementById('wealthLiquid').innerText = `£${fmt(operatingCash)}`;
+                document.getElementById('wealthLiquid').innerText = `£${fmt(liquidAssets)}`;
                 
                 const ctxWealth = document.getElementById('chartWealth').getContext('2d');
                 if(wealthChart) wealthChart.destroy();
@@ -986,34 +1003,11 @@
                 });
 
                 const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
-                // Render Grouped List
-                groupedAssets.forEach((item) => { 
-                    listAssets.innerHTML += `
-                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
-                        <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name} <span class="text-[9px] text-slate-400 uppercase ml-1">${item.type}</span></span>
-                        <div class="flex gap-2">
-                            <span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span>
-                            <button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
-                            <button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
-                        </div>
-                    </div>`; 
-                });
-
+                db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name} <span class="text-[9px] text-slate-400 uppercase ml-1">${item.type}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
                 const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
-                groupedDebts.forEach((item) => { 
-                    listDebts.innerHTML += `
-                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
-                        <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span>
-                        <div class="flex gap-2">
-                            <span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span>
-                            <button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
-                            <button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
-                        </div>
-                    </div>`; 
-                });
+                db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
 
-                // FIRE CALC
-                const avgExp = 2000; // Simplified for robustness
+                const avgExp = 2000; 
                 const target = avgExp * 12 * 25; 
                 const progress = Math.min(((displayTotalAssets-totalDebts) / target) * 100, 100); 
                 document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; 
@@ -1039,7 +1033,6 @@
         window.delBill = (id) => { if(confirm("Delete bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); renderCalendar(); } };
         window.delWealthItem = (type, id) => { 
             if(confirm("Remove?")) { 
-                // Filter by ID
                 db.wealth[type] = db.wealth[type].filter(item => item.id !== id); 
                 save(); 
                 renderWealth(); 
@@ -1076,13 +1069,11 @@
                     const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted); 
                     const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values()); 
                     
-                    // Merge Wealth (Assets)
                     const assetMap = new Map();
                     if (cloudData.wealth && cloudData.wealth.assets) cloudData.wealth.assets.forEach(a => assetMap.set(a.name, a));
                     db.wealth.assets.forEach(a => assetMap.set(a.name, a));
                     db.wealth.assets = Array.from(assetMap.values());
 
-                    // Merge Wealth (Debts)
                     const debtMap = new Map();
                     if (cloudData.wealth && cloudData.wealth.debts) cloudData.wealth.debts.forEach(d => debtMap.set(d.name, d));
                     db.wealth.debts.forEach(d => debtMap.set(d.name, d));
@@ -1125,6 +1116,44 @@
             render();
         };
 
+        // AUTO-RUN CLEANUP ON START
+        function consolidateWealth() {
+            let hasChanges = false;
+            // 1. Merge Assets
+            const assetMap = new Map();
+            db.wealth.assets.forEach(a => {
+                const key = a.name.trim().toLowerCase();
+                if (assetMap.has(key)) {
+                    const existing = assetMap.get(key);
+                    existing.value += parseFloat(a.value); // Add values
+                    hasChanges = true;
+                } else {
+                    assetMap.set(key, { ...a, value: parseFloat(a.value) });
+                }
+            });
+
+            // 2. Merge Debts
+            const debtMap = new Map();
+            db.wealth.debts.forEach(d => {
+                const key = d.name.trim().toLowerCase();
+                if (debtMap.has(key)) {
+                    const existing = debtMap.get(key);
+                    existing.value += parseFloat(d.value);
+                    hasChanges = true;
+                } else {
+                    debtMap.set(key, { ...d, value: parseFloat(d.value) });
+                }
+            });
+
+            if (hasChanges) {
+                db.wealth.assets = Array.from(assetMap.values());
+                db.wealth.debts = Array.from(debtMap.values());
+                localStorage.setItem('infinityDB', JSON.stringify(db)); // Force save
+                console.log("Data consolidated");
+            }
+        }
+        
+        consolidateWealth(); // <-- THIS LINE FIXES YOUR EXISTING DATA
         renderDropdowns(); applyTheme(); render(); renderSettingsCats(); updateCloudStatus();
         window.editAnnualIncome = () => { const v = prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
