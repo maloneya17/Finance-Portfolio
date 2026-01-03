@@ -248,13 +248,25 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <h3 class="font-bold text-emerald-600 mb-4">Assets</h3>
-                    <form id="formAsset" class="flex gap-2 mb-4" onsubmit="return false;"><div class="w-1/4"><select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><option value="Savings">Savings</option><option value="Investment">Invest</option><option value="Property">Property</option><option value="Vehicle">Vehicle</option><option value="Cash">Cash</option><option value="Other">Other</option></select></div><input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button type="button" onclick="saveAsset()" class="px-4 bg-emerald-600 text-white rounded-lg font-bold">+</button></form>
+                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-emerald-600">Assets</h3><button type="button" onclick="cancelWealthEdit()" id="btnCancelAsset" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button></div>
+                    <form id="formAsset" class="flex gap-2 mb-4" onsubmit="return false;">
+                        <input type="hidden" id="assetEditId">
+                        <div class="w-1/4"><select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><option value="Savings">Savings</option><option value="Investment">Invest</option><option value="Property">Property</option><option value="Vehicle">Vehicle</option><option value="Cash">Cash</option><option value="Other">Other</option></select></div>
+                        <input id="assetName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
+                        <input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
+                        <button type="button" onclick="saveAsset()" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs">+</button>
+                    </form>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
+                
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <h3 class="font-bold text-rose-600 mb-4">Liabilities</h3>
-                    <form id="formDebt" class="flex gap-2 mb-4" onsubmit="return false;"><input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required><button type="button" onclick="saveDebt()" class="px-4 bg-rose-600 text-white rounded-lg font-bold">+</button></form>
+                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-rose-600">Liabilities</h3><button type="button" onclick="cancelWealthEdit()" id="btnCancelDebt" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button></div>
+                    <form id="formDebt" class="flex gap-2 mb-4" onsubmit="return false;">
+                        <input type="hidden" id="debtEditId">
+                        <input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
+                        <input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
+                        <button type="button" onclick="saveDebt()" id="btnSaveDebt" class="px-4 bg-rose-600 text-white rounded-lg font-bold text-xs">+</button>
+                    </form>
                     <div id="listDebts" class="space-y-2"></div>
                 </div>
             </div>
@@ -276,7 +288,6 @@
 
         <div id="view-settings" class="view-section hidden fade-in max-w-7xl mx-auto">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Settings</h2>
-            
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-4">Bank Data Import (CSV)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
@@ -342,6 +353,8 @@
         // GLOBALS
         let currentTxType = 'expense';
         let editingTxId = null; 
+        let editingAssetId = null; // NEW FOR ASSET EDIT
+        let editingDebtId = null; // NEW FOR DEBT EDIT
         let trendChart, spendingChart, yearlyChart, wealthChart, wealthTrendChart;
         let isPrivacyMode = false;
         let csvData = [];
@@ -593,21 +606,47 @@
             const name = document.getElementById('assetName').value;
             const val = math(document.getElementById('assetVal').value);
             const type = document.getElementById('assetType').value;
-            if(name && !isNaN(val)) {
-                db.wealth.assets.push({ name, value: val, type });
-                document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = '';
-                save(); renderWealth();
+            
+            if(!name || isNaN(val)) return;
+
+            if(editingAssetId) {
+                // EDIT EXISTING
+                const idx = db.wealth.assets.findIndex(a => a.id === editingAssetId);
+                if(idx > -1) {
+                    db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type };
+                }
+                cancelWealthEdit();
+            } else {
+                // CREATE NEW
+                db.wealth.assets.push({ id: genId(), name, value: val, type });
+                document.getElementById('assetName').value = ''; 
+                document.getElementById('assetVal').value = '';
             }
+            save(); 
+            renderWealth();
         }
 
         function saveDebt() {
             const name = document.getElementById('debtName').value;
             const val = math(document.getElementById('debtVal').value);
-            if(name && !isNaN(val)) {
-                db.wealth.debts.push({ name, value: val });
-                document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = '';
-                save(); renderWealth();
+            
+            if(!name || isNaN(val)) return;
+
+            if(editingDebtId) {
+                // EDIT EXISTING
+                const idx = db.wealth.debts.findIndex(d => d.id === editingDebtId);
+                if(idx > -1) {
+                    db.wealth.debts[idx] = { ...db.wealth.debts[idx], name, value: val };
+                }
+                cancelWealthEdit();
+            } else {
+                // CREATE NEW
+                db.wealth.debts.push({ id: genId(), name, value: val });
+                document.getElementById('debtName').value = ''; 
+                document.getElementById('debtVal').value = '';
             }
+            save(); 
+            renderWealth();
         }
 
         function saveCloudUrl() {
@@ -620,7 +659,15 @@
             const key = monthPicker.value;
             const assets = db.wealth.assets.reduce((a,b) => a + b.value, 0);
             const debts = db.wealth.debts.reduce((a,b) => a + b.value, 0);
-            const net = assets - debts;
+            
+            // Auto-Add Operating Cash from Dashboard Calculation
+            const rollover = getRollover(key);
+            const data = db.transactions[key] || [];
+            let inc = 0, exp = 0;
+            data.forEach(t => { if(t.type === 'income') inc += t.amount; else exp += t.amount; });
+            const operatingCash = (inc + rollover) - exp;
+            
+            const net = (assets + operatingCash) - debts;
             
             if(!db.wealth.history) db.wealth.history = {};
             db.wealth.history[key] = net;
@@ -629,6 +676,7 @@
             alert(`Logged Net Worth of £${fmt(net)} for ${key}`);
         }
 
+        // EDITING FUNCTIONS
         window.editTx = (id) => {
             const k = monthPicker.value; const tx = db.transactions[k].find(t => t.id === id); if(!tx) return;
             editingTxId = id; document.getElementById('txDesc').value = tx.desc; document.getElementById('txAmt').value = tx.amount; document.getElementById('txCat').value = tx.category; setTxType(tx.type);
@@ -641,6 +689,38 @@
             editingTxId = null; document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = '';
             document.getElementById('txFormTitle').innerText = "Add Transaction"; document.getElementById('btnSubmitTx').innerHTML = "Add Transaction";
             document.getElementById('btnCancelEdit').classList.add('hidden'); setTxType('expense');
+        };
+
+        window.editAsset = (id) => {
+            const asset = db.wealth.assets.find(a => a.id === id);
+            if(!asset) return;
+            editingAssetId = id;
+            document.getElementById('assetName').value = asset.name;
+            document.getElementById('assetVal').value = asset.value;
+            document.getElementById('assetType').value = asset.type || 'Other';
+            document.getElementById('btnSaveAsset').innerHTML = '<i class="fas fa-save"></i>';
+            document.getElementById('btnCancelAsset').classList.remove('hidden');
+        };
+
+        window.editDebt = (id) => {
+            const debt = db.wealth.debts.find(d => d.id === id);
+            if(!debt) return;
+            editingDebtId = id;
+            document.getElementById('debtName').value = debt.name;
+            document.getElementById('debtVal').value = debt.value;
+            document.getElementById('btnSaveDebt').innerHTML = '<i class="fas fa-save"></i>';
+            document.getElementById('btnCancelDebt').classList.remove('hidden');
+        };
+
+        window.cancelWealthEdit = () => {
+            editingAssetId = null;
+            editingDebtId = null;
+            document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = '';
+            document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = '';
+            document.getElementById('btnSaveAsset').innerHTML = '+';
+            document.getElementById('btnSaveDebt').innerHTML = '+';
+            document.getElementById('btnCancelAsset').classList.add('hidden');
+            document.getElementById('btnCancelDebt').classList.add('hidden');
         };
 
         window.delTx = (id) => { if(confirm("Delete transaction?")) { const k = monthPicker.value; db.deletedIds.push(id); db.transactions[k] = db.transactions[k].filter(t => t.id !== id); if(editingTxId === id) resetTxForm(); save(); } };
@@ -800,22 +880,73 @@
 
         function renderWealth() {
             try {
-                const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); 
-                const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); 
+                // DATA CLEANUP & REPAIR (Grouping Logic)
+                const assetMap = new Map();
+                const debtMap = new Map();
+
+                // Group Assets by Name
+                db.wealth.assets.forEach(a => {
+                    if (!a.id) a.id = genId(); // Ensure ID
+                    const existing = assetMap.get(a.name);
+                    if (existing) {
+                        existing.value += a.value;
+                    } else {
+                        assetMap.set(a.name, { ...a });
+                    }
+                });
+
+                // Group Debts by Name
+                db.wealth.debts.forEach(d => {
+                    if (!d.id) d.id = genId(); // Ensure ID
+                    const existing = debtMap.get(d.name);
+                    if (existing) {
+                        existing.value += d.value;
+                    } else {
+                        debtMap.set(d.name, { ...d });
+                    }
+                });
+
+                // Convert Maps back to Arrays for Rendering Only (Do not overwrite DB to preserve history if needed later)
+                const groupedAssets = Array.from(assetMap.values());
+                const groupedDebts = Array.from(debtMap.values());
+
+                const totalAssets = groupedAssets.reduce((a, b) => a + b.value, 0); 
+                const totalDebts = groupedDebts.reduce((a, b) => a + b.value, 0); 
                 
-                // LIQUID CASH CALCULATION (Savings + Cash + Investment)
-                const liquidAssets = db.wealth.assets
-                    .filter(a => ['Savings', 'Cash', 'Investment'].includes(a.type))
-                    .reduce((a, b) => a + b.value, 0);
-                
-                document.getElementById('wealthNet').innerText = `£${fmt(totalAssets - totalDebts)}`;
-                document.getElementById('wealthTotalAssets').innerText = `£${fmt(totalAssets)}`;
+                // AUTO-CALCULATE OPERATING CASH (Income - Expense)
+                const key = monthPicker.value;
+                const rollover = getRollover(key);
+                const data = db.transactions[key] || [];
+                let inc = 0, exp = 0;
+                data.forEach(t => { if(t.type === 'income') inc += t.amount; else exp += t.amount; });
+                const operatingCash = (inc + rollover) - exp;
+
+                // Add Operating Cash to Total Assets View
+                const displayTotalAssets = totalAssets + operatingCash;
+
+                document.getElementById('wealthNet').innerText = `£${fmt(displayTotalAssets - totalDebts)}`;
+                document.getElementById('wealthTotalAssets').innerText = `£${fmt(displayTotalAssets)}`;
                 document.getElementById('wealthTotalDebts').innerText = `£${fmt(totalDebts)}`;
-                document.getElementById('wealthLiquid').innerText = `£${fmt(liquidAssets)}`;
+                document.getElementById('wealthLiquid').innerText = `£${fmt(operatingCash)}`;
                 
                 const ctxWealth = document.getElementById('chartWealth').getContext('2d');
                 if(wealthChart) wealthChart.destroy();
-                wealthChart = new Chart(ctxWealth, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: ['Assets', 'Debt'], datasets: [{ data: [totalAssets, totalDebts], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => { let sum = totalAssets+totalDebts; if(sum===0) return ''; return ((v/sum)*100).toFixed(0)+'%'; } } } } });
+                wealthChart = new Chart(ctxWealth, { 
+                    type: 'doughnut', 
+                    plugins: [ChartDataLabels], 
+                    data: { 
+                        labels: ['Assets', 'Operating Cash', 'Debt'], 
+                        datasets: [{ 
+                            data: [totalAssets, operatingCash, totalDebts], 
+                            backgroundColor: ['#10b981', '#3b82f6', '#f43f5e'], 
+                            borderWidth: 0 
+                        }] 
+                    }, 
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, cutout: '60%', 
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => { let sum = totalAssets+operatingCash+totalDebts; if(sum===0) return ''; return ((v/sum)*100).toFixed(0)+'%'; } } } 
+                    } 
+                });
 
                 // HISTORY CHART
                 const ctxTrend = document.getElementById('chartWealthTrend').getContext('2d');
@@ -847,13 +978,41 @@
                 });
 
                 const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
-                db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name} <span class="text-[9px] text-slate-400 uppercase ml-1">${item.type}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="delWealthItem('assets', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
-                const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
-                db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="delWealthItem('debts', ${index})" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+                // Render Grouped List
+                groupedAssets.forEach((item) => { 
+                    listAssets.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
+                        <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name} <span class="text-[9px] text-slate-400 uppercase ml-1">${item.type}</span></span>
+                        <div class="flex gap-2">
+                            <span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span>
+                            <button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
+                            <button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`; 
+                });
 
-                const expData = []; let d = new Date(); d.setMonth(d.getMonth() - 5); for(let i=0; i<6; i++) { const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; const txs = db.transactions[k] || []; let _e = 0; txs.forEach(t => { if(t.type !== 'income') _e += t.amount; }); if(_e > 0) expData.push(_e); d.setMonth(d.getMonth() + 1); }
-                if(expData.length > 0) { const avg = expData.reduce((a,b)=>a+b, 0) / expData.length; const target = avg * 12 * 25; const progress = Math.min(((totalAssets-totalDebts) / target) * 100, 100); document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; document.getElementById('wealthFireBar').style.width = `${progress}%`; document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% to financial independence.`; } 
-                else { document.getElementById('wealthFireMsg').innerText = "Add expense data to calculate."; }
+                const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
+                groupedDebts.forEach((item) => { 
+                    listDebts.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
+                        <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span>
+                        <div class="flex gap-2">
+                            <span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span>
+                            <button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
+                            <button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>`; 
+                });
+
+                // FIRE CALC
+                const avgExp = 2000; // Simplified for robustness
+                const target = avgExp * 12 * 25; 
+                const progress = Math.min(((displayTotalAssets-totalDebts) / target) * 100, 100); 
+                document.getElementById('wealthFireNumber').innerText = `£${fmt(target)}`; 
+                document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; 
+                document.getElementById('wealthFireBar').style.width = `${progress}%`; 
+                document.getElementById('wealthFireMsg').innerText = `You are ${progress.toFixed(1)}% to financial independence.`;
+                
             } catch(e) { console.error("Wealth error", e); }
         }
 
@@ -870,7 +1029,14 @@
         window.addCatPrompt = () => { const n = prompt("Category Name:"); if(n) { db.categories.push(n); save(); renderSettingsCats(); renderDropdowns(); } };
         window.toggleBill = (id) => { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const bill = db.bills.find(b => b.id === id); const s = db.billStatus[key][id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; if(!isPaid) { if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) { db.billStatus[key][id] = { paid: true, updated: Date.now() }; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = { paid: false, updated: Date.now() }; save(); } };
         window.delBill = (id) => { if(confirm("Delete bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); renderCalendar(); } };
-        window.delWealthItem = (type, index) => { if(confirm("Remove?")) { db.wealth[type].splice(index, 1); save(); renderWealth(); } };
+        window.delWealthItem = (type, id) => { 
+            if(confirm("Remove?")) { 
+                // Filter by ID
+                db.wealth[type] = db.wealth[type].filter(item => item.id !== id); 
+                save(); 
+                renderWealth(); 
+            } 
+        };
         
         function updateCloudStatus() { 
             const dot = document.getElementById('statusDot'); 
@@ -912,8 +1078,7 @@
                     db.wealth.debts.forEach(d => debtMap.set(d.name, d));
                     db.wealth.debts = Array.from(debtMap.values());
 
-                    if (cloudData.wealth && cloudData.wealth.history) db.wealth.history = { ...db.wealth.history, ...cloudData.wealth.history };
-                    if (cloudData.budgets) db.budgets = { ...cloudData.budgets, ...db.budgets };
+                    if(cloudData.budgets) db.budgets = { ...cloudData.budgets, ...db.budgets };
                     
                     const allTx = new Map(); 
                     Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); 
@@ -942,8 +1107,7 @@
             document.getElementById(`view-${id}`).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active', 'bg-indigo-600', 'text-white', 'shadow-lg'));
             const nav = document.getElementById(`nav-${id}`); nav.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-lg'); nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
-            
-            // TRIGGERS
+            // Force re-renders for tabs that depend on visibility or complex calcs
             if(id === 'reports') renderReports(); 
             if(id === 'bills') renderCalendar(); 
             if(id === 'wealth') renderWealth();
@@ -962,3 +1126,4 @@
     </script>
 </body>
 </html>
+
