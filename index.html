@@ -258,7 +258,6 @@
                     </form>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
-                
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-rose-600">Liabilities</h3><button type="button" onclick="cancelWealthEdit()" id="btnCancelDebt" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button></div>
                     <form id="formDebt" class="flex gap-2 mb-4" onsubmit="return false;">
@@ -288,6 +287,7 @@
 
         <div id="view-settings" class="view-section hidden fade-in max-w-7xl mx-auto">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Settings</h2>
+            
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-4">Bank Data Import (CSV)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
@@ -336,25 +336,33 @@
             transactions: {}, bills: [], billStatus: {}, wealth: { assets: [], debts: [], history: {} }, deletedIds: [], annualIncome: 0, cloudURL: '', theme: 'light', budgets: {} 
         };
         
-        let db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
+        // SAFELY LOAD DATA
+        let db;
+        try {
+            db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
+        } catch (e) {
+            console.error("Data corrupted, resetting", e);
+            db = DEFAULTS;
+        }
         
-        // MIGRATION & REPAIR
-        if(Array.isArray(db.transactions)) db.transactions = {}; 
+        // MIGRATION & DATA REPAIR
+        if(!db.transactions || Array.isArray(db.transactions)) db.transactions = {}; 
         if(!db.theme) db.theme = 'light';
         if(!db.bills) db.bills = [];
         if(!db.billStatus) db.billStatus = {};
-        if(!db.wealth) db.wealth = { assets: [], debts: [], history: {} };
+        if(!db.wealth) db.wealth = { assets: [], debts: [] };
         if(!db.wealth.assets) db.wealth.assets = [];
         if(!db.wealth.debts) db.wealth.debts = [];
         if(!db.wealth.history) db.wealth.history = {};
         if(!db.budgets) db.budgets = {};
+        if(!db.categories) db.categories = DEFAULTS.categories;
         if(!db.categories.includes('Imported')) db.categories.push('Imported');
         
         // GLOBALS
         let currentTxType = 'expense';
         let editingTxId = null; 
-        let editingAssetId = null; // NEW FOR ASSET EDIT
-        let editingDebtId = null; // NEW FOR DEBT EDIT
+        let editingAssetId = null;
+        let editingDebtId = null;
         let trendChart, spendingChart, yearlyChart, wealthChart, wealthTrendChart;
         let isPrivacyMode = false;
         let csvData = [];
@@ -1042,7 +1050,7 @@
             const dot = document.getElementById('statusDot'); 
             const txt = document.getElementById('statusText'); 
             const input = document.getElementById('cloudInput');
-            if(input && db.cloudURL) input.value = db.cloudURL; 
+            if(input && db.cloudURL) input.value = db.cloudURL; // Restore URL to input
             if(db.cloudURL) { 
                 dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'; 
                 txt.innerText = "Cloud Linked"; 
@@ -1068,11 +1076,13 @@
                     const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted); 
                     const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values()); 
                     
+                    // Merge Wealth (Assets)
                     const assetMap = new Map();
                     if (cloudData.wealth && cloudData.wealth.assets) cloudData.wealth.assets.forEach(a => assetMap.set(a.name, a));
                     db.wealth.assets.forEach(a => assetMap.set(a.name, a));
                     db.wealth.assets = Array.from(assetMap.values());
 
+                    // Merge Wealth (Debts)
                     const debtMap = new Map();
                     if (cloudData.wealth && cloudData.wealth.debts) cloudData.wealth.debts.forEach(d => debtMap.set(d.name, d));
                     db.wealth.debts.forEach(d => debtMap.set(d.name, d));
@@ -1126,4 +1136,3 @@
     </script>
 </body>
 </html>
-
