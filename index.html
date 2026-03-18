@@ -456,16 +456,17 @@
         // HTML-escape all user-supplied strings before inserting into innerHTML
         const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
         
-        // --- NEW CONSOLIDATION LOGIC ---
+        // --- CONSOLIDATION LOGIC ---
         function consolidateWealth() {
             let hasChanges = false;
-            // Merge Assets by Name
+            // Merge Assets by Name + Type together — two assets with the same name
+            // but different types (e.g. "ISA" as Savings vs Investment) are kept separate.
             const assetMap = new Map();
             db.wealth.assets.forEach(a => {
-                const key = a.name.trim().toLowerCase();
+                const key = `${a.name.trim().toLowerCase()}|${(a.type || '').toLowerCase()}`;
                 if (assetMap.has(key)) {
                     const existing = assetMap.get(key);
-                    existing.value += parseFloat(a.value); // Add values
+                    existing.value += parseFloat(a.value);
                     hasChanges = true;
                 } else {
                     assetMap.set(key, { ...a, value: parseFloat(a.value) });
@@ -620,7 +621,7 @@
             for (let k of sortedKeys) {
                 if (k >= currentKey) break;
                 let mInc = 0, mExp = 0;
-                db.transactions[k].forEach(t => { if(t.type === 'income') mInc += math(t.amount); else mExp += math(t.amount); });
+                db.transactions[k].forEach(t => { if(t.type === 'income') mInc += math(t.amount); else if(t.type === 'expense') mExp += math(t.amount); });
                 balance += (mInc - mExp);
             }
             return balance;
@@ -640,26 +641,30 @@
                 const key = monthPicker.value;
                 const searchTerm = document.getElementById('txSearch') ? document.getElementById('txSearch').value.toLowerCase() : '';
                 const data = db.transactions[key] || [];
-                
+
+                // KPIs always use the FULL month data, unaffected by search/filter
                 let inc = 0, exp = 0, cats = {};
+                data.forEach(t => {
+                    const val = math(t.amount);
+                    if(t.type === 'income') inc += val;
+                    else if(t.type === 'expense') { exp += val; cats[t.category] = (cats[t.category] || 0) + val; }
+                });
+
+                // Transaction list uses filtered data
                 const list = document.getElementById('listTx');
                 if(list) list.innerHTML = '';
-
                 const catFilter = document.getElementById('txCatFilter') ? document.getElementById('txCatFilter').value : '';
                 const filteredData = data.filter(t => {
                     const matchSearch = t.desc.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm);
                     const matchCat = !catFilter || t.category === catFilter;
                     return matchSearch && matchCat;
                 });
-                filteredData.sort((a,b) => b.updatedAt - a.updatedAt); 
+                filteredData.sort((a,b) => b.updatedAt - a.updatedAt);
 
                 filteredData.forEach(t => {
                     const val = math(t.amount);
-                    if(t.type === 'income') inc += val; 
-                    else { exp += val; cats[t.category] = (cats[t.category] || 0) + val; }
                     const colorClass = t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
                     const sign = t.type === 'income' ? '+' : '-';
-                    
                     if(list) list.insertAdjacentHTML('beforeend', `
                         <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
                             <td class="py-3 pl-2"><div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(t.category)}</div></td>
@@ -673,7 +678,7 @@
                 if(document.getElementById('kpiInc')) document.getElementById('kpiInc').innerHTML = `£${fmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: £${fmt(rollover)}</span>`;
                 if(document.getElementById('kpiExp')) document.getElementById('kpiExp').innerText = `£${fmt(exp)}`;
                 if(document.getElementById('kpiSalary')) document.getElementById('kpiSalary').innerText = `£${fmt(db.annualIncome)}`;
-                
+
                 const year = key.split('-')[0];
                 let ytd = 0;
                 Object.keys(db.transactions).forEach(k => { if(k.startsWith(year)) db.transactions[k].forEach(t => { if(t.type === 'income') ytd += math(t.amount); }); });
@@ -685,10 +690,15 @@
                 if(document.getElementById('kpiMaxCat')) document.getElementById('kpiMaxCat').innerText = maxCat;
                 if(document.getElementById('kpiMaxVal')) document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
 
-                const savingsRate = inc > 0 ? ((inc - exp) / inc * 100) : 0;
+                // Savings rate: show actual deficit amount, not zero-floored
                 const savedAmt = inc - exp;
-                if(document.getElementById('kpiSavingsRate')) document.getElementById('kpiSavingsRate').innerText = `${savingsRate.toFixed(1)}%`;
-                if(document.getElementById('kpiSavingsAmt')) document.getElementById('kpiSavingsAmt').innerText = `£${fmt(Math.max(0, savedAmt))} saved`;
+                const savingsRate = inc > 0 ? (savedAmt / inc * 100) : 0;
+                const isDeficit = savedAmt < 0;
+                if(document.getElementById('kpiSavingsRate')) {
+                    document.getElementById('kpiSavingsRate').innerText = `${savingsRate.toFixed(1)}%`;
+                    document.getElementById('kpiSavingsRate').className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : 'text-indigo-600 dark:text-indigo-400'}`;
+                }
+                if(document.getElementById('kpiSavingsAmt')) document.getElementById('kpiSavingsAmt').innerText = isDeficit ? `£${fmt(Math.abs(savedAmt))} deficit` : `£${fmt(savedAmt)} saved`;
                 renderUpcomingBills();
 
                 if(!document.getElementById('view-dashboard').classList.contains('hidden')) {
@@ -1098,25 +1108,32 @@
                     } 
                 });
 
-                // HISTORY CHART
+                // HISTORY CHART — build a true 12-month window so gaps appear as gaps
                 const ctxTrend = document.getElementById('chartWealthTrend').getContext('2d');
                 if(wealthTrendChart) wealthTrendChart.destroy();
-                
+
                 const histData = db.wealth.history || {};
-                const labels = Object.keys(histData).sort().slice(-12);
-                const values = labels.map(k => histData[k]);
-                
+                const chartLabels = [], chartValues = [];
+                const histStart = new Date(); histStart.setMonth(histStart.getMonth() - 11);
+                for(let i = 0; i < 12; i++) {
+                    const lk = `${histStart.getFullYear()}-${String(histStart.getMonth()+1).padStart(2,'0')}`;
+                    chartLabels.push(histStart.toLocaleString('default', { month: 'short', year: '2-digit' }));
+                    chartValues.push(histData[lk] !== undefined ? histData[lk] : null);
+                    histStart.setMonth(histStart.getMonth() + 1);
+                }
+
                 wealthTrendChart = new Chart(ctxTrend, {
                     type: 'line',
                     data: {
-                        labels: labels,
+                        labels: chartLabels,
                         datasets: [{
                             label: 'Net Worth',
-                            data: values,
+                            data: chartValues,
                             borderColor: '#6366f1',
                             backgroundColor: 'rgba(99, 102, 241, 0.1)',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            spanGaps: false
                         }]
                     },
                     options: {
@@ -1128,37 +1145,34 @@
                 });
 
                 // DYNAMIC FIRE CALCULATION
-                // 1. Calculate Average Monthly Expense (Last 6 Months)
+                // Average monthly expense over a true 6-month window (zero months count as £0)
                 let totalSpent = 0;
-                let activeMonths = 0;
-                let d = new Date(); 
-                d.setMonth(d.getMonth() - 5); // Start 5 months ago
+                let hasAnyData = false;
+                let fireD = new Date();
+                fireD.setMonth(fireD.getMonth() - 5); // Start 5 months ago
 
                 for(let i=0; i<6; i++) {
-                    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                    const txs = db.transactions[k] || [];
+                    const fk = `${fireD.getFullYear()}-${String(fireD.getMonth()+1).padStart(2,'0')}`;
+                    const txs = db.transactions[fk] || [];
                     let monthExp = 0;
                     txs.forEach(t => { if(t.type === 'expense') monthExp += t.amount; });
-                    
-                    if(monthExp > 0) {
-                        totalSpent += monthExp;
-                        activeMonths++;
-                    }
-                    d.setMonth(d.getMonth() + 1);
+                    totalSpent += monthExp;
+                    if(monthExp > 0) hasAnyData = true;
+                    fireD.setMonth(fireD.getMonth() + 1);
                 }
 
-                // Default fallback if no data
-                const avgMonthlyExp = activeMonths > 0 ? (totalSpent / activeMonths) : 2000; 
+                // Always divide by 6 — months with no data count as £0 spend
+                const avgMonthlyExp = hasAnyData ? (totalSpent / 6) : 2000;
                 const annualExp = avgMonthlyExp * 12;
-                const fireTarget = annualExp * 25; 
+                const fireTarget = annualExp * 25;
                 const currentNet = displayTotalAssets - totalDebts;
-                const progress = Math.min((currentNet / fireTarget) * 100, 100); 
+                const progress = Math.min((currentNet / fireTarget) * 100, 100);
 
-                document.getElementById('wealthFireNumber').innerText = `£${fmt(fireTarget)}`; 
-                document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; 
-                document.getElementById('wealthFireBar').style.width = `${progress}%`; 
-                document.getElementById('wealthFireMsg').innerText = activeMonths > 0 
-                    ? `Based on avg spending of £${fmt(avgMonthlyExp)}/mo` 
+                document.getElementById('wealthFireNumber').innerText = `£${fmt(fireTarget)}`;
+                document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`;
+                document.getElementById('wealthFireBar').style.width = `${progress}%`;
+                document.getElementById('wealthFireMsg').innerText = hasAnyData
+                    ? `Based on avg spending of £${fmt(avgMonthlyExp)}/mo (6-month window)`
                     : `Add expense data to calibrate target. (Default: £2k/mo)`;
 
                 const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
@@ -1245,10 +1259,12 @@
 
                     if(cloudData.budgets) db.budgets = { ...cloudData.budgets, ...db.budgets };
                     
-                    const allTx = new Map(); 
-                    Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); 
-                    Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); }); 
-                    db.transactions = {}; allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); }); 
+                    const allTx = new Map();
+                    // Load cloud transactions first
+                    Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); });
+                    // Local wins on tie (>=) so local month assignment is preserved when timestamps are equal
+                    Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt >= existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); });
+                    db.transactions = {}; allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); });
                     
                     Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = { ...db.billStatus[date], ...cloudData.billStatus[date] }; }); 
                 } 
