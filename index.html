@@ -32,7 +32,6 @@
         
         /* BILLS */
         .bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; border-left: 3px solid transparent; }
-        .bill-chip.paid { text-decoration: line-through; opacity: 0.6; }
         .bill-chip:hover .btn-delete-bill { opacity: 1; }
         .btn-delete-bill { opacity: 0; transition: opacity 0.2s; }
         
@@ -44,10 +43,29 @@
         body.privacy-active .money-val,
         body.privacy-active canvas,
         body.privacy-active .bill-amt {
-            filter: blur(6px);
+            filter: blur(10px);
+            opacity: 0.25;
             user-select: none;
-            transition: filter 0.3s ease;
+            transition: filter 0.3s ease, opacity 0.3s ease;
         }
+
+        /* VIEW TRANSITIONS */
+        @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .view-enter { animation: viewIn 0.25s ease-out forwards; }
+
+        /* MOBILE TRANSACTION CARDS */
+        @media (max-width: 640px) {
+            #listTx thead { display: none; }
+            #listTx tr { display: flex; flex-wrap: wrap; padding: 0.75rem 0.5rem; border-bottom: 1px solid #f1f5f9; }
+            .dark #listTx tr { border-color: #1e293b; }
+            #listTx tr td:first-child { flex: 1 1 100%; margin-bottom: 4px; }
+            #listTx tr td:nth-child(2) { flex: 1; font-size: 0.9rem; }
+            #listTx tr td:nth-child(3) { flex: 0; }
+        }
+
+        /* BILL PAID CHIP */
+        .bill-chip.paid { opacity: 0.65; }
+        .bill-chip.paid .bill-name { text-decoration: line-through; }
 
         /* PROGRESS BARS */
         .progress-bar-bg { height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; }
@@ -117,7 +135,7 @@
             <button type="button" onclick="manualSync(true)" id="btnSync" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
                 <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now
             </button>
-            <div class="text-[10px] text-center text-slate-500 font-medium mt-1 flex justify-center items-center gap-2">
+            <div class="text-[10px] text-center text-slate-500 font-medium mt-1 flex justify-center items-center gap-2" title="Local Mode: data is stored only on this device. Cloud Linked: data is synced across devices via your Google Script URL.">
                 <span id="statusDot" class="w-2 h-2 rounded-full bg-slate-600"></span>
                 <span id="statusText">Local Only</span>
             </div>
@@ -127,8 +145,8 @@
     <div id="main-content" class="flex-grow overflow-y-auto p-8 bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
         
         <div id="view-dashboard" class="view-section fade-in max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
-                <div class="card bg-slate-900 text-white col-span-1 md:col-span-2 relative overflow-hidden group cursor-pointer border-none rounded-2xl p-6 shadow-xl" onclick="editAnnualIncome()">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+                <div class="card bg-slate-900 text-white col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 relative overflow-hidden group cursor-pointer border-none rounded-2xl p-6 shadow-xl" onclick="editAnnualIncome()">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110"><i class="fas fa-edit text-6xl"></i></div>
                     <p class="text-xs text-slate-400 font-bold uppercase mb-1">Annual Income Target</p>
                     <h2 class="text-3xl font-extrabold money-val" id="kpiSalary">£0.00</h2>
@@ -157,6 +175,11 @@
                     <h3 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="kpiSavingsRate">0%</h3>
                     <p class="text-xs text-slate-500 mt-1 money-val" id="kpiSavingsAmt">£0.00 saved</p>
                 </div>
+            </div>
+
+            <div id="monthBanner" class="hidden flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl px-5 py-3 mb-6 text-sm">
+                <span class="text-indigo-700 dark:text-indigo-300 font-medium"><i class="fas fa-calendar-alt mr-2"></i>Viewing <span id="monthBannerLabel"></span></span>
+                <button type="button" onclick="goToCurrentMonth()" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap ml-4">Go to today &rarr;</button>
             </div>
 
             <div id="upcomingBillsWidget" class="hidden card bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-8">
@@ -192,10 +215,10 @@
                             <button type="button" onclick="setTxType('expense')" id="btnExp" class="py-2 rounded-md text-sm font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
                             <button type="button" onclick="setTxType('income')" id="btnInc" class="py-2 rounded-md text-sm font-bold text-slate-400 transition">Income</button>
                         </div>
-                        <div><label class="text-[10px] font-bold text-slate-400 uppercase">Description</label><input type="text" id="txDesc" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required></div>
+                        <div><label class="text-[10px] font-bold text-slate-400 uppercase">Description</label><input type="text" id="txDesc" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required></div>
                         <div class="flex gap-3">
-                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" step="0.01" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required></div>
-                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer" onchange="checkNewCategory(this)"></select></div>
+                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><div class="relative mt-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span><input type="number" id="txAmt" step="0.01" class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required></div></div>
+                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition cursor-pointer" onchange="checkNewCategory(this)"></select></div>
                         </div>
                         <button type="button" onclick="saveTransaction()" id="btnSubmitTx" class="w-full py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">Add Transaction</button>
                     </form>
@@ -247,8 +270,8 @@
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 h-fit">
                     <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Add Recurring Bill</h3>
                     <form id="formBill" class="space-y-4" onsubmit="return false;">
-                        <input type="text" id="billName" placeholder="Bill Name" class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required>
-                        <div class="flex gap-2"><input type="number" id="billAmt" placeholder="£0.00" step="0.01" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required><input type="number" id="billDay" placeholder="Day (1-31)" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required></div>
+                        <input type="text" id="billName" placeholder="Bill Name" class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                        <div class="flex gap-2"><div class="relative w-1/2"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span><input type="number" id="billAmt" step="0.01" class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required></div><input type="number" id="billDay" placeholder="Day (1-31)" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required></div>
                         <button type="button" onclick="saveBill()" class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
                     </form>
                 </div>
@@ -297,8 +320,8 @@
                     <form id="formAsset" class="flex gap-2 mb-4" onsubmit="return false;">
                         <input type="hidden" id="assetEditId">
                         <div class="w-1/4"><select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><option value="Savings">Savings</option><option value="Investment">Invest</option><option value="Property">Property</option><option value="Vehicle">Vehicle</option><option value="Cash">Cash</option><option value="Other">Other</option></select></div>
-                        <input id="assetName" placeholder="Name (e.g. ISA)" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
-                        <input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
+                        <input id="assetName" placeholder="Name (e.g. ISA)" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        <div class="relative w-24"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span><input id="assetVal" type="number" step="0.01" class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required></div>
                         <button type="button" onclick="saveAsset()" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs">+</button>
                     </form>
                     <div id="listAssets" class="space-y-2"></div>
@@ -308,8 +331,8 @@
                     <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-rose-600">Liabilities</h3><button type="button" onclick="cancelWealthEdit()" id="btnCancelDebt" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button></div>
                     <form id="formDebt" class="flex gap-2 mb-4" onsubmit="return false;">
                         <input type="hidden" id="debtEditId">
-                        <input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
-                        <input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
+                        <input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        <div class="relative w-24"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span><input id="debtVal" type="number" step="0.01" class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required></div>
                         <button type="button" onclick="saveDebt()" id="btnSaveDebt" class="px-4 bg-rose-600 text-white rounded-lg font-bold text-xs">+</button>
                     </form>
                     <div id="listDebts" class="space-y-2"></div>
@@ -380,7 +403,7 @@
                     </div>
                     <input type="text" id="recDesc" placeholder="Description" class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
                     <div class="flex gap-2">
-                        <input type="number" id="recAmt" placeholder="Amount" step="0.01" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        <div class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span><input type="number" id="recAmt" step="0.01" class="w-full p-2 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition"></div>
                         <select id="recCat" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
                     </div>
                     <button type="button" onclick="saveRecurring()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-500 transition">+ Add Template</button>
@@ -699,6 +722,18 @@
                     document.getElementById('kpiSavingsRate').className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : 'text-indigo-600 dark:text-indigo-400'}`;
                 }
                 if(document.getElementById('kpiSavingsAmt')) document.getElementById('kpiSavingsAmt').innerText = isDeficit ? `£${fmt(Math.abs(savedAmt))} deficit` : `£${fmt(savedAmt)} saved`;
+                // Month context banner
+                const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+                const banner = document.getElementById('monthBanner');
+                if(banner) {
+                    if(key !== todayKey) {
+                        banner.classList.remove('hidden');
+                        const [by, bm] = key.split('-').map(Number);
+                        document.getElementById('monthBannerLabel').innerText = new Date(by, bm-1).toLocaleString('default', { month: 'long', year: 'numeric' });
+                    } else {
+                        banner.classList.add('hidden');
+                    }
+                }
                 renderUpcomingBills();
 
                 if(!document.getElementById('view-dashboard').classList.contains('hidden')) {
@@ -776,9 +811,8 @@
             } else {
                 // ADD MODE
                 if (existing) {
-                    if(confirm(`"${existing.name}" exists. Add £${val} to it?`)) {
-                        existing.value += val;
-                    } else { return; }
+                    existing.value += val;
+                    showToast(`£${fmt(val)} added to "${existing.name}"`);
                 } else {
                     db.wealth.assets.push({ id: genId(), name, value: val, type });
                 }
@@ -804,10 +838,9 @@
                 if(idx > -1) db.wealth.debts[idx] = { ...db.wealth.debts[idx], name, value: val };
                 cancelWealthEdit();
             } else {
-                 if (existing) {
-                    if(confirm(`"${existing.name}" exists. Add £${val} to it?`)) {
-                        existing.value += val;
-                    } else { return; }
+                if (existing) {
+                    existing.value += val;
+                    showToast(`£${fmt(val)} added to "${existing.name}"`);
                 } else {
                     db.wealth.debts.push({ id: genId(), name, value: val });
                 }
@@ -913,7 +946,9 @@
         function updateDashboardCharts(cats) {
             const ctxSpend = document.getElementById('chartSpend').getContext('2d');
             if(spendingChart) spendingChart.destroy();
-            spendingChart = new Chart(ctxSpend, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(c => getCatColor(c)), borderWidth: db.theme === 'dark' ? 0 : 2, borderColor: '#ffffff' }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (v, ctx) => { let sum = ctx.dataset.data.reduce((a,b)=>a+b,0); let pct = (v*100/sum); return pct<5?'':pct.toFixed(0)+'%'; } } } } });
+            const spendLabels = Object.keys(cats).sort((a,b) => cats[b]-cats[a]);
+            const spendValues = spendLabels.map(c => cats[c]);
+            spendingChart = new Chart(ctxSpend, { type: 'bar', plugins: [ChartDataLabels], data: { labels: spendLabels, datasets: [{ data: spendValues, backgroundColor: spendLabels.map(c => getCatColor(c)), borderRadius: 4, borderSkipped: false }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'end', color: db.theme === 'dark' ? '#94a3b8' : '#64748b', font: { size: 10, weight: 'bold' }, formatter: (v) => `£${fmt(v)}` } }, scales: { x: { display: false, grid: { display: false } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } } });
 
             const ctxTrend = document.getElementById('chartTrend').getContext('2d');
             if(trendChart) trendChart.destroy();
@@ -1045,12 +1080,17 @@
                 
                 for(let d=1; d<=daysInMonth; d++) {
                     let billsHtml = '';
-                    (billMap[d] || []).forEach(b => {
+                    const dayBills = billMap[d] || [];
+                    const visible = dayBills.slice(0, 2);
+                    const overflow = dayBills.length - visible.length;
+                    visible.forEach(b => {
                         const s = (db.billStatus[key] || {})[b.id];
                         const isPaid = (typeof s === 'object') ? s.paid : !!s;
                         const cls = isPaid ? 'paid bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300' : 'unpaid bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300';
-                        billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')"><span class="truncate font-bold">${esc(b.name)}</span><div class="flex items-center"><span class="bill-amt money-val">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
+                        const checkIcon = isPaid ? `<i class="fas fa-check text-emerald-500 mr-1" style="font-size:9px"></i>` : '';
+                        billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')">${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
                     });
+                    if(overflow > 0) billsHtml += `<div class="text-[9px] text-slate-400 font-bold pl-1">+${overflow} more</div>`;
                     grid.innerHTML += `<div class="calendar-day bg-white dark:bg-slate-900/50 border-b border-r border-slate-200 dark:border-slate-800"><div class="day-number text-slate-400 dark:text-slate-500">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`;
                 }
                 
@@ -1176,9 +1216,17 @@
                     : `Add expense data to calibrate target. (Default: £2k/mo)`;
 
                 const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
-                db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+                if(db.wealth.assets.length === 0) {
+                    listAssets.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No assets yet — add one above.</p>`;
+                } else {
+                    db.wealth.assets.forEach((item) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+                }
                 const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
-                db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+                if(db.wealth.debts.length === 0) {
+                    listDebts.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No liabilities yet.</p>`;
+                } else {
+                    db.wealth.debts.forEach((item) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+                }
 
             } catch(e) { console.error("Wealth error", e); }
         }
@@ -1207,14 +1255,53 @@
         
         window.delCat = (c) => { if(confirm(`Delete '${c}'?`)) { db.categories = db.categories.filter(x => x !== c); delete db.budgets[c]; save(); renderSettingsCats(); renderDropdowns(); } };
         window.addCatPrompt = () => { const raw = prompt("Category Name:"); const n = raw ? raw.trim().slice(0, 50) : ''; if(n && !db.categories.includes(n)) { db.categories.push(n); save(); renderSettingsCats(); renderDropdowns(); } else if(n) { showToast(`Category "${n}" already exists`); } };
-        window.toggleBill = (id) => { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const bill = db.bills.find(b => b.id === id); const s = db.billStatus[key][id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; if(!isPaid) { if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) { db.billStatus[key][id] = { paid: true, updated: Date.now() }; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = { paid: false, updated: Date.now() }; save(); } };
-        window.delBill = (id) => { if(confirm("Delete bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); renderCalendar(); } };
-        window.delWealthItem = (type, id) => { 
-            if(confirm("Remove?")) { 
-                db.wealth[type] = db.wealth[type].filter(item => item.id !== id); 
-                save(); 
-                renderWealth(); 
-            } 
+        window.toggleBill = (id) => {
+            const key = monthPicker.value;
+            if(!db.billStatus[key]) db.billStatus[key] = {};
+            const bill = db.bills.find(b => b.id === id);
+            const s = db.billStatus[key][id];
+            const isPaid = (typeof s === 'object') ? s.paid : !!s;
+            if(!isPaid) {
+                const txId = genId();
+                db.billStatus[key][id] = { paid: true, updated: Date.now(), txId };
+                if(!db.transactions[key]) db.transactions[key] = [];
+                db.transactions[key].push({ id: txId, updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' });
+                save();
+                showToast(`"${bill.name}" marked paid — added to expenses`, () => {
+                    db.billStatus[key][id] = { paid: false, updated: Date.now() };
+                    db.transactions[key] = (db.transactions[key] || []).filter(t => t.id !== txId);
+                    save();
+                });
+            } else {
+                db.billStatus[key][id] = { paid: false, updated: Date.now() };
+                save();
+                showToast(`"${bill.name}" marked unpaid`);
+            }
+            renderCalendar(); render();
+        };
+        window.delBill = (id) => {
+            const bill = db.bills.find(b => b.id === id);
+            if(!bill) return;
+            const backup = { ...bill };
+            db.deletedIds.push(id);
+            db.bills = db.bills.filter(b => b.id !== id);
+            save(); renderCalendar();
+            showToast(`Deleted bill "${backup.name}"`, () => {
+                db.deletedIds = db.deletedIds.filter(d => d !== id);
+                db.bills.push(backup);
+                save(); renderCalendar();
+            });
+        };
+        window.delWealthItem = (type, id) => {
+            const item = db.wealth[type].find(i => i.id === id);
+            if(!item) return;
+            const backup = { ...item };
+            db.wealth[type] = db.wealth[type].filter(i => i.id !== id);
+            save(); renderWealth();
+            showToast(`Removed "${backup.name}"`, () => {
+                db.wealth[type].push(backup);
+                save(); renderWealth();
+            });
         };
         
         function updateCloudStatus() { 
@@ -1285,16 +1372,20 @@
         const now = new Date(); monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; monthPicker.addEventListener('change', render);
         window.switchView = (id) => {
             document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));
-            document.getElementById(`view-${id}`).classList.remove('hidden');
+            const el = document.getElementById(`view-${id}`);
+            el.classList.remove('hidden', 'view-enter');
+            void el.offsetWidth; // force reflow so animation restarts
+            el.classList.add('view-enter');
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active', 'bg-indigo-600', 'text-white', 'shadow-lg'));
             const nav = document.getElementById(`nav-${id}`); nav.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-lg'); nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
-            // Force re-renders for tabs that depend on visibility or complex calcs
-            if(id === 'reports') renderReports(); 
-            if(id === 'bills') renderCalendar(); 
+            if(id === 'reports') renderReports();
+            if(id === 'bills') renderCalendar();
             if(id === 'wealth') renderWealth();
             if(id === 'budget') renderBudgets();
             render();
         };
+
+        window.goToCurrentMonth = () => { monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; render(); };
 
         // TOAST SYSTEM
         function showToast(msg, undoFn = null) {
