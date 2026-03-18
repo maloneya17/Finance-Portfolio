@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.tailwindcss.com; style-src 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; img-src 'self' data: blob:; connect-src *;">
     <title>Finance Portfolio</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -452,6 +453,8 @@
         const math = (v) => parseFloat(Number(v || 0).toFixed(2));
         const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
+        // HTML-escape all user-supplied strings before inserting into innerHTML
+        const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
         
         // --- NEW CONSOLIDATION LOGIC ---
         function consolidateWealth() {
@@ -659,7 +662,7 @@
                     
                     if(list) list.insertAdjacentHTML('beforeend', `
                         <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
-                            <td class="py-3 pl-2"><div class="font-bold text-slate-700 dark:text-slate-200">${t.desc}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${t.category}</div></td>
+                            <td class="py-3 pl-2"><div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(t.category)}</div></td>
                             <td class="text-right font-bold ${colorClass} money-val">${sign}£${fmt(val)}</td>
                             <td class="text-right pr-2"><button type="button" onclick="editTx('${t.id}')" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delTx('${t.id}')" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button></td>
                         </tr>`);
@@ -709,11 +712,14 @@
         // SAVE FUNCTIONS (NO FORM SUBMIT)
         function saveTransaction() {
             const k = monthPicker.value;
-            const desc = document.getElementById('txDesc').value; 
-            const amt = math(document.getElementById('txAmt').value); 
+            const desc = document.getElementById('txDesc').value.trim().slice(0, 200);
+            const amt = math(document.getElementById('txAmt').value);
             const cat = document.getElementById('txCat').value;
-            
-            if(!desc || !amt) return alert("Please enter description and amount");
+
+            if(!desc) return showToast('Please enter a description');
+            if(!amt || amt <= 0) return showToast('Please enter a valid positive amount');
+            if(amt > 100000000) return showToast('Amount is unreasonably large');
+            if(cat === 'ADD_NEW') return showToast('Please select a valid category');
 
             if(editingTxId) {
                 const txIndex = db.transactions[k].findIndex(t => t.id === editingTxId);
@@ -728,9 +734,12 @@
         }
 
         function saveBill() {
-            const name = document.getElementById('billName').value;
+            const name = document.getElementById('billName').value.trim().slice(0, 100);
             const amt = math(document.getElementById('billAmt').value);
             const day = parseInt(document.getElementById('billDay').value);
+            if(!name) return showToast('Please enter a bill name');
+            if(!amt || amt <= 0) return showToast('Please enter a valid positive amount');
+            if(!day || day < 1 || day > 31) return showToast('Day must be between 1 and 31');
             if(name && amt && day) {
                 db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day });
                 document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = '';
@@ -739,11 +748,12 @@
         }
 
         function saveAsset() {
-            const name = document.getElementById('assetName').value;
+            const name = document.getElementById('assetName').value.trim().slice(0, 100);
             const val = math(document.getElementById('assetVal').value);
             const type = document.getElementById('assetType').value;
-            
-            if(!name || isNaN(val)) return;
+
+            if(!name) return showToast('Please enter an asset name');
+            if(isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
 
             // SMART ADD: Check if name exists, if so, add to existing
             const existing = db.wealth.assets.find(a => a.name.trim().toLowerCase() === name.trim().toLowerCase());
@@ -771,10 +781,11 @@
         }
 
         function saveDebt() {
-            const name = document.getElementById('debtName').value;
+            const name = document.getElementById('debtName').value.trim().slice(0, 100);
             const val = math(document.getElementById('debtVal').value);
-            
-            if(!name || isNaN(val)) return;
+
+            if(!name) return showToast('Please enter a liability name');
+            if(isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
 
             const existing = db.wealth.debts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase());
 
@@ -942,7 +953,7 @@
                 db.categories.forEach(c => {
                     if(c === 'Bills') return;
                     const val = db.budgets[c] || 0;
-                    inputsDiv.innerHTML += `<div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500 w-1/3 truncate">${c}</span><input type="number" onchange="updateBudget('${c}', this.value)" value="${val > 0 ? val : ''}" placeholder="Not Set" class="w-full p-2 text-xs rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white outline-none"></div>`;
+                    inputsDiv.innerHTML += `<div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500 w-1/3 truncate">${esc(c)}</span><input type="number" onchange="updateBudget(${JSON.stringify(c)}, this.value)" value="${val > 0 ? val : ''}" placeholder="Not Set" class="w-full p-2 text-xs rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white outline-none"></div>`;
                 });
             }
             
@@ -959,7 +970,7 @@
                         const spent = cats[c] || 0;
                         const pct = Math.min((spent / budget) * 100, 100);
                         let color = 'bg-emerald-500'; if(pct > 75) color = 'bg-amber-500'; if(pct >= 100) color = 'bg-rose-500';
-                        barsDiv.innerHTML += `<div><div class="flex justify-between items-end mb-1"><span class="font-bold text-sm text-slate-700 dark:text-slate-200">${c}</span><span class="text-xs font-bold text-slate-500"><span class="money-val">£${fmt(spent)}</span> / <span class="money-val">£${fmt(budget)}</span></span></div><div class="progress-bar-bg bg-slate-200 dark:bg-slate-800"><div class="progress-bar-fill ${color}" style="width: ${pct}%"></div></div></div>`;
+                        barsDiv.innerHTML += `<div><div class="flex justify-between items-end mb-1"><span class="font-bold text-sm text-slate-700 dark:text-slate-200">${esc(c)}</span><span class="text-xs font-bold text-slate-500"><span class="money-val">£${fmt(spent)}</span> / <span class="money-val">£${fmt(budget)}</span></span></div><div class="progress-bar-bg bg-slate-200 dark:bg-slate-800"><div class="progress-bar-fill ${color}" style="width: ${pct}%"></div></div></div>`;
                     }
                 });
                 if(document.getElementById('budgetEmpty')) document.getElementById('budgetEmpty').classList.toggle('hidden', hasBudget);
@@ -1028,7 +1039,7 @@
                         const s = (db.billStatus[key] || {})[b.id];
                         const isPaid = (typeof s === 'object') ? s.paid : !!s;
                         const cls = isPaid ? 'paid bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300' : 'unpaid bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300';
-                        billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')"><span class="truncate font-bold">${b.name}</span><div class="flex items-center"><span class="bill-amt money-val">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
+                        billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')"><span class="truncate font-bold">${esc(b.name)}</span><div class="flex items-center"><span class="bill-amt money-val">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
                     });
                     grid.innerHTML += `<div class="calendar-day bg-white dark:bg-slate-900/50 border-b border-r border-slate-200 dark:border-slate-800"><div class="day-number text-slate-400 dark:text-slate-500">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`;
                 }
@@ -1151,9 +1162,9 @@
                     : `Add expense data to calibrate target. (Default: £2k/mo)`;
 
                 const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
-                db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name} <span class="text-[9px] text-slate-400 uppercase ml-1">${item.type}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+                db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
                 const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
-                db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
+                db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
 
             } catch(e) { console.error("Wealth error", e); }
         }
@@ -1177,11 +1188,11 @@
             const recCat = document.getElementById('recCat');
             if (recCat) { recCat.innerHTML = ''; db.categories.forEach(c => recCat.innerHTML += `<option value="${c}">${c}</option>`); }
         }
-        function checkNewCategory(sel) { if(sel.value === 'ADD_NEW') { const n = prompt("New Category Name:"); if(n) { db.categories.push(n); save(); renderDropdowns(); sel.value = n; } else sel.value = db.categories[0]; } }
-        function renderSettingsCats() { const div = document.getElementById('settingsCatList'); div.innerHTML = ''; db.categories.forEach(c => { if(c === 'Bills') return; div.innerHTML += `<div class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300">${c} <span onclick="delCat('${c}')" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span></div>`; }); }
+        function checkNewCategory(sel) { if(sel.value === 'ADD_NEW') { const raw = prompt("New Category Name:"); const n = raw ? raw.trim().slice(0, 50) : ''; if(n && !db.categories.includes(n)) { db.categories.push(n); save(); renderDropdowns(); sel.value = n; } else if(n) { sel.value = n; } else { sel.value = db.categories[0]; } } }
+        function renderSettingsCats() { const div = document.getElementById('settingsCatList'); div.innerHTML = ''; db.categories.forEach(c => { if(c === 'Bills') return; div.innerHTML += `<div class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300">${esc(c)} <span onclick="delCat(${JSON.stringify(c)})" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span></div>`; }); }
         
         window.delCat = (c) => { if(confirm(`Delete '${c}'?`)) { db.categories = db.categories.filter(x => x !== c); delete db.budgets[c]; save(); renderSettingsCats(); renderDropdowns(); } };
-        window.addCatPrompt = () => { const n = prompt("Category Name:"); if(n) { db.categories.push(n); save(); renderSettingsCats(); renderDropdowns(); } };
+        window.addCatPrompt = () => { const raw = prompt("Category Name:"); const n = raw ? raw.trim().slice(0, 50) : ''; if(n && !db.categories.includes(n)) { db.categories.push(n); save(); renderSettingsCats(); renderDropdowns(); } else if(n) { showToast(`Category "${n}" already exists`); } };
         window.toggleBill = (id) => { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const bill = db.bills.find(b => b.id === id); const s = db.billStatus[key][id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; if(!isPaid) { if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) { db.billStatus[key][id] = { paid: true, updated: Date.now() }; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = { paid: false, updated: Date.now() }; save(); } };
         window.delBill = (id) => { if(confirm("Delete bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); renderCalendar(); } };
         window.delWealthItem = (type, id) => { 
@@ -1274,7 +1285,7 @@
             const container = document.getElementById('toastContainer');
             const id = 'toast_' + Date.now();
             const undoHtml = undoFn ? `<button class="toast-btn" onclick="toastUndo('${id}')">Undo</button>` : '';
-            container.insertAdjacentHTML('beforeend', `<div id="${id}" class="toast"><span>${msg}</span>${undoHtml}</div>`);
+            container.insertAdjacentHTML('beforeend', `<div id="${id}" class="toast"><span>${esc(msg)}</span>${undoHtml}</div>`);
             const el = document.getElementById(id);
             if (undoFn) el._undoFn = undoFn;
             setTimeout(() => { if (el && el.parentNode) el.remove(); }, 4500);
@@ -1319,10 +1330,11 @@
             document.getElementById('recBtnInc').className = `py-1.5 rounded-md text-xs font-bold transition ${!isExp ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`;
         }
         function saveRecurring() {
-            const desc = document.getElementById('recDesc').value.trim();
+            const desc = document.getElementById('recDesc').value.trim().slice(0, 200);
             const amt = math(document.getElementById('recAmt').value);
             const cat = document.getElementById('recCat').value;
-            if (!desc || !amt) return showToast('Enter description and amount');
+            if (!desc) return showToast('Enter a description');
+            if (!amt || amt <= 0) return showToast('Enter a valid positive amount');
             db.recurring.push({ id: genId(), desc, amount: amt, category: cat, type: currentRecType });
             document.getElementById('recDesc').value = '';
             document.getElementById('recAmt').value = '';
@@ -1339,7 +1351,7 @@
             db.recurring.forEach(r => {
                 const sign = r.type === 'income' ? '+' : '-';
                 const col = r.type === 'income' ? 'text-emerald-600' : 'text-rose-600';
-                list.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-xs"><div><span class="font-bold text-slate-700 dark:text-slate-200">${r.desc}</span> <span class="text-slate-400 dark:text-slate-500 ml-1">${r.category}</span></div><div class="flex items-center gap-2"><span class="font-bold ${col}">${sign}£${fmt(r.amount)}</span><button type="button" onclick="delRecurring('${r.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fas fa-times"></i></button></div></div>`;
+                list.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-xs"><div><span class="font-bold text-slate-700 dark:text-slate-200">${esc(r.desc)}</span> <span class="text-slate-400 dark:text-slate-500 ml-1">${esc(r.category)}</span></div><div class="flex items-center gap-2"><span class="font-bold ${col}">${sign}£${fmt(r.amount)}</span><button type="button" onclick="delRecurring('${r.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fas fa-times"></i></button></div></div>`;
             });
         }
         window.delRecurring = (id) => { db.recurring = db.recurring.filter(r => r.id !== id); save(); renderRecurring(); showToast('Template removed'); };
@@ -1380,7 +1392,7 @@
                 list.innerHTML = '';
                 upcoming.sort((a, b) => a.daysUntil - b.daysUntil).forEach(b => {
                     const label = b.daysUntil === 0 ? 'Today' : b.daysUntil === 1 ? 'Tomorrow' : `In ${b.daysUntil}d`;
-                    list.innerHTML += `<div class="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold"><i class="fas fa-clock"></i>${b.name} <span class="font-normal money-val">£${fmt(b.amount)}</span><span class="text-[9px] uppercase bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 rounded-full">${label}</span></div>`;
+                    list.innerHTML += `<div class="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold"><i class="fas fa-clock"></i>${esc(b.name)} <span class="font-normal money-val">£${fmt(b.amount)}</span><span class="text-[9px] uppercase bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 rounded-full">${esc(label)}</span></div>`;
                 });
             } else {
                 widget.classList.add('hidden');
