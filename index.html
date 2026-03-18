@@ -40,16 +40,43 @@
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         
         /* PRIVACY MODE BLUR */
-        body.privacy-active .money-val, 
+        body.privacy-active .money-val,
         body.privacy-active canvas,
-        body.privacy-active .bill-amt { 
-            filter: blur(6px); 
+        body.privacy-active .bill-amt {
+            filter: blur(6px);
             user-select: none;
             transition: filter 0.3s ease;
         }
+
+        /* PROGRESS BARS */
+        .progress-bar-bg { height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; }
+        .dark .progress-bar-bg { background: #1e293b; }
+        .progress-bar-fill { height: 8px; border-radius: 9999px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* TOAST */
+        #toastContainer { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+        .toast { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #1e293b; color: #f1f5f9; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 500; box-shadow: 0 4px 24px rgba(0,0,0,0.25); animation: fadeIn 0.3s ease; pointer-events: all; min-width: 200px; }
+        .toast-btn { background: none; border: none; color: #818cf8; font-weight: 700; cursor: pointer; font-size: 0.8125rem; padding: 0; margin-left: auto; white-space: nowrap; }
+
+        /* MOBILE SIDEBAR */
+        @media (max-width: 768px) {
+            #sidebar { position: fixed; left: -280px; height: 100vh; transition: left 0.3s ease; z-index: 200; overflow-y: auto; }
+            #sidebar.open { left: 0; }
+            #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; display: none; }
+            #sidebarOverlay.open { display: block; }
+            #mobileMenuBtn { display: flex !important; }
+            #main-content { padding: 1rem; }
+        }
+        @media (min-width: 769px) { #mobileMenuBtn { display: none !important; } }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 h-screen flex overflow-hidden">
+
+    <div id="toastContainer"></div>
+    <div id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <button id="mobileMenuBtn" type="button" onclick="toggleSidebar()" style="display:none" class="fixed top-4 left-4 z-[201] bg-slate-900 text-white p-2.5 rounded-lg shadow-lg items-center justify-center">
+        <i class="fas fa-bars"></i>
+    </button>
 
     <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between z-50">
         <div>
@@ -99,7 +126,7 @@
     <div id="main-content" class="flex-grow overflow-y-auto p-8 bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
         
         <div id="view-dashboard" class="view-section fade-in max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
                 <div class="card bg-slate-900 text-white col-span-1 md:col-span-2 relative overflow-hidden group cursor-pointer border-none rounded-2xl p-6 shadow-xl" onclick="editAnnualIncome()">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110"><i class="fas fa-edit text-6xl"></i></div>
                     <p class="text-xs text-slate-400 font-bold uppercase mb-1">Annual Income Target</p>
@@ -117,13 +144,25 @@
                     <p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p>
                     <h3 class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1 money-val" id="kpiExp">£0.00</h3>
                 </div>
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-violet-500 md:col-span-2 lg:col-span-1 rounded-2xl p-6 shadow-sm">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-violet-500 rounded-2xl p-6 shadow-sm">
                     <div class="overflow-hidden">
                         <p class="text-xs text-slate-400 font-bold uppercase">Top Category</p>
                         <h3 class="text-xl font-bold text-violet-600 dark:text-violet-400 mt-1 truncate" id="kpiMaxCat">N/A</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 money-val" id="kpiMaxVal">£0.00</p>
                     </div>
                 </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-indigo-500 rounded-2xl p-6 shadow-sm">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Savings Rate</p>
+                    <h3 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="kpiSavingsRate">0%</h3>
+                    <p class="text-xs text-slate-500 mt-1 money-val" id="kpiSavingsAmt">£0.00 saved</p>
+                </div>
+            </div>
+
+            <div id="upcomingBillsWidget" class="hidden card bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-8">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-amber-700 dark:text-amber-400 text-sm"><i class="fas fa-bell mr-2"></i>Bills Due This Week</h3>
+                </div>
+                <div id="upcomingBillsList" class="flex flex-wrap gap-2"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -162,8 +201,16 @@
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm lg:col-span-2 min-h-[400px]">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-white">Transactions</h3>
-                        <div class="relative w-full sm:w-48"><input type="text" id="txSearch" onkeyup="render()" placeholder="Search..." class="w-full pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition"><i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs"></i></div>
+                        <div class="flex items-center gap-3">
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white">Transactions</h3>
+                            <button type="button" onclick="applyRecurring()" title="Apply recurring templates to this month" class="text-xs text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-1 border border-indigo-200 dark:border-indigo-800 px-2 py-1 rounded-lg transition hover:bg-indigo-50 dark:hover:bg-indigo-900/20"><i class="fas fa-redo-alt"></i> Recurring</button>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <select id="txCatFilter" onchange="render()" class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none focus:border-indigo-500 transition cursor-pointer">
+                                <option value="">All Categories</option>
+                            </select>
+                            <div class="relative"><input type="text" id="txSearch" onkeyup="render()" placeholder="Search..." class="pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition w-36"><i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs"></i></div>
+                        </div>
                     </div>
                     <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800"><th class="py-2 font-bold pl-2">Description</th><th class="py-2 font-bold text-right">Amount</th><th class="py-2 font-bold text-right pr-2">Actions</th></tr></thead><tbody id="listTx" class="text-sm text-slate-700 dark:text-slate-300"></tbody></table><div id="emptyState" class="hidden py-12 text-center"><p class="text-slate-400 font-medium text-sm">No transactions found.</p></div></div>
                 </div>
@@ -322,6 +369,33 @@
                 <div id="settingsCatList" class="flex flex-wrap gap-2 mb-4"></div>
                 <button type="button" onclick="addCatPrompt()" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
             </div>
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Recurring Transactions</h3>
+                <p class="text-xs text-slate-500 mb-4">Templates applied to a month with one click from the Transactions panel.</p>
+                <form class="flex flex-col gap-2 mb-4" onsubmit="return false;">
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                        <button type="button" onclick="setRecType('expense')" id="recBtnExp" class="py-1.5 rounded-md text-xs font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
+                        <button type="button" onclick="setRecType('income')" id="recBtnInc" class="py-1.5 rounded-md text-xs font-bold text-slate-400 transition">Income</button>
+                    </div>
+                    <input type="text" id="recDesc" placeholder="Description" class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                    <div class="flex gap-2">
+                        <input type="number" id="recAmt" placeholder="Amount" step="0.01" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        <select id="recCat" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                    </div>
+                    <button type="button" onclick="saveRecurring()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-500 transition">+ Add Template</button>
+                </form>
+                <div id="recurringList" class="space-y-2"></div>
+            </div>
+
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Export Data</h3>
+                <p class="text-xs text-slate-500 mb-4">Download your financial data for backup or analysis.</p>
+                <div class="flex gap-3">
+                    <button type="button" onclick="exportJSON()" class="flex-1 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 dark:hover:bg-slate-600 transition"><i class="fas fa-download mr-2"></i>JSON Backup</button>
+                    <button type="button" onclick="exportCSV()" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-500 transition"><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                </div>
+            </div>
+
             <div class="card bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-6 max-w-md">
                 <h3 class="font-bold text-rose-600 mb-2">Danger Zone</h3>
                 <button type="button" onclick="resetData()" class="text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-lg font-bold text-xs transition">Reset All Data</button>
@@ -362,6 +436,7 @@
         if(!db.budgets) db.budgets = {};
         if(!db.categories) db.categories = DEFAULTS.categories;
         if(!db.categories.includes('Imported')) db.categories.push('Imported');
+        if(!db.recurring) db.recurring = [];
         
         // GLOBALS
         let currentTxType = 'expense';
@@ -567,7 +642,12 @@
                 const list = document.getElementById('listTx');
                 if(list) list.innerHTML = '';
 
-                const filteredData = data.filter(t => t.desc.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm));
+                const catFilter = document.getElementById('txCatFilter') ? document.getElementById('txCatFilter').value : '';
+                const filteredData = data.filter(t => {
+                    const matchSearch = t.desc.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm);
+                    const matchCat = !catFilter || t.category === catFilter;
+                    return matchSearch && matchCat;
+                });
                 filteredData.sort((a,b) => b.updatedAt - a.updatedAt); 
 
                 filteredData.forEach(t => {
@@ -601,6 +681,12 @@
                 for(const [c, v] of Object.entries(cats)) { if(v > maxVal) { maxVal = v; maxCat = c; } }
                 if(document.getElementById('kpiMaxCat')) document.getElementById('kpiMaxCat').innerText = maxCat;
                 if(document.getElementById('kpiMaxVal')) document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
+
+                const savingsRate = inc > 0 ? ((inc - exp) / inc * 100) : 0;
+                const savedAmt = inc - exp;
+                if(document.getElementById('kpiSavingsRate')) document.getElementById('kpiSavingsRate').innerText = `${savingsRate.toFixed(1)}%`;
+                if(document.getElementById('kpiSavingsAmt')) document.getElementById('kpiSavingsAmt').innerText = `£${fmt(Math.max(0, savedAmt))} saved`;
+                renderUpcomingBills();
 
                 if(!document.getElementById('view-dashboard').classList.contains('hidden')) {
                     updateDashboardCharts(cats);
@@ -786,7 +872,22 @@
             document.getElementById('btnCancelDebt').classList.add('hidden');
         };
 
-        window.delTx = (id) => { if(confirm("Delete transaction?")) { const k = monthPicker.value; db.deletedIds.push(id); db.transactions[k] = db.transactions[k].filter(t => t.id !== id); if(editingTxId === id) resetTxForm(); save(); } };
+        window.delTx = (id) => {
+            const k = monthPicker.value;
+            const tx = (db.transactions[k] || []).find(t => t.id === id);
+            if (!tx) return;
+            const backup = { ...tx };
+            db.deletedIds.push(id);
+            db.transactions[k] = db.transactions[k].filter(t => t.id !== id);
+            if (editingTxId === id) resetTxForm();
+            save();
+            showToast(`Deleted "${tx.desc.slice(0, 25)}"`, () => {
+                db.deletedIds = db.deletedIds.filter(d => d !== id);
+                if (!db.transactions[k]) db.transactions[k] = [];
+                db.transactions[k].push(backup);
+                save();
+            });
+        };
 
         function updateDashboardCharts(cats) {
             const ctxSpend = document.getElementById('chartSpend').getContext('2d');
@@ -1062,7 +1163,20 @@
             if(map[c]) return map[c]; let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
         };
         
-        function renderDropdowns() { const sel = document.getElementById('txCat'); const cur = sel.value; sel.innerHTML = ''; db.categories.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`); sel.innerHTML += `<option value="ADD_NEW">+ New Category...</option>`; if(db.categories.includes(cur)) sel.value = cur; }
+        function renderDropdowns() {
+            const sel = document.getElementById('txCat');
+            const cur = sel.value;
+            sel.innerHTML = '';
+            db.categories.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`);
+            sel.innerHTML += `<option value="ADD_NEW">+ New Category...</option>`;
+            if(db.categories.includes(cur)) sel.value = cur;
+            // Update category filter
+            const filter = document.getElementById('txCatFilter');
+            if (filter) { const cf = filter.value; filter.innerHTML = '<option value="">All Categories</option>'; db.categories.forEach(c => filter.innerHTML += `<option value="${c}">${c}</option>`); if(db.categories.includes(cf)) filter.value = cf; }
+            // Update recurring category select
+            const recCat = document.getElementById('recCat');
+            if (recCat) { recCat.innerHTML = ''; db.categories.forEach(c => recCat.innerHTML += `<option value="${c}">${c}</option>`); }
+        }
         function checkNewCategory(sel) { if(sel.value === 'ADD_NEW') { const n = prompt("New Category Name:"); if(n) { db.categories.push(n); save(); renderDropdowns(); sel.value = n; } else sel.value = db.categories[0]; } }
         function renderSettingsCats() { const div = document.getElementById('settingsCatList'); div.innerHTML = ''; db.categories.forEach(c => { if(c === 'Bills') return; div.innerHTML += `<div class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300">${c} <span onclick="delCat('${c}')" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span></div>`; }); }
         
@@ -1155,45 +1269,126 @@
             render();
         };
 
-        // AUTO-RUN CLEANUP ON START
-        function consolidateWealth() {
-            let hasChanges = false;
-            // 1. Merge Assets
-            const assetMap = new Map();
-            db.wealth.assets.forEach(a => {
-                const key = a.name.trim().toLowerCase();
-                if (assetMap.has(key)) {
-                    const existing = assetMap.get(key);
-                    existing.value += parseFloat(a.value); // Add values
-                    hasChanges = true;
-                } else {
-                    assetMap.set(key, { ...a, value: parseFloat(a.value) });
-                }
-            });
+        // TOAST SYSTEM
+        function showToast(msg, undoFn = null) {
+            const container = document.getElementById('toastContainer');
+            const id = 'toast_' + Date.now();
+            const undoHtml = undoFn ? `<button class="toast-btn" onclick="toastUndo('${id}')">Undo</button>` : '';
+            container.insertAdjacentHTML('beforeend', `<div id="${id}" class="toast"><span>${msg}</span>${undoHtml}</div>`);
+            const el = document.getElementById(id);
+            if (undoFn) el._undoFn = undoFn;
+            setTimeout(() => { if (el && el.parentNode) el.remove(); }, 4500);
+        }
+        window.toastUndo = (id) => { const el = document.getElementById(id); if (el && el._undoFn) { el._undoFn(); el.remove(); } };
 
-            // 2. Merge Debts
-            const debtMap = new Map();
-            db.wealth.debts.forEach(d => {
-                const key = d.name.trim().toLowerCase();
-                if (debtMap.has(key)) {
-                    const existing = debtMap.get(key);
-                    existing.value += parseFloat(d.value);
-                    hasChanges = true;
-                } else {
-                    debtMap.set(key, { ...d, value: parseFloat(d.value) });
-                }
-            });
+        // MOBILE SIDEBAR
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('open');
+        }
 
-            if (hasChanges) {
-                db.wealth.assets = Array.from(assetMap.values());
-                db.wealth.debts = Array.from(debtMap.values());
-                localStorage.setItem('infinityDB', JSON.stringify(db)); // Force save
-                console.log("Data consolidated");
+        // EXPORT
+        function exportJSON() {
+            const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `finance-backup-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            showToast('JSON backup downloaded');
+        }
+        function exportCSV() {
+            const rows = [['Month','Date Added','Description','Category','Type','Amount']];
+            Object.keys(db.transactions).sort().forEach(month => {
+                (db.transactions[month] || []).forEach(t => {
+                    rows.push([month, new Date(t.updatedAt || 0).toISOString().slice(0,10), `"${(t.desc||'').replace(/"/g,'""')}"`, t.category, t.type, t.amount]);
+                });
+            });
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `transactions-${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            showToast('CSV exported successfully');
+        }
+
+        // RECURRING TRANSACTIONS
+        let currentRecType = 'expense';
+        function setRecType(type) {
+            currentRecType = type;
+            const isExp = type === 'expense';
+            document.getElementById('recBtnExp').className = `py-1.5 rounded-md text-xs font-bold transition ${isExp ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400'}`;
+            document.getElementById('recBtnInc').className = `py-1.5 rounded-md text-xs font-bold transition ${!isExp ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`;
+        }
+        function saveRecurring() {
+            const desc = document.getElementById('recDesc').value.trim();
+            const amt = math(document.getElementById('recAmt').value);
+            const cat = document.getElementById('recCat').value;
+            if (!desc || !amt) return showToast('Enter description and amount');
+            db.recurring.push({ id: genId(), desc, amount: amt, category: cat, type: currentRecType });
+            document.getElementById('recDesc').value = '';
+            document.getElementById('recAmt').value = '';
+            save(); renderRecurring();
+        }
+        function renderRecurring() {
+            const list = document.getElementById('recurringList');
+            if (!list) return;
+            list.innerHTML = '';
+            if (!db.recurring || db.recurring.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No templates yet. Add one above.</p>';
+                return;
+            }
+            db.recurring.forEach(r => {
+                const sign = r.type === 'income' ? '+' : '-';
+                const col = r.type === 'income' ? 'text-emerald-600' : 'text-rose-600';
+                list.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-xs"><div><span class="font-bold text-slate-700 dark:text-slate-200">${r.desc}</span> <span class="text-slate-400 dark:text-slate-500 ml-1">${r.category}</span></div><div class="flex items-center gap-2"><span class="font-bold ${col}">${sign}£${fmt(r.amount)}</span><button type="button" onclick="delRecurring('${r.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fas fa-times"></i></button></div></div>`;
+            });
+        }
+        window.delRecurring = (id) => { db.recurring = db.recurring.filter(r => r.id !== id); save(); renderRecurring(); showToast('Template removed'); };
+        function applyRecurring() {
+            if (!db.recurring || db.recurring.length === 0) { showToast('No templates set up — add them in Settings'); return; }
+            const key = monthPicker.value;
+            if (!db.transactions[key]) db.transactions[key] = [];
+            let count = 0;
+            db.recurring.forEach(r => {
+                const exists = db.transactions[key].some(t => t.desc === r.desc && t.amount === r.amount && t.type === r.type);
+                if (!exists) { db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: r.desc, amount: r.amount, category: r.category, type: r.type }); count++; }
+            });
+            if (count > 0) { save(); showToast(`Applied ${count} recurring transaction${count > 1 ? 's' : ''}`); }
+            else showToast('All recurring transactions already applied this month');
+        }
+
+        // UPCOMING BILLS WIDGET
+        function renderUpcomingBills() {
+            const widget = document.getElementById('upcomingBillsWidget');
+            const list = document.getElementById('upcomingBillsList');
+            if (!widget || !list) return;
+            const today = new Date();
+            const key = monthPicker.value;
+            const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+            if (key !== currentMonthKey) { widget.classList.add('hidden'); return; }
+            const [y, m] = key.split('-').map(Number);
+            const upcoming = [];
+            db.bills.forEach(b => {
+                const day = Math.min(b.day, new Date(y, m, 0).getDate());
+                const billDate = new Date(y, m - 1, day);
+                const daysUntil = Math.ceil((billDate - today) / 86400000);
+                const s = (db.billStatus[key] || {})[b.id];
+                const isPaid = (typeof s === 'object') ? s.paid : !!s;
+                if (!isPaid && daysUntil >= 0 && daysUntil <= 7) upcoming.push({ ...b, daysUntil });
+            });
+            if (upcoming.length > 0) {
+                widget.classList.remove('hidden');
+                list.innerHTML = '';
+                upcoming.sort((a, b) => a.daysUntil - b.daysUntil).forEach(b => {
+                    const label = b.daysUntil === 0 ? 'Today' : b.daysUntil === 1 ? 'Tomorrow' : `In ${b.daysUntil}d`;
+                    list.innerHTML += `<div class="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold"><i class="fas fa-clock"></i>${b.name} <span class="font-normal money-val">£${fmt(b.amount)}</span><span class="text-[9px] uppercase bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 rounded-full">${label}</span></div>`;
+                });
+            } else {
+                widget.classList.add('hidden');
             }
         }
-        
-        consolidateWealth(); // <-- THIS LINE FIXES YOUR EXISTING DATA
-        renderDropdowns(); applyTheme(); render(); renderSettingsCats(); updateCloudStatus();
+
+        consolidateWealth(); // Auto-merge duplicate wealth items on start
+        renderDropdowns(); applyTheme(); render(); renderSettingsCats(); updateCloudStatus(); renderRecurring();
         window.editAnnualIncome = () => { const v = prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
         window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
         document.getElementById('formCloud').addEventListener('submit', e=>{ 
