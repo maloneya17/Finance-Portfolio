@@ -205,10 +205,10 @@ export function renderCalendar(): void {
       if (day > daysInMonth) { day = daysInMonth; b._shifted = true; } else { b._shifted = false; }
       if (!billMap[day]) billMap[day] = [];
       billMap[day].push(b);
-      total += b.amount;
+      total += math(b.amount);
       const s = (db.billStatus[key] ?? {})[b.id];
       const isPaid = typeof s === 'object' ? s.paid : !!s;
-      if (!isPaid) unpaidBillTotal += b.amount;
+      if (!isPaid) unpaidBillTotal += math(b.amount);
     });
 
     const grid = document.getElementById('calendarCells');
@@ -234,7 +234,7 @@ export function renderCalendar(): void {
         const checkIcon = isPaid ? `<i class="fas fa-check text-emerald-500 mr-1" style="font-size:9px"></i>` : '';
         const shiftTitle = b._shifted ? ` title="Scheduled day ${b.day} — moved to last day of this month"` : '';
         const shiftMark = b._shifted ? ' <span title="Date adjusted" style="font-size:9px">*</span>' : '';
-        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}"${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}"><i class="fas fa-times-circle"></i></span></div></div>`;
+        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}"${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">£${fmt(b.amount)}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}"><i class="fas fa-times-circle"></i></span></div></div>`;
       });
       if (overflow > 0) billsHtml += `<div class="text-[9px] text-slate-400 font-bold pl-1">+${overflow} more</div>`;
 
@@ -267,7 +267,7 @@ export function renderWealth(): void {
     const rollover = getRollover(key);
     const txs = db.transactions[key] ?? [];
     let inc = 0, exp = 0;
-    txs.forEach(t => { if (t.type === 'income') inc += t.amount; else exp += t.amount; });
+    txs.forEach(t => { if (t.type === 'income') inc += math(t.amount); else exp += math(t.amount); });
     const operatingCash = (inc + rollover) - exp;
 
     const displayTotalAssets = totalAssets + operatingCash;

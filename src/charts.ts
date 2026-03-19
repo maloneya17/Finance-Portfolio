@@ -60,7 +60,7 @@ function getCtx(id: string): CanvasRenderingContext2D {
 
 // ─── Dashboard charts ─────────────────────────────────────────────────────────
 import { db } from './db';
-import { fmt, getCatColor } from './utils';
+import { math, fmt, getCatColor } from './utils';
 import { FIRE_ROLLING_MONTHS, FIRE_DEFAULT_EXP, FIRE_MULTIPLIER } from './constants';
 
 export function updateDashboardCharts(cats: Record<string, number>): void {
@@ -115,7 +115,7 @@ export function updateDashboardCharts(cats: Record<string, number>): void {
     labels.push(d.toLocaleString('default', { month: 'short' }));
     const txs = db.transactions[k] ?? [];
     let inc = 0, exp = 0;
-    txs.forEach(t => { if (t.type === 'income') inc += t.amount; else exp += t.amount; });
+    txs.forEach(t => { if (t.type === 'income') inc += math(t.amount); else exp += math(t.amount); });
     dInc.push(inc);
     dExp.push(exp);
     d.setMonth(d.getMonth() + 1);
@@ -281,7 +281,7 @@ export function calcFireStats(currentNet: number): {
     const fk = `${fireD.getFullYear()}-${String(fireD.getMonth() + 1).padStart(2, '0')}`;
     const txs = db.transactions[fk] ?? [];
     let monthExp = 0;
-    txs.forEach(t => { if (t.type === 'expense') monthExp += t.amount; });
+    txs.forEach(t => { if (t.type === 'expense') monthExp += math(t.amount); });
     totalSpent += monthExp;
     if (monthExp > 0) hasData = true;
     fireD.setMonth(fireD.getMonth() + 1);

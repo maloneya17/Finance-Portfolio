@@ -437,7 +437,7 @@ export function executeImport(): void {
 
     for (let i = 1; i < csvData.length; i++) {
       const row = csvData[i];
-      if (row.length <= 1 && !row[0]) continue;
+      if (row.length === 0 || (row.length === 1 && !row[0]?.trim())) continue;
 
       const rawAmtStr = row[amtIdx]?.replace(/[^0-9.-]/g, '') ?? '';
       let rawAmt = parseFloat(rawAmtStr);
