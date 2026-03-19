@@ -4,81 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Portfolio</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PWA -->
+    <meta name="theme-color" content="#10b981">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Finance">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/svg+xml" href="/icon.svg">
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
-        }
-    </script>
-    
-    <style>
-        /* CORE */
-        body { transition: background-color 0.3s, color 0.3s; }
-        .nav-item { transition: all 0.2s ease; }
-        .nav-item:hover { transform: translateX(4px); }
-        .nav-item.active { box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transform: translateX(0); }
-        
-        /* CALENDAR */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; border-radius: 12px; overflow: hidden; }
-        .calendar-day { min-height: 130px; padding: 8px; position: relative; transition: background-color 0.2s; }
-        
-        /* BILLS */
-        .bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; border-left: 3px solid transparent; }
-        .bill-chip.paid { text-decoration: line-through; opacity: 0.6; }
-        .bill-chip:hover .btn-delete-bill { opacity: 1; }
-        .btn-delete-bill { opacity: 0; transition: opacity 0.2s; }
-        
-        /* ANIMATION */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        
-        /* PRIVACY MODE BLUR */
-        body.privacy-active .money-val, 
-        body.privacy-active canvas,
-        body.privacy-active .bill-amt { 
-            filter: blur(6px); 
-            user-select: none;
-            transition: filter 0.3s ease;
-        }
-    </style>
+    <script type="module" src="/src/main.ts"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 h-screen flex overflow-hidden">
+
+    <div id="toastContainer" role="region" aria-live="assertive" aria-atomic="false"></div>
+    <div id="sidebarOverlay"></div>
+    <button id="mobileMenuBtn" type="button" data-action="toggle-sidebar" style="display:none"
+        class="fixed top-4 left-4 z-[201] bg-slate-900 text-white p-2.5 rounded-lg shadow-lg items-center justify-center">
+        <i class="fas fa-bars"></i>
+    </button>
 
     <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between z-50">
         <div>
             <div class="flex items-center gap-3 mb-10">
-                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg transform rotate-3"><i class="fas fa-wallet text-white"></i></div>
+                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg transform rotate-3">
+                    <i class="fas fa-wallet text-white"></i>
+                </div>
                 <h1 class="font-bold text-lg leading-tight tracking-tight">Infinity<br><span class="text-indigo-400">Finance</span></h1>
             </div>
 
             <div class="mb-8">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Timeline</label>
-                <input type="month" id="monthPicker" class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg font-bold text-white text-sm outline-none focus:border-indigo-500 transition cursor-pointer hover:bg-slate-700">
+                <label for="monthPicker" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Timeline</label>
+                <input type="month" id="monthPicker" aria-label="Select month to view"
+                    class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg font-bold text-white text-sm outline-none focus:border-indigo-500 transition cursor-pointer hover:bg-slate-700">
             </div>
 
-            <nav class="space-y-1">
-                <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item active flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer bg-indigo-600 text-white shadow-lg shadow-indigo-900/50"><i class="fas fa-chart-pie w-5"></i> Dashboard</div>
-                <div onclick="switchView('budget')" id="nav-budget" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white"><i class="fas fa-coins w-5"></i> Budgets</div>
-                <div onclick="switchView('bills')" id="nav-bills" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white"><i class="fas fa-calendar-alt w-5"></i> Bills</div>
-                <div onclick="switchView('wealth')" id="nav-wealth" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white"><i class="fas fa-landmark w-5"></i> Net Worth</div>
-                <div onclick="switchView('reports')" id="nav-reports" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white"><i class="fas fa-chart-line w-5"></i> Reports</div>
-                <div onclick="switchView('settings')" id="nav-settings" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white"><i class="fas fa-sliders-h w-5"></i> Settings</div>
+            <nav class="space-y-1" aria-label="Main navigation">
+                <div role="button" tabindex="0" data-nav="dashboard" id="nav-dashboard"
+                    class="nav-item active flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer bg-indigo-600 text-white shadow-lg shadow-indigo-900/50"
+                    aria-current="page"><i class="fas fa-chart-pie w-5" aria-hidden="true"></i> Dashboard</div>
+                <div role="button" tabindex="0" data-nav="budget" id="nav-budget"
+                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    <i class="fas fa-coins w-5" aria-hidden="true"></i> Budgets</div>
+                <div role="button" tabindex="0" data-nav="bills" id="nav-bills"
+                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    <i class="fas fa-calendar-alt w-5" aria-hidden="true"></i> Bills</div>
+                <div role="button" tabindex="0" data-nav="wealth" id="nav-wealth"
+                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    <i class="fas fa-landmark w-5" aria-hidden="true"></i> Net Worth</div>
+                <div role="button" tabindex="0" data-nav="reports" id="nav-reports"
+                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    <i class="fas fa-chart-line w-5" aria-hidden="true"></i> Reports</div>
+                <div role="button" tabindex="0" data-nav="settings" id="nav-settings"
+                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    <i class="fas fa-sliders-h w-5" aria-hidden="true"></i> Settings</div>
             </nav>
         </div>
 
         <div class="pt-6 border-t border-slate-800">
-            <button type="button" onclick="togglePrivacy()" class="w-full py-2 mb-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
+            <button type="button" data-action="toggle-privacy"
+                class="w-full py-2 mb-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
                 <i class="fas fa-eye-slash" id="privacyIcon"></i> <span id="privacyLabel">Hide Figures</span>
             </button>
-            
-            <button type="button" onclick="toggleTheme()" class="w-full py-2 mb-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
+            <button type="button" data-action="toggle-theme"
+                class="w-full py-2 mb-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
                 <i class="fas fa-moon"></i> <span id="themeLabel">Dark Mode</span>
             </button>
 
@@ -86,10 +77,12 @@
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sync Status</span>
                 <span id="syncIndicator" class="hidden text-[10px] text-amber-500"><i class="fas fa-sync fa-spin"></i></span>
             </div>
-            <button type="button" onclick="manualSync(true)" id="btnSync" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
+            <button type="button" data-action="sync" id="btnSync"
+                class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
                 <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now
             </button>
-            <div class="text-[10px] text-center text-slate-500 font-medium mt-1 flex justify-center items-center gap-2">
+            <div class="text-[10px] text-center text-slate-500 font-medium mt-1 flex justify-center items-center gap-2"
+                title="Local Mode: data is stored only on this device. Cloud Linked: data is synced across devices via your Google Script URL.">
                 <span id="statusDot" class="w-2 h-2 rounded-full bg-slate-600"></span>
                 <span id="statusText">Local Only</span>
             </div>
@@ -97,11 +90,15 @@
     </div>
 
     <div id="main-content" class="flex-grow overflow-y-auto p-8 bg-slate-100 dark:bg-slate-950 transition-colors duration-300">
-        
+
+        <!-- DASHBOARD -->
         <div id="view-dashboard" class="view-section fade-in max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                <div class="card bg-slate-900 text-white col-span-1 md:col-span-2 relative overflow-hidden group cursor-pointer border-none rounded-2xl p-6 shadow-xl" onclick="editAnnualIncome()">
-                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110"><i class="fas fa-edit text-6xl"></i></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+                <div class="card bg-slate-900 text-white col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 relative overflow-hidden group cursor-pointer border-none rounded-2xl p-6 shadow-xl"
+                    data-action="edit-annual-income">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110">
+                        <i class="fas fa-edit text-6xl"></i>
+                    </div>
                     <p class="text-xs text-slate-400 font-bold uppercase mb-1">Annual Income Target</p>
                     <h2 class="text-3xl font-extrabold money-val" id="kpiSalary">£0.00</h2>
                     <div class="mt-4 flex gap-4 text-xs font-medium text-slate-400">
@@ -109,7 +106,8 @@
                         <span><i class="fas fa-clock text-indigo-400"></i> Avg: <span id="kpiAvg" class="text-white money-val">£0</span></span>
                     </div>
                 </div>
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-emerald-500 rounded-2xl p-6 shadow-sm">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-emerald-500 rounded-2xl p-6 shadow-sm"
+                    title="Income this month plus any surplus carried forward from previous months (Rollover)">
                     <p class="text-xs text-slate-400 font-bold uppercase">Total Available</p>
                     <h3 class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 money-val" id="kpiInc">£0.00</h3>
                 </div>
@@ -117,13 +115,30 @@
                     <p class="text-xs text-slate-400 font-bold uppercase">Expenses (Month)</p>
                     <h3 class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1 money-val" id="kpiExp">£0.00</h3>
                 </div>
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-violet-500 md:col-span-2 lg:col-span-1 rounded-2xl p-6 shadow-sm">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-violet-500 rounded-2xl p-6 shadow-sm">
                     <div class="overflow-hidden">
                         <p class="text-xs text-slate-400 font-bold uppercase">Top Category</p>
                         <h3 class="text-xl font-bold text-violet-600 dark:text-violet-400 mt-1 truncate" id="kpiMaxCat">N/A</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 money-val" id="kpiMaxVal">£0.00</p>
                     </div>
                 </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-indigo-500 rounded-2xl p-6 shadow-sm">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Savings Rate</p>
+                    <h3 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="kpiSavingsRate">0%</h3>
+                    <p class="text-xs text-slate-500 mt-1 money-val" id="kpiSavingsAmt">£0.00 saved</p>
+                </div>
+            </div>
+
+            <div id="monthBanner" class="hidden flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl px-5 py-3 mb-6 text-sm">
+                <span class="text-indigo-700 dark:text-indigo-300 font-medium"><i class="fas fa-calendar-alt mr-2"></i>Viewing <span id="monthBannerLabel"></span></span>
+                <button type="button" data-action="go-current-month" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap ml-4">Go to today &rarr;</button>
+            </div>
+
+            <div id="upcomingBillsWidget" class="hidden card bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-8">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-bold text-amber-700 dark:text-amber-400 text-sm"><i class="fas fa-bell mr-2"></i>Bills Due This Week</h3>
+                </div>
+                <div id="upcomingBillsList" class="flex flex-wrap gap-2"></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -144,32 +159,76 @@
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm h-fit sticky top-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="txFormTitle">Add Transaction</h3>
-                        <button type="button" onclick="resetTxForm()" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
+                        <button type="button" data-action="cancel-edit-tx" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
                     <form id="formTx" class="space-y-4" onsubmit="return false;">
-                        <input type="hidden" id="txId">
                         <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                            <button type="button" onclick="setTxType('expense')" id="btnExp" class="py-2 rounded-md text-sm font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
-                            <button type="button" onclick="setTxType('income')" id="btnInc" class="py-2 rounded-md text-sm font-bold text-slate-400 transition">Income</button>
+                            <button type="button" id="btnExp" class="py-2 rounded-md text-sm font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
+                            <button type="button" id="btnInc" class="py-2 rounded-md text-sm font-bold text-slate-400 transition">Income</button>
                         </div>
-                        <div><label class="text-[10px] font-bold text-slate-400 uppercase">Description</label><input type="text" id="txDesc" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required></div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase" for="txDesc">Description</label>
+                            <input type="text" id="txDesc" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                        </div>
                         <div class="flex gap-3">
-                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Amount</label><input type="number" id="txAmt" step="0.01" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" required></div>
-                            <div class="w-1/2"><label class="text-[10px] font-bold text-slate-400 uppercase">Category</label><select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer" onchange="checkNewCategory(this)"></select></div>
+                            <div class="w-1/2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase" for="txAmt">Amount</label>
+                                <div class="relative mt-1">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
+                                    <input type="number" id="txAmt" step="0.01" class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                                </div>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase" for="txCat">Category</label>
+                                <select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition cursor-pointer"></select>
+                            </div>
                         </div>
-                        <button type="button" onclick="saveTransaction()" id="btnSubmitTx" class="w-full py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">Add Transaction</button>
+                        <button type="button" data-action="save-tx" id="btnSubmitTx"
+                            class="w-full py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition mt-2">Add Transaction</button>
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm lg:col-span-2 min-h-[400px]">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                        <h3 class="font-bold text-lg text-slate-800 dark:text-white">Transactions</h3>
-                        <div class="relative w-full sm:w-48"><input type="text" id="txSearch" onkeyup="render()" placeholder="Search..." class="w-full pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition"><i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs"></i></div>
+                        <div class="flex items-center gap-3">
+                            <h3 class="font-bold text-lg text-slate-800 dark:text-white">Transactions</h3>
+                            <button type="button" data-action="apply-recurring"
+                                title="Apply recurring templates to this month"
+                                class="text-xs text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-1 border border-indigo-200 dark:border-indigo-800 px-2 py-1 rounded-lg transition hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                <i class="fas fa-redo-alt"></i> Recurring
+                            </button>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <select id="txCatFilter" aria-label="Filter by category"
+                                class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none focus:border-indigo-500 transition cursor-pointer">
+                                <option value="">All Categories</option>
+                            </select>
+                            <div class="relative">
+                                <input type="text" id="txSearch" placeholder="Search..." aria-label="Search transactions"
+                                    class="pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition w-36">
+                                <i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs" aria-hidden="true"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="text-xs text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800"><th class="py-2 font-bold pl-2">Description</th><th class="py-2 font-bold text-right">Amount</th><th class="py-2 font-bold text-right pr-2">Actions</th></tr></thead><tbody id="listTx" class="text-sm text-slate-700 dark:text-slate-300"></tbody></table><div id="emptyState" class="hidden py-12 text-center"><p class="text-slate-400 font-medium text-sm">No transactions found.</p></div></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" aria-label="Transaction list">
+                            <thead>
+                                <tr class="text-xs text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800">
+                                    <th class="py-2 font-bold pl-2" scope="col">Description</th>
+                                    <th class="py-2 font-bold text-right" scope="col">Amount</th>
+                                    <th class="py-2 font-bold text-right pr-2" scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listTx" class="text-sm text-slate-700 dark:text-slate-300" aria-live="polite" aria-relevant="all"></tbody>
+                        </table>
+                        <div id="emptyState" class="hidden py-12 text-center" aria-live="polite">
+                            <p class="text-slate-400 font-medium text-sm">No transactions found.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- BUDGETS -->
         <div id="view-budget" class="view-section hidden fade-in max-w-7xl mx-auto">
             <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-8">Monthly Budgets</h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -189,36 +248,63 @@
             </div>
         </div>
 
+        <!-- BILLS -->
         <div id="view-bills" class="view-section hidden fade-in max-w-7xl mx-auto">
-             <div class="flex flex-col md:flex-row justify-between items-center mb-6"><div><h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Bill Calendar</h2><p class="text-sm text-slate-500">Plan your fixed costs.</p></div></div>
-             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-slate-500 rounded-2xl p-6"><p class="text-xs text-slate-400 font-bold uppercase">Monthly Bills</p><h3 class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1 money-val" id="billTotal">£0.00</h3></div>
-                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-emerald-500 bg-emerald-50 dark:bg-emerald-900/10 border-none rounded-2xl p-6"><p class="text-xs text-emerald-600 font-bold uppercase">Real-Time Safe</p><h3 class="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1 money-val" id="billSafe">£0.00</h3></div>
-             </div>
-             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Bill Calendar</h2>
+                    <p class="text-sm text-slate-500">Plan your fixed costs.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-slate-500 rounded-2xl p-6">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Monthly Bills</p>
+                    <h3 class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1 money-val" id="billTotal">£0.00</h3>
+                </div>
+                <div class="card bg-white dark:bg-slate-900 bg-emerald-50 dark:bg-emerald-900/10 border-none rounded-2xl p-6">
+                    <p class="text-xs text-emerald-600 font-bold uppercase">Real-Time Safe</p>
+                    <h3 class="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mt-1 money-val" id="billSafe">£0.00</h3>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 h-fit">
                     <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Add Recurring Bill</h3>
                     <form id="formBill" class="space-y-4" onsubmit="return false;">
-                        <input type="text" id="billName" placeholder="Bill Name" class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required>
-                        <div class="flex gap-2"><input type="number" id="billAmt" placeholder="£0.00" step="0.01" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required><input type="number" id="billDay" placeholder="Day (1-31)" class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none" required></div>
-                        <button type="button" onclick="saveBill()" class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
+                        <input type="text" id="billName" placeholder="Bill Name"
+                            class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                        <div class="flex gap-2">
+                            <div class="relative w-1/2">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
+                                <input type="number" id="billAmt" step="0.01"
+                                    class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                            </div>
+                            <input type="number" id="billDay" placeholder="Day (1-31)"
+                                class="w-1/2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                        </div>
+                        <button type="button" data-action="save-bill" class="w-full py-2 bg-slate-800 dark:bg-indigo-600 text-white rounded-lg font-bold text-sm">Add Bill</button>
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-0 lg:col-span-2 overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="calendarMonthLabel"></h3></div>
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between">
+                        <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="calendarMonthLabel"></h3>
+                    </div>
                     <div class="calendar-grid bg-slate-200 dark:bg-slate-800 gap-[1px] border border-slate-200 dark:border-slate-800">
-                        <div id="calendarCells" class="contents"></div> 
+                        <div id="calendarCells" class="contents"></div>
                     </div>
                 </div>
-             </div>
+            </div>
         </div>
 
+        <!-- NET WORTH -->
         <div id="view-wealth" class="view-section hidden fade-in max-w-7xl mx-auto">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Net Worth</h2>
-                <button type="button" onclick="logNetWorth()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-lg transition"><i class="fas fa-camera mr-2"></i> Log Snapshot</button>
+                <button type="button" data-action="log-net-worth"
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-lg transition">
+                    <i class="fas fa-camera mr-2"></i> Log Snapshot
+                </button>
             </div>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="card bg-slate-900 text-white flex flex-col justify-center rounded-2xl p-6 shadow-lg">
                     <div class="mb-4">
@@ -234,65 +320,119 @@
                         <p class="text-sm font-bold text-white money-val" id="wealthLiquid">£0.00</p>
                     </div>
                 </div>
-                
+
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 flex items-center justify-center relative">
                     <h3 class="absolute top-4 left-4 font-bold text-xs text-slate-400 uppercase">Composition</h3>
                     <div class="h-[180px] w-full relative"><canvas id="chartWealth"></canvas></div>
                 </div>
-                
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6"><div class="flex justify-between items-end mb-4"><div><h3 class="font-bold text-slate-800 dark:text-white">Retirement (FIRE)</h3><p class="text-xs text-slate-500 mt-1">Target: 25x Annual Spending</p></div><h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 money-val" id="wealthFireNumber">£0.00</h3></div><div class="relative pt-2"><div class="flex justify-between text-xs font-bold mb-2"><span class="text-slate-500">0%</span><span class="text-indigo-600" id="wealthFirePct">0%</span><span class="text-slate-500">100%</span></div><div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden"><div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" id="wealthFireBar" style="width: 0%"></div></div><p class="text-xs text-center text-slate-400 mt-3" id="wealthFireMsg">Loading...</p></div></div>
+
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-white">Retirement (FIRE)</h3>
+                            <p class="text-xs text-slate-500 mt-1">Target: 25x Annual Spending</p>
+                        </div>
+                        <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 money-val" id="wealthFireNumber">£0.00</h3>
+                    </div>
+                    <div class="relative pt-2">
+                        <div class="flex justify-between text-xs font-bold mb-2">
+                            <span class="text-slate-500">0%</span>
+                            <span class="text-indigo-600" id="wealthFirePct">0%</span>
+                            <span class="text-slate-500">100%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden">
+                            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" id="wealthFireBar" style="width:0%"></div>
+                        </div>
+                        <p class="text-xs text-center text-slate-400 mt-3" id="wealthFireMsg">Loading...</p>
+                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-emerald-600">Assets</h3><button type="button" onclick="cancelWealthEdit()" id="btnCancelAsset" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-emerald-600">Assets</h3>
+                        <button type="button" data-action="cancel-asset" id="btnCancelAsset" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
+                    </div>
                     <form id="formAsset" class="flex gap-2 mb-4" onsubmit="return false;">
-                        <input type="hidden" id="assetEditId">
-                        <div class="w-1/4"><select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs"><option value="Savings">Savings</option><option value="Investment">Invest</option><option value="Property">Property</option><option value="Vehicle">Vehicle</option><option value="Cash">Cash</option><option value="Other">Other</option></select></div>
-                        <input id="assetName" placeholder="Name (e.g. ISA)" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
-                        <input id="assetVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
-                        <button type="button" onclick="saveAsset()" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs">+</button>
+                        <div class="w-1/4">
+                            <select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs">
+                                <option value="Savings">Savings</option>
+                                <option value="Investment">Invest</option>
+                                <option value="Property">Property</option>
+                                <option value="Vehicle">Vehicle</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <input id="assetName" placeholder="Name (e.g. ISA)"
+                            class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        <div class="relative w-24">
+                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
+                            <input id="assetVal" type="number" step="0.01"
+                                class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        </div>
+                        <button type="button" data-action="save-asset" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs">+</button>
                     </form>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
-                
+
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-rose-600">Liabilities</h3><button type="button" onclick="cancelWealthEdit()" id="btnCancelDebt" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-rose-600">Liabilities</h3>
+                        <button type="button" data-action="cancel-debt" id="btnCancelDebt" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
+                    </div>
                     <form id="formDebt" class="flex gap-2 mb-4" onsubmit="return false;">
-                        <input type="hidden" id="debtEditId">
-                        <input id="debtName" placeholder="Name" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
-                        <input id="debtVal" placeholder="Value" type="number" step="0.01" class="w-24 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs" required>
-                        <button type="button" onclick="saveDebt()" id="btnSaveDebt" class="px-4 bg-rose-600 text-white rounded-lg font-bold text-xs">+</button>
+                        <input id="debtName" placeholder="Name"
+                            class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        <div class="relative w-24">
+                            <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
+                            <input id="debtVal" type="number" step="0.01"
+                                class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        </div>
+                        <button type="button" data-action="save-debt" id="btnSaveDebt" class="px-4 bg-rose-600 text-white rounded-lg font-bold text-xs">+</button>
                     </form>
                     <div id="listDebts" class="space-y-2"></div>
                 </div>
             </div>
-            
+
             <div class="grid grid-cols-1 mt-6">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-slate-800 dark:text-white">History Trend</h3><span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Past 12 Months</span></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-800 dark:text-white">History Trend</h3>
+                        <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Past 12 Months</span>
+                    </div>
                     <div class="h-[200px] w-full relative"><canvas id="chartWealthTrend"></canvas></div>
                 </div>
             </div>
         </div>
 
+        <!-- REPORTS -->
         <div id="view-reports" class="view-section hidden fade-in max-w-7xl mx-auto">
-             <div class="flex justify-between items-center mb-8"><h2 class="text-2xl font-extrabold text-slate-800 dark:text-white">Analytics</h2><div class="flex gap-2"><select id="reportYearSelect" class="bg-transparent dark:text-white font-bold cursor-pointer outline-none border-b border-slate-300 dark:border-slate-700" onchange="renderReports()"></select></div></div>
-             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 lg:col-span-2">
-                     <h3 class="font-bold mb-4 text-slate-800 dark:text-white">Yearly Trend</h3>
-                     <div class="h-[300px] w-full relative"><canvas id="chartYearly"></canvas></div>
-                 </div>
-                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                     <h3 class="font-bold mb-4 text-slate-800 dark:text-white">Monthly Net</h3>
-                     <div class="overflow-x-auto"><table class="w-full text-sm"><tbody id="rptMonthTable"></tbody></table></div>
-                 </div>
-             </div>
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white">Analytics</h2>
+                <div class="flex gap-2">
+                    <select id="reportYearSelect" class="bg-transparent dark:text-white font-bold cursor-pointer outline-none border-b border-slate-300 dark:border-slate-700"></select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 lg:col-span-2">
+                    <h3 class="font-bold mb-4 text-slate-800 dark:text-white">Yearly Trend</h3>
+                    <div class="h-[300px] w-full relative"><canvas id="chartYearly"></canvas></div>
+                </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+                    <h3 class="font-bold mb-4 text-slate-800 dark:text-white">Monthly Net</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm"><tbody id="rptMonthTable"></tbody></table>
+                    </div>
+                </div>
+            </div>
         </div>
 
+        <!-- SETTINGS -->
         <div id="view-settings" class="view-section hidden fade-in max-w-7xl mx-auto">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Settings</h2>
-            
+
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-4">Bank Data Import (CSV)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
@@ -308,899 +448,75 @@
                         <input type="checkbox" id="mapInvert" class="accent-indigo-600">
                     </div>
                     <div class="text-xs text-slate-400 italic" id="csvPreview"></div>
-                    <button type="button" onclick="executeImport()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md">Import Transactions</button>
+                    <button type="button" data-action="import-csv" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md">Import Transactions</button>
                 </div>
             </div>
 
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Cloud Sync</h3>
-                <p class="text-xs text-slate-500 mb-4">Paste your Google Script URL to enable cross-device syncing.</p>
-                <form id="formCloud" class="flex gap-2" onsubmit="return false;"><input type="text" id="cloudInput" placeholder="https://script.google.com/..." class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white"><button type="button" onclick="saveCloudUrl()" class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button></form>
+                <p class="text-xs text-slate-500 mb-2">Paste your Google Script URL to enable cross-device syncing.</p>
+                <p class="text-xs text-amber-600 dark:text-amber-400 mb-4 flex items-start gap-1.5">
+                    <i class="fas fa-exclamation-triangle mt-0.5 shrink-0"></i>
+                    The URL is stored as plain text in your browser. Anyone with access to this device or URL can read and overwrite your synced data.
+                </p>
+                <form id="formCloud" class="flex gap-2" onsubmit="return false;">
+                    <input type="text" id="cloudInput" placeholder="https://script.google.com/..."
+                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white">
+                    <button type="button" data-action="save-cloud-url" class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button>
+                </form>
             </div>
+
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Manage Categories</h3>
                 <div id="settingsCatList" class="flex flex-wrap gap-2 mb-4"></div>
-                <button type="button" onclick="addCatPrompt()" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
+                <button type="button" data-action="add-cat" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
             </div>
+
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Recurring Transactions</h3>
+                <p class="text-xs text-slate-500 mb-4">Templates applied to a month with one click from the Transactions panel.</p>
+                <form class="flex flex-col gap-2 mb-4" onsubmit="return false;">
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                        <button type="button" id="recBtnExp" class="py-1.5 rounded-md text-xs font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
+                        <button type="button" id="recBtnInc" class="py-1.5 rounded-md text-xs font-bold text-slate-400 transition">Income</button>
+                    </div>
+                    <input type="text" id="recDesc" placeholder="Description"
+                        class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
+                            <input type="number" id="recAmt" step="0.01"
+                                class="w-full p-2 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition">
+                        </div>
+                        <select id="recCat" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                    </div>
+                    <button type="button" data-action="save-recurring" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-500 transition">+ Add Template</button>
+                </form>
+                <div id="recurringList" class="space-y-2"></div>
+            </div>
+
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Export Data</h3>
+                <p class="text-xs text-slate-500 mb-4">Download your financial data for backup or analysis.</p>
+                <div class="flex gap-3">
+                    <button type="button" data-action="export-json"
+                        class="flex-1 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 dark:hover:bg-slate-600 transition">
+                        <i class="fas fa-download mr-2"></i>JSON Backup
+                    </button>
+                    <button type="button" data-action="export-csv"
+                        class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-500 transition">
+                        <i class="fas fa-file-csv mr-2"></i>Export CSV
+                    </button>
+                </div>
+            </div>
+
             <div class="card bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-6 max-w-md">
                 <h3 class="font-bold text-rose-600 mb-2">Danger Zone</h3>
-                <button type="button" onclick="resetData()" class="text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-lg font-bold text-xs transition">Reset All Data</button>
+                <button type="button" data-action="reset-data"
+                    class="text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-lg font-bold text-xs transition">Reset All Data</button>
             </div>
         </div>
 
     </div>
-
-    <script>
-        // CONFIG
-        Chart.register(ChartDataLabels);
-        Chart.defaults.font.family = "'Inter', sans-serif";
-        Chart.defaults.color = '#94a3b8';
-        
-        const DEFAULTS = { 
-            categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt', 'Bills', 'Imported'], 
-            transactions: {}, bills: [], billStatus: {}, wealth: { assets: [], debts: [], history: {} }, deletedIds: [], annualIncome: 0, cloudURL: '', theme: 'light', budgets: {} 
-        };
-        
-        // SAFELY LOAD DATA
-        let db;
-        try {
-            db = JSON.parse(localStorage.getItem('infinityDB')) || DEFAULTS;
-        } catch (e) {
-            console.error("Data corrupted, resetting", e);
-            db = DEFAULTS;
-        }
-        
-        // MIGRATION & DATA REPAIR
-        if(!db.transactions || Array.isArray(db.transactions)) db.transactions = {}; 
-        if(!db.theme) db.theme = 'light';
-        if(!db.bills) db.bills = [];
-        if(!db.billStatus) db.billStatus = {};
-        if(!db.wealth) db.wealth = { assets: [], debts: [] };
-        if(!db.wealth.assets) db.wealth.assets = [];
-        if(!db.wealth.debts) db.wealth.debts = [];
-        if(!db.wealth.history) db.wealth.history = {};
-        if(!db.budgets) db.budgets = {};
-        if(!db.categories) db.categories = DEFAULTS.categories;
-        if(!db.categories.includes('Imported')) db.categories.push('Imported');
-        
-        // GLOBALS
-        let currentTxType = 'expense';
-        let editingTxId = null; 
-        let editingAssetId = null;
-        let editingDebtId = null;
-        let trendChart, spendingChart, yearlyChart, wealthChart, wealthTrendChart;
-        let isPrivacyMode = false;
-        let csvData = [];
-        const monthPicker = document.getElementById('monthPicker');
-
-        // CORE UTILS
-        const math = (v) => parseFloat(Number(v || 0).toFixed(2));
-        const fmt = (n) => parseFloat(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        const genId = () => Date.now().toString(36) + Math.random().toString(36).substr(2);
-        
-        // --- NEW CONSOLIDATION LOGIC ---
-        function consolidateWealth() {
-            let hasChanges = false;
-            // Merge Assets by Name
-            const assetMap = new Map();
-            db.wealth.assets.forEach(a => {
-                const key = a.name.trim().toLowerCase();
-                if (assetMap.has(key)) {
-                    const existing = assetMap.get(key);
-                    existing.value += parseFloat(a.value); // Add values
-                    hasChanges = true;
-                } else {
-                    assetMap.set(key, { ...a, value: parseFloat(a.value) });
-                }
-            });
-
-            // Merge Debts by Name
-            const debtMap = new Map();
-            db.wealth.debts.forEach(d => {
-                const key = d.name.trim().toLowerCase();
-                if (debtMap.has(key)) {
-                    const existing = debtMap.get(key);
-                    existing.value += parseFloat(d.value);
-                    hasChanges = true;
-                } else {
-                    debtMap.set(key, { ...d, value: parseFloat(d.value) });
-                }
-            });
-
-            if (hasChanges) {
-                db.wealth.assets = Array.from(assetMap.values());
-                db.wealth.debts = Array.from(debtMap.values());
-                localStorage.setItem('infinityDB', JSON.stringify(db)); // Force save
-                console.log("Data consolidated");
-            }
-        }
-
-        // CSV LOGIC
-        document.getElementById('csvFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const text = evt.target.result;
-                const rows = text.split('\n').map(r => r.split(',')); 
-                if(rows.length < 2) return alert("Invalid CSV");
-                
-                csvData = rows;
-                const headers = rows[0];
-                const selects = ['mapDate', 'mapDesc', 'mapAmt'];
-                
-                selects.forEach(id => {
-                    const sel = document.getElementById(id);
-                    sel.innerHTML = '';
-                    headers.forEach((h, i) => sel.innerHTML += `<option value="${i}">${h.replace(/"/g, '')}</option>`);
-                });
-                
-                headers.forEach((h, i) => {
-                    const lower = h.toLowerCase();
-                    if(lower.includes('date')) document.getElementById('mapDate').value = i;
-                    if(lower.includes('desc') || lower.includes('detail')) document.getElementById('mapDesc').value = i;
-                    if(lower.includes('amount') || lower.includes('value')) document.getElementById('mapAmt').value = i;
-                });
-
-                document.getElementById('csvMapper').classList.remove('hidden');
-                document.getElementById('csvPreview').innerText = `Loaded ${rows.length - 1} rows. Select columns above.`;
-            };
-            reader.readAsText(file);
-        });
-
-        function executeImport() {
-            try {
-                const dateIdx = parseInt(document.getElementById('mapDate').value);
-                const descIdx = parseInt(document.getElementById('mapDesc').value);
-                const amtIdx = parseInt(document.getElementById('mapAmt').value);
-                const invert = document.getElementById('mapInvert').checked;
-                let count = 0;
-
-                for(let i=1; i<csvData.length; i++) {
-                    const row = csvData[i];
-                    if(!row[dateIdx] || !row[amtIdx]) continue;
-
-                    const cleanDesc = row[descIdx] ? row[descIdx].replace(/"/g, '').trim() : 'Imported';
-                    let rawAmt = parseFloat(row[amtIdx].replace(/[^0-9.-]/g, ''));
-                    if(isNaN(rawAmt)) continue;
-                    if(invert) rawAmt = rawAmt * -1;
-
-                    const type = rawAmt > 0 ? 'income' : 'expense';
-                    const finalAmt = Math.abs(rawAmt);
-
-                    let dateStr = row[dateIdx].replace(/"/g, '').trim();
-                    let parts = dateStr.split(/[-/]/);
-                    let year, month;
-                    
-                    if (parseInt(parts[0]) > 2000) { year = parts[0]; month = parts[1]; } 
-                    else { year = parts[2]; month = parts[1]; } 
-                    
-                    if(year && year.length === 2) year = '20' + year;
-                    if(!year || !month) continue;
-
-                    const monthKey = `${year}-${month.padStart(2, '0')}`;
-                    
-                    if(!db.transactions[monthKey]) db.transactions[monthKey] = [];
-                    db.transactions[monthKey].push({
-                        id: genId(),
-                        updatedAt: Date.now(),
-                        desc: cleanDesc,
-                        amount: finalAmt,
-                        category: 'Imported',
-                        type: type
-                    });
-                    count++;
-                }
-                save();
-                alert(`Successfully imported ${count} transactions.`);
-                document.getElementById('csvFile').value = '';
-                document.getElementById('csvMapper').classList.add('hidden');
-                render();
-            } catch(e) { alert("Import error: " + e.message); }
-        }
-
-        // THEME & PRIVACY
-        function applyTheme() {
-            const html = document.documentElement;
-            const label = document.getElementById('themeLabel');
-            if(db.theme === 'dark') {
-                html.classList.add('dark'); label.innerText = "Light Mode";
-                Chart.defaults.color = '#cbd5e1'; Chart.defaults.borderColor = '#334155';
-            } else {
-                html.classList.remove('dark'); label.innerText = "Dark Mode";
-                Chart.defaults.color = '#64748b'; Chart.defaults.borderColor = '#e2e8f0';
-            }
-            if(trendChart) { trendChart.destroy(); updateDashboardCharts(getCurrentCats()); }
-            if(!document.getElementById('view-reports').classList.contains('hidden')) {
-                try { renderReports(); } catch(e) { console.log(e); }
-            }
-        }
-        function toggleTheme() { db.theme = db.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); }
-
-        function togglePrivacy() {
-            isPrivacyMode = !isPrivacyMode;
-            if(isPrivacyMode) {
-                document.body.classList.add('privacy-active');
-                document.getElementById('privacyLabel').innerText = "Show Figures";
-                document.getElementById('privacyIcon').className = "fas fa-eye";
-            } else {
-                document.body.classList.remove('privacy-active');
-                document.getElementById('privacyLabel').innerText = "Hide Figures";
-                document.getElementById('privacyIcon').className = "fas fa-eye-slash";
-            }
-        }
-        
-        function save(skipSync = false) { 
-            localStorage.setItem('infinityDB', JSON.stringify(db)); 
-            try { render(); } catch(e) { console.error("Render error after save", e); }
-            updateCloudStatus();
-        }
-
-        function getRollover(currentKey) {
-            let balance = 0;
-            const sortedKeys = Object.keys(db.transactions).sort();
-            for (let k of sortedKeys) {
-                if (k >= currentKey) break;
-                let mInc = 0, mExp = 0;
-                db.transactions[k].forEach(t => { if(t.type === 'income') mInc += math(t.amount); else mExp += math(t.amount); });
-                balance += (mInc - mExp);
-            }
-            return balance;
-        }
-
-        function getCurrentCats() {
-             const key = monthPicker.value;
-             const data = db.transactions[key] || [];
-             let cats = {};
-             data.forEach(t => { if(t.type === 'expense') cats[t.category] = (cats[t.category] || 0) + math(t.amount); });
-             return cats;
-        }
-
-        // RENDER DASHBOARD
-        function render() {
-            try {
-                const key = monthPicker.value;
-                const searchTerm = document.getElementById('txSearch') ? document.getElementById('txSearch').value.toLowerCase() : '';
-                const data = db.transactions[key] || [];
-                
-                let inc = 0, exp = 0, cats = {};
-                const list = document.getElementById('listTx');
-                if(list) list.innerHTML = '';
-
-                const filteredData = data.filter(t => t.desc.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm));
-                filteredData.sort((a,b) => b.updatedAt - a.updatedAt); 
-
-                filteredData.forEach(t => {
-                    const val = math(t.amount);
-                    if(t.type === 'income') inc += val; 
-                    else { exp += val; cats[t.category] = (cats[t.category] || 0) + val; }
-                    const colorClass = t.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400';
-                    const sign = t.type === 'income' ? '+' : '-';
-                    
-                    if(list) list.insertAdjacentHTML('beforeend', `
-                        <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
-                            <td class="py-3 pl-2"><div class="font-bold text-slate-700 dark:text-slate-200">${t.desc}</div><div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${t.category}</div></td>
-                            <td class="text-right font-bold ${colorClass} money-val">${sign}£${fmt(val)}</td>
-                            <td class="text-right pr-2"><button type="button" onclick="editTx('${t.id}')" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delTx('${t.id}')" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button></td>
-                        </tr>`);
-                });
-
-                if(document.getElementById('emptyState')) document.getElementById('emptyState').classList.toggle('hidden', filteredData.length > 0);
-                const rollover = getRollover(key);
-                if(document.getElementById('kpiInc')) document.getElementById('kpiInc').innerHTML = `£${fmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: £${fmt(rollover)}</span>`;
-                if(document.getElementById('kpiExp')) document.getElementById('kpiExp').innerText = `£${fmt(exp)}`;
-                if(document.getElementById('kpiSalary')) document.getElementById('kpiSalary').innerText = `£${fmt(db.annualIncome)}`;
-                
-                const year = key.split('-')[0];
-                let ytd = 0;
-                Object.keys(db.transactions).forEach(k => { if(k.startsWith(year)) db.transactions[k].forEach(t => { if(t.type === 'income') ytd += math(t.amount); }); });
-                if(document.getElementById('kpiYTD')) document.getElementById('kpiYTD').innerText = `£${fmt(ytd)}`;
-                if(document.getElementById('kpiAvg')) document.getElementById('kpiAvg').innerText = `£${fmt(ytd / (parseInt(key.split('-')[1]) || 1))}`;
-
-                let maxCat = 'N/A', maxVal = 0;
-                for(const [c, v] of Object.entries(cats)) { if(v > maxVal) { maxVal = v; maxCat = c; } }
-                if(document.getElementById('kpiMaxCat')) document.getElementById('kpiMaxCat').innerText = maxCat;
-                if(document.getElementById('kpiMaxVal')) document.getElementById('kpiMaxVal').innerText = `£${fmt(maxVal)}`;
-
-                if(!document.getElementById('view-dashboard').classList.contains('hidden')) {
-                    updateDashboardCharts(cats);
-                }
-                
-                if(!document.getElementById('view-budget').classList.contains('hidden')) renderBudgets();
-            } catch(e) {
-                console.error("Render Crash Avoided:", e);
-            }
-        }
-
-        function setTxType(type) { 
-            currentTxType = type; 
-            const activeClass = type === 'expense' ? "bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300" : "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300";
-            const inactiveClass = "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700";
-            document.getElementById('btnExp').className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'expense' ? activeClass : inactiveClass}`;
-            document.getElementById('btnInc').className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'income' ? activeClass : inactiveClass}`;
-        }
-
-        // SAVE FUNCTIONS (NO FORM SUBMIT)
-        function saveTransaction() {
-            const k = monthPicker.value;
-            const desc = document.getElementById('txDesc').value; 
-            const amt = math(document.getElementById('txAmt').value); 
-            const cat = document.getElementById('txCat').value;
-            
-            if(!desc || !amt) return alert("Please enter description and amount");
-
-            if(editingTxId) {
-                const txIndex = db.transactions[k].findIndex(t => t.id === editingTxId);
-                if(txIndex > -1) db.transactions[k][txIndex] = { ...db.transactions[k][txIndex], desc, amount: amt, category: cat, type: currentTxType, updatedAt: Date.now() };
-                resetTxForm();
-            } else {
-                if(!db.transactions[k]) db.transactions[k] = [];
-                db.transactions[k].push({ id: genId(), updatedAt: Date.now(), desc, amount: amt, category: cat, type: currentTxType });
-                document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = '';
-            }
-            save();
-        }
-
-        function saveBill() {
-            const name = document.getElementById('billName').value;
-            const amt = math(document.getElementById('billAmt').value);
-            const day = parseInt(document.getElementById('billDay').value);
-            if(name && amt && day) {
-                db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day });
-                document.getElementById('billName').value = ''; document.getElementById('billAmt').value = ''; document.getElementById('billDay').value = '';
-                save(); renderCalendar();
-            }
-        }
-
-        function saveAsset() {
-            const name = document.getElementById('assetName').value;
-            const val = math(document.getElementById('assetVal').value);
-            const type = document.getElementById('assetType').value;
-            
-            if(!name || isNaN(val)) return;
-
-            // SMART ADD: Check if name exists, if so, add to existing
-            const existing = db.wealth.assets.find(a => a.name.trim().toLowerCase() === name.trim().toLowerCase());
-            
-            if(editingAssetId) {
-                // EDIT MODE = Overwrite value
-                const idx = db.wealth.assets.findIndex(a => a.id === editingAssetId);
-                if(idx > -1) db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type };
-                cancelWealthEdit();
-            } else {
-                // ADD MODE
-                if (existing) {
-                    if(confirm(`"${existing.name}" exists. Add £${val} to it?`)) {
-                        existing.value += val;
-                    } else { return; }
-                } else {
-                    db.wealth.assets.push({ id: genId(), name, value: val, type });
-                }
-                document.getElementById('assetName').value = ''; 
-                document.getElementById('assetVal').value = '';
-            }
-            consolidateWealth(); // Ensure clean DB
-            save(); 
-            renderWealth();
-        }
-
-        function saveDebt() {
-            const name = document.getElementById('debtName').value;
-            const val = math(document.getElementById('debtVal').value);
-            
-            if(!name || isNaN(val)) return;
-
-            const existing = db.wealth.debts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase());
-
-            if(editingDebtId) {
-                const idx = db.wealth.debts.findIndex(d => d.id === editingDebtId);
-                if(idx > -1) db.wealth.debts[idx] = { ...db.wealth.debts[idx], name, value: val };
-                cancelWealthEdit();
-            } else {
-                 if (existing) {
-                    if(confirm(`"${existing.name}" exists. Add £${val} to it?`)) {
-                        existing.value += val;
-                    } else { return; }
-                } else {
-                    db.wealth.debts.push({ id: genId(), name, value: val });
-                }
-                document.getElementById('debtName').value = ''; 
-                document.getElementById('debtVal').value = '';
-            }
-            consolidateWealth();
-            save(); 
-            renderWealth();
-        }
-
-        function saveCloudUrl() {
-            const url = document.getElementById('cloudInput').value.trim();
-            if(url) { db.cloudURL = url; save(); manualSync(true); }
-        }
-
-        // NEW: NET WORTH HISTORY LOGIC
-        function logNetWorth() {
-            const key = monthPicker.value;
-            const assets = db.wealth.assets.reduce((a,b) => a + b.value, 0);
-            const debts = db.wealth.debts.reduce((a,b) => a + b.value, 0);
-            
-            // Auto-Add Operating Cash from Dashboard Calculation
-            const rollover = getRollover(key);
-            const data = db.transactions[key] || [];
-            let inc = 0, exp = 0;
-            data.forEach(t => { if(t.type === 'income') inc += t.amount; else exp += t.amount; });
-            const operatingCash = (inc + rollover) - exp;
-            
-            const net = (assets + operatingCash) - debts;
-            
-            if(!db.wealth.history) db.wealth.history = {};
-            db.wealth.history[key] = net;
-            save();
-            renderWealth();
-            alert(`Logged Net Worth of £${fmt(net)} for ${key}`);
-        }
-
-        // EDITING FUNCTIONS
-        window.editTx = (id) => {
-            const k = monthPicker.value; const tx = db.transactions[k].find(t => t.id === id); if(!tx) return;
-            editingTxId = id; document.getElementById('txDesc').value = tx.desc; document.getElementById('txAmt').value = tx.amount; document.getElementById('txCat').value = tx.category; setTxType(tx.type);
-            document.getElementById('txFormTitle').innerText = "Edit Transaction";
-            document.getElementById('btnSubmitTx').innerHTML = "Update Transaction";
-            document.getElementById('btnCancelEdit').classList.remove('hidden');
-        };
-
-        window.resetTxForm = () => {
-            editingTxId = null; document.getElementById('txDesc').value = ''; document.getElementById('txAmt').value = '';
-            document.getElementById('txFormTitle').innerText = "Add Transaction"; document.getElementById('btnSubmitTx').innerHTML = "Add Transaction";
-            document.getElementById('btnCancelEdit').classList.add('hidden'); setTxType('expense');
-        };
-
-        window.editAsset = (id) => {
-            const asset = db.wealth.assets.find(a => a.id === id);
-            if(!asset) return;
-            editingAssetId = id;
-            document.getElementById('assetName').value = asset.name;
-            document.getElementById('assetVal').value = asset.value;
-            document.getElementById('assetType').value = asset.type || 'Other';
-            document.getElementById('btnSaveAsset').innerHTML = '<i class="fas fa-save"></i>';
-            document.getElementById('btnCancelAsset').classList.remove('hidden');
-        };
-
-        window.editDebt = (id) => {
-            const debt = db.wealth.debts.find(d => d.id === id);
-            if(!debt) return;
-            editingDebtId = id;
-            document.getElementById('debtName').value = debt.name;
-            document.getElementById('debtVal').value = debt.value;
-            document.getElementById('btnSaveDebt').innerHTML = '<i class="fas fa-save"></i>';
-            document.getElementById('btnCancelDebt').classList.remove('hidden');
-        };
-
-        window.cancelWealthEdit = () => {
-            editingAssetId = null;
-            editingDebtId = null;
-            document.getElementById('assetName').value = ''; document.getElementById('assetVal').value = '';
-            document.getElementById('debtName').value = ''; document.getElementById('debtVal').value = '';
-            document.getElementById('btnSaveAsset').innerHTML = '+';
-            document.getElementById('btnSaveDebt').innerHTML = '+';
-            document.getElementById('btnCancelAsset').classList.add('hidden');
-            document.getElementById('btnCancelDebt').classList.add('hidden');
-        };
-
-        window.delTx = (id) => { if(confirm("Delete transaction?")) { const k = monthPicker.value; db.deletedIds.push(id); db.transactions[k] = db.transactions[k].filter(t => t.id !== id); if(editingTxId === id) resetTxForm(); save(); } };
-
-        function updateDashboardCharts(cats) {
-            const ctxSpend = document.getElementById('chartSpend').getContext('2d');
-            if(spendingChart) spendingChart.destroy();
-            spendingChart = new Chart(ctxSpend, { type: 'doughnut', plugins: [ChartDataLabels], data: { labels: Object.keys(cats), datasets: [{ data: Object.values(cats), backgroundColor: Object.keys(cats).map(c => getCatColor(c)), borderWidth: db.theme === 'dark' ? 0 : 2, borderColor: '#ffffff' }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (v, ctx) => { let sum = ctx.dataset.data.reduce((a,b)=>a+b,0); let pct = (v*100/sum); return pct<5?'':pct.toFixed(0)+'%'; } } } } });
-
-            const ctxTrend = document.getElementById('chartTrend').getContext('2d');
-            if(trendChart) trendChart.destroy();
-            const labels = [], dInc = [], dExp = [];
-            let d = new Date(); d.setMonth(d.getMonth() - 5);
-            for(let i=0; i<6; i++) {
-                const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                labels.push(d.toLocaleString('default', { month: 'short' }));
-                const txs = db.transactions[k] || [];
-                let _i = 0, _e = 0;
-                txs.forEach(t => { if(t.type==='income') _i+=t.amount; else _e+=t.amount; });
-                dInc.push(_i); dExp.push(_e);
-                d.setMonth(d.getMonth() + 1);
-            }
-            
-            const customTotals = {
-                id: 'customTotals',
-                afterDraw: (chart) => {
-                    const { ctx, chartArea: { top, left } } = chart;
-                    const data = chart.data.datasets;
-                    if(data[0] && data[0].data) {
-                        const totalInc = data[0].data.reduce((a, b) => a + b, 0);
-                        const totalExp = data[1].data.reduce((a, b) => a + b, 0);
-                        ctx.save();
-                        ctx.font = "bold 12px Inter";
-                        ctx.textAlign = 'left';
-                        ctx.fillStyle = '#10b981'; ctx.fillText(`Inc: £${fmt(totalInc)}`, left + 10, top + 20);
-                        ctx.fillStyle = '#f43f5e'; ctx.fillText(`Exp: £${fmt(totalExp)}`, left + 10, top + 40);
-                        ctx.restore();
-                    }
-                }
-            };
-
-            trendChart = new Chart(ctxTrend, { 
-                type: 'bar', 
-                data: { labels, datasets: [{ label: 'Inc', data: dInc, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Exp', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4 }] }, 
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } },
-                plugins: [customTotals]
-            });
-        }
-
-        // BUDGET LOGIC
-        function renderBudgets() {
-            const inputsDiv = document.getElementById('budgetInputs');
-            if(inputsDiv) {
-                inputsDiv.innerHTML = '';
-                db.categories.forEach(c => {
-                    if(c === 'Bills') return;
-                    const val = db.budgets[c] || 0;
-                    inputsDiv.innerHTML += `<div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500 w-1/3 truncate">${c}</span><input type="number" onchange="updateBudget('${c}', this.value)" value="${val > 0 ? val : ''}" placeholder="Not Set" class="w-full p-2 text-xs rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white outline-none"></div>`;
-                });
-            }
-            
-            const cats = getCurrentCats();
-            const barsDiv = document.getElementById('budgetBars');
-            if(barsDiv) {
-                barsDiv.innerHTML = '';
-                let hasBudget = false;
-                if(document.getElementById('budgetMonthLabel')) document.getElementById('budgetMonthLabel').innerText = monthPicker.value;
-                Object.keys(db.budgets).forEach(c => {
-                    const budget = db.budgets[c];
-                    if(budget > 0) {
-                        hasBudget = true;
-                        const spent = cats[c] || 0;
-                        const pct = Math.min((spent / budget) * 100, 100);
-                        let color = 'bg-emerald-500'; if(pct > 75) color = 'bg-amber-500'; if(pct >= 100) color = 'bg-rose-500';
-                        barsDiv.innerHTML += `<div><div class="flex justify-between items-end mb-1"><span class="font-bold text-sm text-slate-700 dark:text-slate-200">${c}</span><span class="text-xs font-bold text-slate-500"><span class="money-val">£${fmt(spent)}</span> / <span class="money-val">£${fmt(budget)}</span></span></div><div class="progress-bar-bg bg-slate-200 dark:bg-slate-800"><div class="progress-bar-fill ${color}" style="width: ${pct}%"></div></div></div>`;
-                    }
-                });
-                if(document.getElementById('budgetEmpty')) document.getElementById('budgetEmpty').classList.toggle('hidden', hasBudget);
-            }
-        }
-
-        window.updateBudget = (cat, val) => { db.budgets[cat] = math(val); save(); renderBudgets(); };
-
-        // REPORTS
-        function renderReports() {
-            try {
-                const years = new Set([new Date().getFullYear()]);
-                Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0])));
-                const sel = document.getElementById('reportYearSelect');
-                if(sel.options.length === 0 || sel.innerHTML === '') {
-                    sel.innerHTML = ''; Array.from(years).sort((a,b)=>b-a).forEach(y => sel.innerHTML += `<option value="${y}">${y}</option>`);
-                    const currentDashYear = parseInt(monthPicker.value.split('-')[0]); if(years.has(currentDashYear)) sel.value = currentDashYear;
-                }
-                const targetYear = sel.value; 
-                const monthTable = document.getElementById('rptMonthTable'); monthTable.innerHTML = '';
-                const chLabels = [], chInc = [], chExp = [];
-                let hasData = false;
-                for(let m=1; m<=12; m++) {
-                    const mk = `${targetYear}-${String(m).padStart(2,'0')}`;
-                    const txs = db.transactions[mk] || [];
-                    let mInc = 0, mExp = 0;
-                    txs.forEach(t => { if(t.type === 'income') mInc += math(t.amount); else mExp += math(t.amount); });
-                    chLabels.push(new Date(targetYear, m-1).toLocaleString('default', { month: 'short' })); chInc.push(mInc); chExp.push(mExp);
-                    if(mInc > 0 || mExp > 0) {
-                        hasData = true; const net = mInc - mExp; const netColor = net >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400';
-                        monthTable.innerHTML += `<tr class="border-b border-slate-50 dark:border-slate-800"><td class="py-3 pl-3 font-medium text-slate-700 dark:text-slate-300">${new Date(targetYear, m-1).toLocaleString('default', { month: 'long' })}</td><td class="text-right text-emerald-600 dark:text-emerald-400 money-val">£${fmt(mInc)}</td><td class="text-right text-rose-600 dark:text-rose-400 money-val">£${fmt(mExp)}</td><td class="text-right pr-3 font-bold ${netColor} money-val">£${fmt(net)}</td></tr>`;
-                    }
-                }
-                if(!hasData) monthTable.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 text-xs">No data for ${targetYear}</td></tr>`;
-                const ctxYear = document.getElementById('chartYearly').getContext('2d'); if(yearlyChart) yearlyChart.destroy();
-                yearlyChart = new Chart(ctxYear, { type: 'line', data: { labels: chLabels, datasets: [ { label: 'Income', data: chInc, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4 }, { label: 'Expense', data: chExp, borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.1)', fill: true, tension: 0.4 } ] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: db.theme==='dark'?'#334155':'#f1f5f9' } }, x: { grid: { display: false } } } } });
-            } catch(e) { console.error("Report render error", e); }
-        }
-
-        // OTHER RENDERERS
-        function renderCalendar() {
-            try {
-                const key = monthPicker.value;
-                const [y, m] = key.split('-').map(Number);
-                const daysInMonth = new Date(y, m, 0).getDate();
-                const firstDay = new Date(y, m - 1, 1).getDay();
-                const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-
-                const billMap = {};
-                let total = 0, paid = 0, unpaidBillTotal = 0;
-                db.bills.forEach(b => {
-                    let day = b.day; if(day > daysInMonth) day = daysInMonth;
-                    if(!billMap[day]) billMap[day] = []; billMap[day].push(b);
-                    total += b.amount;
-                    const s = (db.billStatus[key] || {})[b.id];
-                    const isPaid = (typeof s === 'object') ? s.paid : !!s;
-                    if(isPaid) paid += b.amount; else unpaidBillTotal += b.amount;
-                });
-
-                const grid = document.getElementById('calendarCells'); grid.innerHTML = '';
-                for(let i=0; i<startOffset; i++) grid.innerHTML += `<div class="bg-slate-100 dark:bg-slate-900 min-h-[130px]"></div>`;
-                
-                for(let d=1; d<=daysInMonth; d++) {
-                    let billsHtml = '';
-                    (billMap[d] || []).forEach(b => {
-                        const s = (db.billStatus[key] || {})[b.id];
-                        const isPaid = (typeof s === 'object') ? s.paid : !!s;
-                        const cls = isPaid ? 'paid bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border-emerald-300' : 'unpaid bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300';
-                        billsHtml += `<div class="bill-chip ${cls}" onclick="toggleBill('${b.id}')"><span class="truncate font-bold">${b.name}</span><div class="flex items-center"><span class="bill-amt money-val">£${b.amount}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" onclick="event.stopPropagation(); delBill('${b.id}')"><i class="fas fa-times-circle"></i></span></div></div>`;
-                    });
-                    grid.innerHTML += `<div class="calendar-day bg-white dark:bg-slate-900/50 border-b border-r border-slate-200 dark:border-slate-800"><div class="day-number text-slate-400 dark:text-slate-500">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`;
-                }
-                
-                document.getElementById('calendarMonthLabel').innerText = new Date(y, m-1).toLocaleString('default', { month: 'long', year: 'numeric' });
-                document.getElementById('billTotal').innerText = `£${fmt(total)}`;
-                const rollover = getRollover(key);
-                const inc = (db.transactions[key]||[]).filter(t=>t.type==='income').reduce((a,b)=>a+math(b.amount),0);
-                const exp = (db.transactions[key]||[]).filter(t=>t.type==='expense').reduce((a,b)=>a+math(b.amount),0);
-                document.getElementById('billSafe').innerText = `£${fmt((inc + rollover) - exp - unpaidBillTotal)}`;
-            } catch(e) { console.error("Calendar Error", e); }
-        }
-
-        function renderWealth() {
-            try {
-                // AUTO-CONSOLIDATE
-                consolidateWealth();
-
-                const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0); 
-                const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0); 
-                
-                // AUTO-CALCULATE OPERATING CASH (Income - Expense)
-                const key = monthPicker.value;
-                const rollover = getRollover(key);
-                const data = db.transactions[key] || [];
-                let inc = 0, exp = 0;
-                data.forEach(t => { if(t.type === 'income') inc += t.amount; else exp += t.amount; });
-                const operatingCash = (inc + rollover) - exp;
-
-                const displayTotalAssets = totalAssets + operatingCash;
-                const liquidAssets = db.wealth.assets
-                    .filter(a => ['Savings', 'Cash', 'Investment'].includes(a.type))
-                    .reduce((a, b) => a + b.value, 0) + operatingCash;
-
-                document.getElementById('wealthNet').innerText = `£${fmt(displayTotalAssets - totalDebts)}`;
-                document.getElementById('wealthTotalAssets').innerText = `£${fmt(displayTotalAssets)}`;
-                document.getElementById('wealthTotalDebts').innerText = `£${fmt(totalDebts)}`;
-                document.getElementById('wealthLiquid').innerText = `£${fmt(liquidAssets)}`;
-                
-                const ctxWealth = document.getElementById('chartWealth').getContext('2d');
-                if(wealthChart) wealthChart.destroy();
-                wealthChart = new Chart(ctxWealth, { 
-                    type: 'doughnut', 
-                    plugins: [ChartDataLabels], 
-                    data: { 
-                        labels: ['Assets', 'Operating Cash', 'Debt'], 
-                        datasets: [{ 
-                            data: [totalAssets, operatingCash, totalDebts], 
-                            backgroundColor: ['#10b981', '#3b82f6', '#f43f5e'], 
-                            borderWidth: 0 
-                        }] 
-                    }, 
-                    options: { 
-                        responsive: true, maintainAspectRatio: false, cutout: '60%', 
-                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, datalabels: { color: '#fff', font: { weight: 'bold', size: 10 }, formatter: (v) => { let sum = totalAssets+operatingCash+totalDebts; if(sum===0) return ''; return ((v/sum)*100).toFixed(0)+'%'; } } } 
-                    } 
-                });
-
-                // HISTORY CHART
-                const ctxTrend = document.getElementById('chartWealthTrend').getContext('2d');
-                if(wealthTrendChart) wealthTrendChart.destroy();
-                
-                const histData = db.wealth.history || {};
-                const labels = Object.keys(histData).sort().slice(-12);
-                const values = labels.map(k => histData[k]);
-                
-                wealthTrendChart = new Chart(ctxTrend, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Net Worth',
-                            data: values,
-                            borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false }, datalabels: { display: false } },
-                        scales: { x: { display: false }, y: { display: false } }
-                    }
-                });
-
-                // DYNAMIC FIRE CALCULATION
-                // 1. Calculate Average Monthly Expense (Last 6 Months)
-                let totalSpent = 0;
-                let activeMonths = 0;
-                let d = new Date(); 
-                d.setMonth(d.getMonth() - 5); // Start 5 months ago
-
-                for(let i=0; i<6; i++) {
-                    const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                    const txs = db.transactions[k] || [];
-                    let monthExp = 0;
-                    txs.forEach(t => { if(t.type === 'expense') monthExp += t.amount; });
-                    
-                    if(monthExp > 0) {
-                        totalSpent += monthExp;
-                        activeMonths++;
-                    }
-                    d.setMonth(d.getMonth() + 1);
-                }
-
-                // Default fallback if no data
-                const avgMonthlyExp = activeMonths > 0 ? (totalSpent / activeMonths) : 2000; 
-                const annualExp = avgMonthlyExp * 12;
-                const fireTarget = annualExp * 25; 
-                const currentNet = displayTotalAssets - totalDebts;
-                const progress = Math.min((currentNet / fireTarget) * 100, 100); 
-
-                document.getElementById('wealthFireNumber').innerText = `£${fmt(fireTarget)}`; 
-                document.getElementById('wealthFirePct').innerText = `${progress.toFixed(1)}%`; 
-                document.getElementById('wealthFireBar').style.width = `${progress}%`; 
-                document.getElementById('wealthFireMsg').innerText = activeMonths > 0 
-                    ? `Based on avg spending of £${fmt(avgMonthlyExp)}/mo` 
-                    : `Add expense data to calibrate target. (Default: £2k/mo)`;
-
-                const listAssets = document.getElementById('listAssets'); listAssets.innerHTML = '';
-                db.wealth.assets.forEach((item, index) => { listAssets.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name} <span class="text-[9px] text-slate-400 uppercase ml-1">${item.type}</span></span><div class="flex gap-2"><span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editAsset('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('assets', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
-                const listDebts = document.getElementById('listDebts'); listDebts.innerHTML = '';
-                db.wealth.debts.forEach((item, index) => { listDebts.innerHTML += `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1"><span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${item.name}</span><div class="flex gap-2"><span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span><button type="button" onclick="editDebt('${item.id}')" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button><button type="button" onclick="delWealthItem('debts', '${item.id}')" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button></div></div>`; });
-
-            } catch(e) { console.error("Wealth error", e); }
-        }
-
-        const getCatColor = (c) => { 
-            const map = { 'Housing': '#3b82f6', 'Food': '#f59e0b', 'Transport': '#06b6d4', 'Utilities': '#eab308', 'Entertainment': '#8b5cf6', 'Health': '#10b981', 'Savings': '#6366f1', 'Bills': '#64748b' }; 
-            if(map[c]) return map[c]; let hash = 0; for (let i = 0; i < c.length; i++) hash = c.charCodeAt(i) + ((hash << 5) - hash); return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
-        };
-        
-        function renderDropdowns() { const sel = document.getElementById('txCat'); const cur = sel.value; sel.innerHTML = ''; db.categories.forEach(c => sel.innerHTML += `<option value="${c}">${c}</option>`); sel.innerHTML += `<option value="ADD_NEW">+ New Category...</option>`; if(db.categories.includes(cur)) sel.value = cur; }
-        function checkNewCategory(sel) { if(sel.value === 'ADD_NEW') { const n = prompt("New Category Name:"); if(n) { db.categories.push(n); save(); renderDropdowns(); sel.value = n; } else sel.value = db.categories[0]; } }
-        function renderSettingsCats() { const div = document.getElementById('settingsCatList'); div.innerHTML = ''; db.categories.forEach(c => { if(c === 'Bills') return; div.innerHTML += `<div class="px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300">${c} <span onclick="delCat('${c}')" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span></div>`; }); }
-        
-        window.delCat = (c) => { if(confirm(`Delete '${c}'?`)) { db.categories = db.categories.filter(x => x !== c); delete db.budgets[c]; save(); renderSettingsCats(); renderDropdowns(); } };
-        window.addCatPrompt = () => { const n = prompt("Category Name:"); if(n) { db.categories.push(n); save(); renderSettingsCats(); renderDropdowns(); } };
-        window.toggleBill = (id) => { const key = monthPicker.value; if(!db.billStatus[key]) db.billStatus[key] = {}; const bill = db.bills.find(b => b.id === id); const s = db.billStatus[key][id]; const isPaid = (typeof s === 'object') ? s.paid : !!s; if(!isPaid) { if(confirm(`Mark '${bill.name}' paid? (Adds expense to dashboard)`)) { db.billStatus[key][id] = { paid: true, updated: Date.now() }; if(!db.transactions[key]) db.transactions[key] = []; db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' }); save(); } } else { db.billStatus[key][id] = { paid: false, updated: Date.now() }; save(); } };
-        window.delBill = (id) => { if(confirm("Delete bill?")) { db.deletedIds.push(id); db.bills = db.bills.filter(b => b.id !== id); save(); renderCalendar(); } };
-        window.delWealthItem = (type, id) => { 
-            if(confirm("Remove?")) { 
-                db.wealth[type] = db.wealth[type].filter(item => item.id !== id); 
-                save(); 
-                renderWealth(); 
-            } 
-        };
-        
-        function updateCloudStatus() { 
-            const dot = document.getElementById('statusDot'); 
-            const txt = document.getElementById('statusText'); 
-            const input = document.getElementById('cloudInput');
-            if(input && db.cloudURL) input.value = db.cloudURL; // Restore URL to input
-            if(db.cloudURL) { 
-                dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'; 
-                txt.innerText = "Cloud Linked"; 
-            } else { 
-                dot.className = 'w-2 h-2 rounded-full bg-slate-400'; 
-                txt.innerText = "Local Mode"; 
-            } 
-        }
-
-        async function manualSync(ui=false) { 
-            if(!db.cloudURL) { if(ui) alert("Please enter a Cloud URL in Settings."); return; }
-            const ind = document.getElementById('syncIndicator'); 
-            const btn = document.getElementById('btnSync');
-            ind.classList.remove('hidden'); 
-            if(ui) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Syncing...`; }
-
-            try { 
-                const response = await fetch(db.cloudURL + "?t=" + Date.now(), { method: 'GET', redirect: 'follow' }); 
-                if (!response.ok) throw new Error("Connection failed");
-                const cloudData = await response.json(); 
-                
-                if (cloudData.status !== 'new') { 
-                    const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds || [])]); db.deletedIds = Array.from(allDeleted); 
-                    const billMap = new Map(); [...db.bills, ...(cloudData.bills || [])].forEach(b => { if (!allDeleted.has(b.id)) { const existing = billMap.get(b.id); if (!existing || (b.updatedAt || 0) > (existing.updatedAt || 0)) billMap.set(b.id, b); } }); db.bills = Array.from(billMap.values()); 
-                    
-                    const assetMap = new Map();
-                    if (cloudData.wealth && cloudData.wealth.assets) cloudData.wealth.assets.forEach(a => assetMap.set(a.name, a));
-                    db.wealth.assets.forEach(a => assetMap.set(a.name, a));
-                    db.wealth.assets = Array.from(assetMap.values());
-
-                    const debtMap = new Map();
-                    if (cloudData.wealth && cloudData.wealth.debts) cloudData.wealth.debts.forEach(d => debtMap.set(d.name, d));
-                    db.wealth.debts.forEach(d => debtMap.set(d.name, d));
-                    db.wealth.debts = Array.from(debtMap.values());
-
-                    if(cloudData.budgets) db.budgets = { ...cloudData.budgets, ...db.budgets };
-                    
-                    const allTx = new Map(); 
-                    Object.keys(cloudData.transactions || {}).forEach(date => { (cloudData.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date }); }); }); 
-                    Object.keys(db.transactions || {}).forEach(date => { (db.transactions[date] || []).forEach(t => { if (!allDeleted.has(t.id)) { const existing = allTx.get(t.id); if (!existing || t.updatedAt > existing.updatedAt) { allTx.set(t.id, { ...t, dateKey: date }); } } }); }); 
-                    db.transactions = {}; allTx.forEach(t => { const k = t.dateKey; delete t.dateKey; if (!db.transactions[k]) db.transactions[k] = []; db.transactions[k].push(t); }); 
-                    
-                    Object.keys(cloudData.billStatus || {}).forEach(date => { db.billStatus[date] = { ...db.billStatus[date], ...cloudData.billStatus[date] }; }); 
-                } 
-                
-                await fetch(db.cloudURL, { method: 'POST', body: JSON.stringify(db), headers: { "Content-Type": "text/plain;charset=utf-8" } }); 
-                save(true);
-                if(ui) alert("Sync Successful!");
-            } catch(e) { 
-                console.error(e); 
-                if(ui) alert("Sync failed: " + e.message); 
-            } finally { 
-                setTimeout(() => ind.classList.add('hidden'), 2000); 
-                if(ui) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now`; }
-            } 
-        }
-        
-        // BOOT & NAVIGATION
-        const now = new Date(); monthPicker.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; monthPicker.addEventListener('change', render);
-        window.switchView = (id) => {
-            document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden'));
-            document.getElementById(`view-${id}`).classList.remove('hidden');
-            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active', 'bg-indigo-600', 'text-white', 'shadow-lg'));
-            const nav = document.getElementById(`nav-${id}`); nav.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-lg'); nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
-            // Force re-renders for tabs that depend on visibility or complex calcs
-            if(id === 'reports') renderReports(); 
-            if(id === 'bills') renderCalendar(); 
-            if(id === 'wealth') renderWealth();
-            if(id === 'budget') renderBudgets();
-            render();
-        };
-
-        // AUTO-RUN CLEANUP ON START
-        function consolidateWealth() {
-            let hasChanges = false;
-            // 1. Merge Assets
-            const assetMap = new Map();
-            db.wealth.assets.forEach(a => {
-                const key = a.name.trim().toLowerCase();
-                if (assetMap.has(key)) {
-                    const existing = assetMap.get(key);
-                    existing.value += parseFloat(a.value); // Add values
-                    hasChanges = true;
-                } else {
-                    assetMap.set(key, { ...a, value: parseFloat(a.value) });
-                }
-            });
-
-            // 2. Merge Debts
-            const debtMap = new Map();
-            db.wealth.debts.forEach(d => {
-                const key = d.name.trim().toLowerCase();
-                if (debtMap.has(key)) {
-                    const existing = debtMap.get(key);
-                    existing.value += parseFloat(d.value);
-                    hasChanges = true;
-                } else {
-                    debtMap.set(key, { ...d, value: parseFloat(d.value) });
-                }
-            });
-
-            if (hasChanges) {
-                db.wealth.assets = Array.from(assetMap.values());
-                db.wealth.debts = Array.from(debtMap.values());
-                localStorage.setItem('infinityDB', JSON.stringify(db)); // Force save
-                console.log("Data consolidated");
-            }
-        }
-        
-        consolidateWealth(); // <-- THIS LINE FIXES YOUR EXISTING DATA
-        renderDropdowns(); applyTheme(); render(); renderSettingsCats(); updateCloudStatus();
-        window.editAnnualIncome = () => { const v = prompt("Annual Salary:", db.annualIncome); if(v) { db.annualIncome = math(v); save(); } };
-        window.resetData = () => { if(confirm("Reset all data?")) { localStorage.removeItem('infinityDB'); location.reload(); } };
-        document.getElementById('formCloud').addEventListener('submit', e=>{ 
-            e.preventDefault(); 
-            const url = document.getElementById('cloudInput').value.trim();
-            if(url) { db.cloudURL = url; save(); manualSync(true); }
-        });
-    </script>
 </body>
 </html>
