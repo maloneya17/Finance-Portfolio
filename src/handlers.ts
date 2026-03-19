@@ -16,6 +16,11 @@ import type { AssetType } from './types';
 
 export { consolidateWealth };
 
+// ─── Null-safe DOM helpers ────────────────────────────────────────────────────
+const inp = (id: string) => document.getElementById(id) as HTMLInputElement | null;
+const btn = (id: string) => document.getElementById(id) as HTMLButtonElement | null;
+const sel = (id: string) => document.getElementById(id) as HTMLSelectElement | null;
+
 // ─── Tx type toggle ───────────────────────────────────────────────────────────
 let currentTxType: 'income' | 'expense' = 'expense';
 
@@ -73,23 +78,22 @@ export function editTx(id: string): void {
   const tx = (db.transactions[k] ?? []).find(t => t.id === id);
   if (!tx) return;
   editingTxId = id;
-  (document.getElementById('txDesc') as HTMLInputElement).value = tx.desc;
-  (document.getElementById('txAmt') as HTMLInputElement).value = String(tx.amount);
-  (document.getElementById('txCat') as HTMLSelectElement).value = tx.category;
+  const txDescEl = inp('txDesc'); if (txDescEl) txDescEl.value = tx.desc;
+  const txAmtEl  = inp('txAmt');  if (txAmtEl)  txAmtEl.value  = String(tx.amount);
+  const txCatEl  = sel('txCat');  if (txCatEl)  txCatEl.value  = tx.category;
   setTxType(tx.type);
   setText('txFormTitle', 'Edit Transaction');
-  (document.getElementById('btnSubmitTx') as HTMLButtonElement).innerHTML = 'Update Transaction';
+  const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Update Transaction';
   document.getElementById('btnCancelEdit')?.classList.remove('hidden');
 }
 
 export function resetTxForm(): void {
   editingTxId = null;
-  (document.getElementById('txDesc') as HTMLInputElement).value = '';
-  (document.getElementById('txAmt') as HTMLInputElement).value = '';
-  const catSel = document.getElementById('txCat') as HTMLSelectElement | null;
-  if (catSel?.options.length) catSel.selectedIndex = 0;
+  const txDescEl = inp('txDesc'); if (txDescEl) txDescEl.value = '';
+  const txAmtEl  = inp('txAmt');  if (txAmtEl)  txAmtEl.value  = '';
+  const txCatEl  = sel('txCat');  if (txCatEl?.options.length) txCatEl.selectedIndex = 0;
   setText('txFormTitle', 'Add Transaction');
-  (document.getElementById('btnSubmitTx') as HTMLButtonElement).innerHTML = 'Add Transaction';
+  const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Add Transaction';
   document.getElementById('btnCancelEdit')?.classList.add('hidden');
   setTxType('expense');
 }
@@ -249,16 +253,16 @@ export function editAsset(id: string): void {
   const asset = db.wealth.assets.find(a => a.id === id);
   if (!asset) return;
   editingAssetId = id;
-  (document.getElementById('assetName') as HTMLInputElement).value = asset.name;
-  (document.getElementById('assetVal') as HTMLInputElement).value = String(asset.value);
-  (document.getElementById('assetType') as HTMLSelectElement).value = asset.type ?? 'Other';
-  (document.getElementById('btnSaveAsset') as HTMLButtonElement).innerHTML = '<i class="fas fa-save"></i>';
+  const anEl = inp('assetName'); if (anEl) anEl.value = asset.name;
+  const avEl = inp('assetVal');  if (avEl) avEl.value = String(asset.value);
+  const atEl = sel('assetType'); if (atEl) atEl.value = asset.type ?? 'Other';
+  const saveBtnA = btn('btnSaveAsset'); if (saveBtnA) saveBtnA.innerHTML = '<i class="fas fa-save"></i>';
   document.getElementById('btnCancelAsset')?.classList.remove('hidden');
 }
 
 export function saveDebt(): void {
-  const name = (document.getElementById('debtName') as HTMLInputElement).value.trim().slice(0, 100);
-  const val = math((document.getElementById('debtVal') as HTMLInputElement).value);
+  const name = (inp('debtName')?.value ?? '').trim().slice(0, 100);
+  const val = math(inp('debtVal')?.value ?? '');
 
   if (!name) return showToast('Please enter a liability name');
   if (isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
@@ -276,8 +280,8 @@ export function saveDebt(): void {
     } else {
       db.wealth.debts.push({ id: genId(), name, value: val });
     }
-    (document.getElementById('debtName') as HTMLInputElement).value = '';
-    (document.getElementById('debtVal') as HTMLInputElement).value = '';
+    const dnEl2 = inp('debtName'); if (dnEl2) dnEl2.value = '';
+    const dvEl2 = inp('debtVal');  if (dvEl2) dvEl2.value = '';
   }
   consolidateWealth();
   save();
@@ -288,21 +292,21 @@ export function editDebt(id: string): void {
   const debt = db.wealth.debts.find(d => d.id === id);
   if (!debt) return;
   editingDebtId = id;
-  (document.getElementById('debtName') as HTMLInputElement).value = debt.name;
-  (document.getElementById('debtVal') as HTMLInputElement).value = String(debt.value);
-  (document.getElementById('btnSaveDebt') as HTMLButtonElement).innerHTML = '<i class="fas fa-save"></i>';
+  const dnEl = inp('debtName'); if (dnEl) dnEl.value = debt.name;
+  const dvEl = inp('debtVal');  if (dvEl) dvEl.value = String(debt.value);
+  const saveBtnD = btn('btnSaveDebt'); if (saveBtnD) saveBtnD.innerHTML = '<i class="fas fa-save"></i>';
   document.getElementById('btnCancelDebt')?.classList.remove('hidden');
 }
 
 export function cancelWealthEdit(): void {
   editingAssetId = null;
   editingDebtId = null;
-  (document.getElementById('assetName') as HTMLInputElement).value = '';
-  (document.getElementById('assetVal') as HTMLInputElement).value = '';
-  (document.getElementById('debtName') as HTMLInputElement).value = '';
-  (document.getElementById('debtVal') as HTMLInputElement).value = '';
-  (document.getElementById('btnSaveAsset') as HTMLButtonElement).innerHTML = '+';
-  (document.getElementById('btnSaveDebt') as HTMLButtonElement).innerHTML = '+';
+  const anEl = inp('assetName'); if (anEl) anEl.value = '';
+  const avEl = inp('assetVal');  if (avEl) avEl.value = '';
+  const dnEl = inp('debtName');  if (dnEl) dnEl.value = '';
+  const dvEl = inp('debtVal');   if (dvEl) dvEl.value = '';
+  const saveBtnA = btn('btnSaveAsset'); if (saveBtnA) saveBtnA.innerHTML = '+';
+  const saveBtnD = btn('btnSaveDebt');  if (saveBtnD) saveBtnD.innerHTML = '+';
   document.getElementById('btnCancelAsset')?.classList.add('hidden');
   document.getElementById('btnCancelDebt')?.classList.add('hidden');
 }
@@ -392,7 +396,12 @@ export function applyRecurring(): void {
 // ─── Annual income ────────────────────────────────────────────────────────────
 export function editAnnualIncome(): void {
   const v = prompt('Annual Salary:', String(db.annualIncome));
-  if (v !== null) { db.annualIncome = math(v); save(); }
+  if (v === null) return;
+  const parsed = math(v);
+  if (isNaN(parsed) || parsed < 0) return showToast('Please enter a valid non-negative salary');
+  if (parsed > MAX_TX_AMOUNT * 10) return showToast('Value exceeds maximum allowed');
+  db.annualIncome = parsed;
+  save();
 }
 
 // ─── CSV Import ───────────────────────────────────────────────────────────────

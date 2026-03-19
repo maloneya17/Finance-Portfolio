@@ -55,7 +55,9 @@ function destroyIfExists(c: Chart | null): null {
 function getCtx(id: string): CanvasRenderingContext2D {
   const canvas = document.getElementById(id) as HTMLCanvasElement | null;
   if (!canvas) throw new Error(`Canvas #${id} not found`);
-  return canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error(`Canvas #${id} 2d context unavailable`);
+  return ctx;
 }
 
 // ─── Dashboard charts ─────────────────────────────────────────────────────────

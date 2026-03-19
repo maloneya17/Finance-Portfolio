@@ -1,5 +1,7 @@
-export const math = (v: string | number | undefined | null): number =>
-  parseFloat(Number(v ?? 0).toFixed(2));
+export const math = (v: string | number | undefined | null): number => {
+  const n = Number(v ?? 0);
+  return parseFloat((isNaN(n) ? 0 : n).toFixed(2));
+};
 
 export const fmt = (n: number): string =>
   parseFloat(String(n)).toLocaleString('en-GB', {

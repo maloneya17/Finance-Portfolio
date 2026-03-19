@@ -20,7 +20,8 @@ export function showToast(msg: string, undoFn?: (() => void) | null): void {
 export function handleToastUndo(e: MouseEvent): void {
   const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-undo]');
   if (!btn) return;
-  const id = btn.dataset['undo']!;
+  const id = btn.dataset['undo'];
+  if (!id) return;
   const el = document.getElementById(id) as (HTMLElement & { _undoFn?: () => void }) | null;
   if (el?._undoFn) { el._undoFn(); el.remove(); }
 }
