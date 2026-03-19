@@ -1,4 +1,5 @@
 import './style.css';
+import { registerSW } from 'virtual:pwa-register';
 import { db, save } from './db';
 import { setThemeDefaults } from './charts';
 import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring } from './render';
@@ -274,3 +275,13 @@ function boot(): void {
 }
 
 document.addEventListener('DOMContentLoaded', boot);
+
+// ─── Service Worker (PWA) ─────────────────────────────────────────────────────
+registerSW({
+  onNeedRefresh() {
+    showToast('New version available — tap to update.', () => window.location.reload());
+  },
+  onOfflineReady() {
+    showToast('App ready to work offline.');
+  },
+});
