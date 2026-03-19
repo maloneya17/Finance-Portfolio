@@ -4,10 +4,12 @@ export type AssetType = 'Savings' | 'Investment' | 'Property' | 'Vehicle' | 'Cas
 export interface Transaction {
   id: string;
   updatedAt: number;
+  date?: string;      // YYYY-MM-DD — actual date of transaction (user-set)
   desc: string;
   amount: number;
   category: string;
   type: TxType;
+  notes?: string;     // optional memo / extra detail
 }
 
 export interface Bill {
@@ -16,6 +18,7 @@ export interface Bill {
   name: string;
   amount: number;
   day: number;
+  category?: string;  // category for auto-created expense, defaults to 'Bills'
   /** Transient flag — set during renderCalendar, not persisted */
   _shifted?: boolean;
 }
@@ -37,6 +40,16 @@ export interface Debt {
   id: string;
   name: string;
   value: number;
+  interestRate?: number;  // annual % e.g. 5.5 for 5.5% APR
+  minPayment?: number;    // monthly minimum payment
+}
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  target: number;
+  current: number;
+  notes?: string;
 }
 
 export interface WealthHistory {
@@ -70,4 +83,7 @@ export interface AppDB {
   theme: 'light' | 'dark';
   budgets: Record<string, number>;
   recurring: RecurringTemplate[];
+  currency: string;       // currency symbol, e.g. '£', '$', '€'
+  goals: SavingsGoal[];
+  autoRecurring: boolean; // auto-apply recurring templates at month start
 }

@@ -28,6 +28,11 @@ export function debounce<T extends (...args: unknown[]) => void>(fn: T, ms = 200
   }) as T;
 }
 
+// ─── Currency symbol ──────────────────────────────────────────────────────────
+let _sym = '£';
+export const setCurrencySymbol = (s: string): void => { _sym = s || '£'; };
+export const sym = (): string => _sym;
+
 const CAT_COLOURS: Record<string, string> = {
   Housing: '#3b82f6',
   Food: '#f59e0b',
@@ -48,4 +53,13 @@ export function getCatColor(c: string): string {
 
 export function getMonthKey(date: Date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Escape a value for CSV output — quotes fields containing commas, quotes, or newlines */
+export function csvEsc(s: string | number): string {
+  const str = String(s ?? '');
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
 }

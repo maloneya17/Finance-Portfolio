@@ -11,6 +11,13 @@ function migrate(db: AppDB): AppDB {
     if (!db.recurring) db.recurring = [];
     db.schemaVersion = 2;
   }
+  // v2 → v3: currency, goals, autoRecurring
+  if (db.schemaVersion < 3) {
+    if (!db.currency) db.currency = '£';
+    if (!db.goals) db.goals = [];
+    if (db.autoRecurring === undefined) db.autoRecurring = false;
+    db.schemaVersion = 3;
+  }
   return db;
 }
 
@@ -29,6 +36,9 @@ function repair(db: AppDB): AppDB {
   if (!db.recurring) db.recurring = [];
   if (!db.deletedIds) db.deletedIds = [];
   if (typeof db.annualIncome !== 'number') db.annualIncome = 0;
+  if (!db.currency) db.currency = '£';
+  if (!db.goals) db.goals = [];
+  if (db.autoRecurring === undefined) db.autoRecurring = false;
   return db;
 }
 
@@ -58,7 +68,6 @@ export function save(skipRender = false): void {
     return;
   }
   if (!skipRender) {
-    // Lazy import to avoid circular deps — render is wired in main.ts
     (window as Window & { _fpRender?: () => void })._fpRender?.();
   }
   (window as Window & { _fpUpdateCloudStatus?: () => void })._fpUpdateCloudStatus?.();

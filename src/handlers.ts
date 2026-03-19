@@ -1,5 +1,5 @@
 import { db, save, clearAndReload } from './db';
-import { math, fmt, genId, esc } from './utils';
+import { math, fmt, genId, esc, setCurrencySymbol } from './utils';
 import { MAX_TX_AMOUNT, MAX_DESC_LENGTH } from './constants';
 import { showToast } from './toast';
 import {
@@ -9,6 +9,7 @@ import {
   renderDropdowns,
   renderSettingsCats,
   renderRecurring,
+  selectedTxIds,
 } from './render';
 import { getMonthPicker } from './main';
 import { getRollover, consolidateWealth } from './finance';
@@ -42,17 +43,21 @@ let editingTxId: string | null = null;
 
 export function saveTransaction(): void {
   const k = getMonthPicker().value;
-  const descEl = document.getElementById('txDesc') as HTMLInputElement | null;
-  const amtEl = document.getElementById('txAmt') as HTMLInputElement | null;
-  const catEl = document.getElementById('txCat') as HTMLSelectElement | null;
+  const descEl  = document.getElementById('txDesc')  as HTMLInputElement | null;
+  const amtEl   = document.getElementById('txAmt')   as HTMLInputElement | null;
+  const catEl   = document.getElementById('txCat')   as HTMLSelectElement | null;
+  const dateEl  = document.getElementById('txDate')  as HTMLInputElement | null;
+  const notesEl = document.getElementById('txNotes') as HTMLInputElement | null;
 
-  const desc = descEl?.value.trim().slice(0, MAX_DESC_LENGTH) ?? '';
-  const amt = math(amtEl?.value ?? '');
-  const cat = catEl?.value ?? '';
+  const desc  = descEl?.value.trim().slice(0, MAX_DESC_LENGTH) ?? '';
+  const amt   = math(amtEl?.value ?? '');
+  const cat   = catEl?.value ?? '';
+  const date  = dateEl?.value ?? '';
+  const notes = notesEl?.value.trim().slice(0, 200) ?? '';
 
   if (!desc) return showToast('Please enter a description');
   if (!amt || amt <= 0) return showToast('Please enter a valid positive amount');
-  if (amt > MAX_TX_AMOUNT) return showToast(`Amount is unreasonably large (max £${MAX_TX_AMOUNT.toLocaleString()})`);
+  if (amt > MAX_TX_AMOUNT) return showToast(`Amount is unreasonably large (max ${db.currency}${MAX_TX_AMOUNT.toLocaleString()})`);
   if (cat === 'ADD_NEW') return showToast('Please select a valid category');
 
   if (editingTxId) {
@@ -60,15 +65,23 @@ export function saveTransaction(): void {
     if (txIndex > -1) {
       db.transactions[k][txIndex] = {
         ...db.transactions[k][txIndex],
-        desc, amount: amt, category: cat, type: currentTxType, updatedAt: Date.now(),
+        desc, amount: amt, category: cat, type: currentTxType,
+        date: date || undefined, notes: notes || undefined,
+        updatedAt: Date.now(),
       };
     }
     resetTxForm();
   } else {
     if (!db.transactions[k]) db.transactions[k] = [];
-    db.transactions[k].push({ id: genId(), updatedAt: Date.now(), desc, amount: amt, category: cat, type: currentTxType });
+    db.transactions[k].push({
+      id: genId(), updatedAt: Date.now(),
+      desc, amount: amt, category: cat, type: currentTxType,
+      date: date || undefined, notes: notes || undefined,
+    });
     if (descEl) descEl.value = '';
-    if (amtEl) amtEl.value = '';
+    if (amtEl)  amtEl.value  = '';
+    if (notesEl) notesEl.value = '';
+    // Keep date as today, keep category for fast repeat entry
   }
   save();
 }
@@ -78,9 +91,11 @@ export function editTx(id: string): void {
   const tx = (db.transactions[k] ?? []).find(t => t.id === id);
   if (!tx) return;
   editingTxId = id;
-  const txDescEl = inp('txDesc'); if (txDescEl) txDescEl.value = tx.desc;
-  const txAmtEl  = inp('txAmt');  if (txAmtEl)  txAmtEl.value  = String(tx.amount);
-  const txCatEl  = sel('txCat');  if (txCatEl)  txCatEl.value  = tx.category;
+  const txDescEl  = inp('txDesc');  if (txDescEl)  txDescEl.value  = tx.desc;
+  const txAmtEl   = inp('txAmt');   if (txAmtEl)   txAmtEl.value   = String(tx.amount);
+  const txCatEl   = sel('txCat');   if (txCatEl)   txCatEl.value   = tx.category;
+  const txDateEl  = inp('txDate');  if (txDateEl)  txDateEl.value  = tx.date ?? '';
+  const txNotesEl = inp('txNotes'); if (txNotesEl) txNotesEl.value = tx.notes ?? '';
   setTxType(tx.type);
   setText('txFormTitle', 'Edit Transaction');
   const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Update Transaction';
@@ -89,9 +104,11 @@ export function editTx(id: string): void {
 
 export function resetTxForm(): void {
   editingTxId = null;
-  const txDescEl = inp('txDesc'); if (txDescEl) txDescEl.value = '';
-  const txAmtEl  = inp('txAmt');  if (txAmtEl)  txAmtEl.value  = '';
-  const txCatEl  = sel('txCat');  if (txCatEl?.options.length) txCatEl.selectedIndex = 0;
+  const txDescEl  = inp('txDesc');  if (txDescEl)  txDescEl.value  = '';
+  const txAmtEl   = inp('txAmt');   if (txAmtEl)   txAmtEl.value   = '';
+  const txDateEl  = inp('txDate');  if (txDateEl)  txDateEl.value  = new Date().toISOString().slice(0, 10);
+  const txNotesEl = inp('txNotes'); if (txNotesEl) txNotesEl.value = '';
+  const txCatEl   = sel('txCat');   if (txCatEl?.options.length) txCatEl.selectedIndex = 0;
   setText('txFormTitle', 'Add Transaction');
   const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Add Transaction';
   document.getElementById('btnCancelEdit')?.classList.add('hidden');
@@ -113,6 +130,36 @@ export function delTx(id: string): void {
     db.transactions[k].push(backup);
     save();
   });
+}
+
+// ─── Bulk transaction actions ─────────────────────────────────────────────────
+export function bulkDeleteTx(): void {
+  const k = getMonthPicker().value;
+  const ids = Array.from(selectedTxIds);
+  if (ids.length === 0) return;
+  const backups = (db.transactions[k] ?? []).filter(t => ids.includes(t.id));
+  db.deletedIds.push(...ids);
+  db.transactions[k] = (db.transactions[k] ?? []).filter(t => !ids.includes(t.id));
+  selectedTxIds.clear();
+  save();
+  showToast(`Deleted ${ids.length} transaction${ids.length > 1 ? 's' : ''}`, () => {
+    db.deletedIds = db.deletedIds.filter(d => !ids.includes(d));
+    if (!db.transactions[k]) db.transactions[k] = [];
+    db.transactions[k].push(...backups);
+    save();
+  });
+}
+
+export function bulkRecategorizeTx(newCat: string): void {
+  const k = getMonthPicker().value;
+  const ids = Array.from(selectedTxIds);
+  if (ids.length === 0 || !newCat) { showToast('Pick a category first'); return; }
+  db.transactions[k] = (db.transactions[k] ?? []).map(t =>
+    ids.includes(t.id) ? { ...t, category: newCat, updatedAt: Date.now() } : t
+  );
+  selectedTxIds.clear();
+  save();
+  showToast(`Updated ${ids.length} transaction${ids.length > 1 ? 's' : ''} to "${newCat}"`);
 }
 
 // ─── Category check ───────────────────────────────────────────────────────────
@@ -155,21 +202,52 @@ export function addCatPrompt(): void {
 }
 
 // ─── Bills ────────────────────────────────────────────────────────────────────
+let editingBillId: string | null = null;
+
 export function saveBill(): void {
-  const name = (document.getElementById('billName') as HTMLInputElement).value.trim().slice(0, 100);
-  const amt = math((document.getElementById('billAmt') as HTMLInputElement).value);
-  const day = parseInt((document.getElementById('billDay') as HTMLInputElement).value);
+  const name     = (inp('billName')?.value ?? '').trim().slice(0, 100);
+  const amt      = math(inp('billAmt')?.value ?? '');
+  const day      = parseInt(inp('billDay')?.value ?? '');
+  const category = sel('billCat')?.value ?? 'Bills';
 
   if (!name) return showToast('Please enter a bill name');
   if (!amt || amt <= 0) return showToast('Please enter a valid positive amount');
   if (!day || day < 1 || day > 31) return showToast('Day must be between 1 and 31');
 
-  db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day });
-  (document.getElementById('billName') as HTMLInputElement).value = '';
-  (document.getElementById('billAmt') as HTMLInputElement).value = '';
-  (document.getElementById('billDay') as HTMLInputElement).value = '';
+  if (editingBillId) {
+    const idx = db.bills.findIndex(b => b.id === editingBillId);
+    if (idx > -1) db.bills[idx] = { ...db.bills[idx], name, amount: amt, day, category, updatedAt: Date.now() };
+    cancelBillEdit();
+  } else {
+    db.bills.push({ id: genId(), updatedAt: Date.now(), name, amount: amt, day, category });
+    if (inp('billName')) inp('billName')!.value = '';
+    if (inp('billAmt'))  inp('billAmt')!.value  = '';
+    if (inp('billDay'))  inp('billDay')!.value  = '';
+  }
   save();
   renderCalendar();
+}
+
+export function editBill(id: string): void {
+  const bill = db.bills.find(b => b.id === id);
+  if (!bill) return;
+  editingBillId = id;
+  if (inp('billName')) inp('billName')!.value = bill.name;
+  if (inp('billAmt'))  inp('billAmt')!.value  = String(bill.amount);
+  if (inp('billDay'))  inp('billDay')!.value  = String(bill.day);
+  if (sel('billCat'))  sel('billCat')!.value  = bill.category ?? 'Bills';
+  const saveBtn = btn('btnSaveBill'); if (saveBtn) saveBtn.innerText = 'Update Bill';
+  document.getElementById('btnCancelBill')?.classList.remove('hidden');
+  document.getElementById('formBill')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+export function cancelBillEdit(): void {
+  editingBillId = null;
+  if (inp('billName')) inp('billName')!.value = '';
+  if (inp('billAmt'))  inp('billAmt')!.value  = '';
+  if (inp('billDay'))  inp('billDay')!.value  = '';
+  const saveBtn = btn('btnSaveBill'); if (saveBtn) saveBtn.innerText = 'Add Bill';
+  document.getElementById('btnCancelBill')?.classList.add('hidden');
 }
 
 export function toggleBill(id: string): void {
@@ -179,12 +257,17 @@ export function toggleBill(id: string): void {
   if (!bill) return;
   const s = db.billStatus[key][id];
   const isPaid = typeof s === 'object' ? s.paid : !!s;
+  const billCat = bill.category ?? 'Bills';
 
   if (!isPaid) {
     const txId = genId();
     db.billStatus[key][id] = { paid: true, updated: Date.now(), txId };
     if (!db.transactions[key]) db.transactions[key] = [];
-    db.transactions[key].push({ id: txId, updatedAt: Date.now(), desc: bill.name, amount: math(bill.amount), category: 'Bills', type: 'expense' });
+    db.transactions[key].push({
+      id: txId, updatedAt: Date.now(),
+      date: new Date().toISOString().slice(0, 10),
+      desc: bill.name, amount: math(bill.amount), category: billCat, type: 'expense',
+    });
     save();
     showToast(`"${bill.name}" marked paid — added to expenses`, () => {
       db.billStatus[key][id] = { paid: false, updated: Date.now() };
@@ -203,6 +286,7 @@ export function toggleBill(id: string): void {
 export function delBill(id: string): void {
   const bill = db.bills.find(b => b.id === id);
   if (!bill) return;
+  if (editingBillId === id) cancelBillEdit();
   const backup = { ...bill };
   db.deletedIds.push(id);
   db.bills = db.bills.filter(b => b.id !== id);
@@ -222,7 +306,7 @@ let editingDebtId: string | null = null;
 
 export function saveAsset(): void {
   const name = (document.getElementById('assetName') as HTMLInputElement).value.trim().slice(0, 100);
-  const val = math((document.getElementById('assetVal') as HTMLInputElement).value);
+  const val  = math((document.getElementById('assetVal') as HTMLInputElement).value);
   const type = (document.getElementById('assetType') as HTMLSelectElement).value as AssetType;
 
   if (!name) return showToast('Please enter an asset name');
@@ -237,7 +321,7 @@ export function saveAsset(): void {
   } else {
     if (existing) {
       existing.value += val;
-      showToast(`£${fmt(val)} added to "${existing.name}"`);
+      showToast(`${db.currency}${fmt(val)} added to "${existing.name}"`);
     } else {
       db.wealth.assets.push({ id: genId(), name, value: val, type });
     }
@@ -261,8 +345,12 @@ export function editAsset(id: string): void {
 }
 
 export function saveDebt(): void {
-  const name = (inp('debtName')?.value ?? '').trim().slice(0, 100);
-  const val = math(inp('debtVal')?.value ?? '');
+  const name       = (inp('debtName')?.value ?? '').trim().slice(0, 100);
+  const val        = math(inp('debtVal')?.value ?? '');
+  const rateRaw    = inp('debtRate')?.value ?? '';
+  const minPayRaw  = inp('debtMinPay')?.value ?? '';
+  const interestRate = rateRaw   ? math(rateRaw)   : undefined;
+  const minPayment   = minPayRaw ? math(minPayRaw) : undefined;
 
   if (!name) return showToast('Please enter a liability name');
   if (isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
@@ -271,17 +359,23 @@ export function saveDebt(): void {
 
   if (editingDebtId) {
     const idx = db.wealth.debts.findIndex(d => d.id === editingDebtId);
-    if (idx > -1) db.wealth.debts[idx] = { ...db.wealth.debts[idx], name, value: val };
+    if (idx > -1) db.wealth.debts[idx] = {
+      ...db.wealth.debts[idx], name, value: val,
+      interestRate: interestRate ?? db.wealth.debts[idx].interestRate,
+      minPayment:   minPayment   ?? db.wealth.debts[idx].minPayment,
+    };
     cancelWealthEdit();
   } else {
     if (existing) {
       existing.value += val;
-      showToast(`£${fmt(val)} added to "${existing.name}"`);
+      showToast(`${db.currency}${fmt(val)} added to "${existing.name}"`);
     } else {
-      db.wealth.debts.push({ id: genId(), name, value: val });
+      db.wealth.debts.push({ id: genId(), name, value: val, interestRate, minPayment });
     }
-    const dnEl2 = inp('debtName'); if (dnEl2) dnEl2.value = '';
-    const dvEl2 = inp('debtVal');  if (dvEl2) dvEl2.value = '';
+    const dnEl2 = inp('debtName');   if (dnEl2) dnEl2.value = '';
+    const dvEl2 = inp('debtVal');    if (dvEl2) dvEl2.value = '';
+    const drEl  = inp('debtRate');   if (drEl)  drEl.value  = '';
+    const dmEl  = inp('debtMinPay'); if (dmEl)  dmEl.value  = '';
   }
   consolidateWealth();
   save();
@@ -292,8 +386,10 @@ export function editDebt(id: string): void {
   const debt = db.wealth.debts.find(d => d.id === id);
   if (!debt) return;
   editingDebtId = id;
-  const dnEl = inp('debtName'); if (dnEl) dnEl.value = debt.name;
-  const dvEl = inp('debtVal');  if (dvEl) dvEl.value = String(debt.value);
+  const dnEl = inp('debtName');   if (dnEl) dnEl.value = debt.name;
+  const dvEl = inp('debtVal');    if (dvEl) dvEl.value = String(debt.value);
+  const drEl = inp('debtRate');   if (drEl) drEl.value = String(debt.interestRate ?? '');
+  const dmEl = inp('debtMinPay'); if (dmEl) dmEl.value = String(debt.minPayment ?? '');
   const saveBtnD = btn('btnSaveDebt'); if (saveBtnD) saveBtnD.innerHTML = '<i class="fas fa-save"></i>';
   document.getElementById('btnCancelDebt')?.classList.remove('hidden');
 }
@@ -301,10 +397,12 @@ export function editDebt(id: string): void {
 export function cancelWealthEdit(): void {
   editingAssetId = null;
   editingDebtId = null;
-  const anEl = inp('assetName'); if (anEl) anEl.value = '';
-  const avEl = inp('assetVal');  if (avEl) avEl.value = '';
-  const dnEl = inp('debtName');  if (dnEl) dnEl.value = '';
-  const dvEl = inp('debtVal');   if (dvEl) dvEl.value = '';
+  const anEl = inp('assetName');   if (anEl) anEl.value = '';
+  const avEl = inp('assetVal');    if (avEl) avEl.value = '';
+  const dnEl = inp('debtName');    if (dnEl) dnEl.value = '';
+  const dvEl = inp('debtVal');     if (dvEl) dvEl.value = '';
+  const drEl = inp('debtRate');    if (drEl) drEl.value = '';
+  const dmEl = inp('debtMinPay');  if (dmEl) dmEl.value = '';
   const saveBtnA = btn('btnSaveAsset'); if (saveBtnA) saveBtnA.innerHTML = '+';
   const saveBtnD = btn('btnSaveDebt');  if (saveBtnD) saveBtnD.innerHTML = '+';
   document.getElementById('btnCancelAsset')?.classList.add('hidden');
@@ -329,7 +427,7 @@ export function delWealthItem(type: 'assets' | 'debts', id: string): void {
 export function logNetWorth(): void {
   const key = getMonthPicker().value;
   const assets = db.wealth.assets.reduce((a, b) => a + b.value, 0);
-  const debts = db.wealth.debts.reduce((a, b) => a + b.value, 0);
+  const debts  = db.wealth.debts.reduce((a, b) => a + b.value, 0);
   const rollover = getRollover(key);
   const txs = db.transactions[key] ?? [];
   let inc = 0, exp = 0;
@@ -339,7 +437,82 @@ export function logNetWorth(): void {
   db.wealth.history[key] = net;
   save();
   renderWealth();
-  alert(`Logged Net Worth of £${fmt(net)} for ${key}`);
+  showToast(`Logged Net Worth of ${db.currency}${fmt(net)} for ${key}`);
+}
+
+// ─── Savings Goals ────────────────────────────────────────────────────────────
+let editingGoalId: string | null = null;
+
+export function saveGoal(): void {
+  const name    = (inp('goalName')?.value ?? '').trim().slice(0, MAX_DESC_LENGTH);
+  const target  = math(inp('goalTarget')?.value ?? '');
+  const current = math(inp('goalCurrent')?.value ?? '');
+  const notes   = (inp('goalNotes')?.value ?? '').trim().slice(0, 200);
+
+  if (!name) return showToast('Please enter a goal name');
+  if (!target || target <= 0) return showToast('Please enter a valid target amount');
+
+  if (editingGoalId) {
+    const idx = db.goals.findIndex(g => g.id === editingGoalId);
+    if (idx > -1) db.goals[idx] = { ...db.goals[idx], name, target, current, notes: notes || undefined };
+    cancelGoalEdit();
+  } else {
+    db.goals.push({ id: genId(), name, target, current, notes: notes || undefined });
+    if (inp('goalName'))    inp('goalName')!.value    = '';
+    if (inp('goalTarget'))  inp('goalTarget')!.value  = '';
+    if (inp('goalCurrent')) inp('goalCurrent')!.value = '';
+    if (inp('goalNotes'))   inp('goalNotes')!.value   = '';
+  }
+  save();
+  renderWealth();
+}
+
+export function editGoal(id: string): void {
+  const goal = db.goals.find(g => g.id === id);
+  if (!goal) return;
+  editingGoalId = id;
+  if (inp('goalName'))    inp('goalName')!.value    = goal.name;
+  if (inp('goalTarget'))  inp('goalTarget')!.value  = String(goal.target);
+  if (inp('goalCurrent')) inp('goalCurrent')!.value = String(goal.current);
+  if (inp('goalNotes'))   inp('goalNotes')!.value   = goal.notes ?? '';
+  const sbtn = btn('btnSaveGoal'); if (sbtn) sbtn.innerText = 'Update Goal';
+  document.getElementById('btnCancelGoal')?.classList.remove('hidden');
+  document.getElementById('goalSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+export function cancelGoalEdit(): void {
+  editingGoalId = null;
+  if (inp('goalName'))    inp('goalName')!.value    = '';
+  if (inp('goalTarget'))  inp('goalTarget')!.value  = '';
+  if (inp('goalCurrent')) inp('goalCurrent')!.value = '';
+  if (inp('goalNotes'))   inp('goalNotes')!.value   = '';
+  const sbtn = btn('btnSaveGoal'); if (sbtn) sbtn.innerText = '+ Add Goal';
+  document.getElementById('btnCancelGoal')?.classList.add('hidden');
+}
+
+export function delGoal(id: string): void {
+  const goal = db.goals.find(g => g.id === id);
+  if (!goal) return;
+  if (editingGoalId === id) cancelGoalEdit();
+  const backup = { ...goal };
+  db.goals = db.goals.filter(g => g.id !== id);
+  save();
+  renderWealth();
+  showToast(`Removed goal "${backup.name}"`, () => {
+    db.goals.push(backup);
+    save();
+    renderWealth();
+  });
+}
+
+// ─── Currency ─────────────────────────────────────────────────────────────────
+export function saveCurrency(): void {
+  const val = (inp('currencySymbolInput')?.value ?? '').trim().slice(0, 3);
+  if (!val) return showToast('Please enter a currency symbol');
+  db.currency = val;
+  setCurrencySymbol(val);
+  save();
+  showToast(`Currency set to "${val}"`);
 }
 
 // ─── Recurring templates ──────────────────────────────────────────────────────
@@ -356,13 +529,13 @@ export function setRecType(type: 'income' | 'expense'): void {
 
 export function saveRecurring(): void {
   const desc = (document.getElementById('recDesc') as HTMLInputElement).value.trim().slice(0, MAX_DESC_LENGTH);
-  const amt = math((document.getElementById('recAmt') as HTMLInputElement).value);
-  const cat = (document.getElementById('recCat') as HTMLSelectElement).value;
+  const amt  = math((document.getElementById('recAmt') as HTMLInputElement).value);
+  const cat  = (document.getElementById('recCat') as HTMLSelectElement).value;
   if (!desc) return showToast('Enter a description');
   if (!amt || amt <= 0) return showToast('Enter a valid positive amount');
   db.recurring.push({ id: genId(), desc, amount: amt, category: cat, type: currentRecType });
   (document.getElementById('recDesc') as HTMLInputElement).value = '';
-  (document.getElementById('recAmt') as HTMLInputElement).value = '';
+  (document.getElementById('recAmt')  as HTMLInputElement).value = '';
   save();
   renderRecurring();
 }
@@ -374,23 +547,33 @@ export function delRecurring(id: string): void {
   showToast('Template removed');
 }
 
-export function applyRecurring(): void {
+/** Apply recurring templates to the current month. Returns number of transactions added. */
+export function applyRecurring(silent = false): number {
   if (!db.recurring || db.recurring.length === 0) {
-    showToast('No templates set up — add them in Settings');
-    return;
+    if (!silent) showToast('No templates set up — add them in Settings');
+    return 0;
   }
   const key = getMonthPicker().value;
   if (!db.transactions[key]) db.transactions[key] = [];
   let count = 0;
   db.recurring.forEach(r => {
-    const exists = db.transactions[key].some(t => t.desc === r.desc && t.amount === r.amount && t.type === r.type);
+    const exists = db.transactions[key].some(t => t.desc === r.desc && t.amount === r.amount && t.type === r.type && t.category === r.category);
     if (!exists) {
-      db.transactions[key].push({ id: genId(), updatedAt: Date.now(), desc: r.desc, amount: r.amount, category: r.category, type: r.type });
+      db.transactions[key].push({
+        id: genId(), updatedAt: Date.now(),
+        date: new Date().toISOString().slice(0, 10),
+        desc: r.desc, amount: r.amount, category: r.category, type: r.type,
+      });
       count++;
     }
   });
-  if (count > 0) { save(); showToast(`Applied ${count} recurring transaction${count > 1 ? 's' : ''}`); }
-  else showToast('All recurring transactions already applied this month');
+  if (count > 0) {
+    save();
+    if (!silent) showToast(`Applied ${count} recurring transaction${count > 1 ? 's' : ''}`);
+  } else {
+    if (!silent) showToast('All recurring transactions already applied this month');
+  }
+  return count;
 }
 
 // ─── Annual income ────────────────────────────────────────────────────────────
@@ -467,13 +650,17 @@ export function executeImport(): void {
       if (!year || !month || isNaN(monthInt) || monthInt < 1 || monthInt > 12) {
         skipped++; skippedRows.push(`Row ${i + 1}: unrecognised date "${dateStr}"`); continue;
       }
-      const monthKey = `${year}-${month.padStart(2, '0')}`;
+      const monthKey  = `${year}-${month.padStart(2, '0')}`;
       const cleanDesc = (row[descIdx]?.replace(/"/g, '').trim().slice(0, MAX_DESC_LENGTH)) ?? 'Imported';
-      const finalAmt = Math.abs(rawAmt);
-      const type = rawAmt > 0 ? 'income' as const : 'expense' as const;
+      const finalAmt  = Math.abs(rawAmt);
+      const type      = rawAmt > 0 ? 'income' as const : 'expense' as const;
 
       if (!db.transactions[monthKey]) db.transactions[monthKey] = [];
-      db.transactions[monthKey].push({ id: genId(), updatedAt: Date.now(), desc: cleanDesc, amount: finalAmt, category: 'Imported', type });
+      db.transactions[monthKey].push({
+        id: genId(), updatedAt: Date.now(),
+        date: dateStr.slice(0, 10),
+        desc: cleanDesc, amount: finalAmt, category: 'Imported', type,
+      });
       count++;
     }
 
