@@ -1,4 +1,4 @@
-import { db, save, clearAndReload } from './db';
+import { db, save, persistOnly, clearAndReload } from './db';
 import { math, fmt, genId, esc, setCurrencySymbol } from './utils';
 import { MAX_TX_AMOUNT, MAX_DESC_LENGTH } from './constants';
 import { showToast } from './toast';
@@ -40,6 +40,9 @@ export function setTxType(type: 'income' | 'expense'): void {
 
 // ─── Transaction CRUD ─────────────────────────────────────────────────────────
 let editingTxId: string | null = null;
+/** Original month key when an edit was started — prevents saving to the wrong month
+ *  if the user changes the month picker between clicking Edit and clicking Update. */
+let editingTxMonth: string | null = null;
 
 export function saveTransaction(): void {
   const k = getMonthPicker().value;
@@ -61,10 +64,12 @@ export function saveTransaction(): void {
   if (cat === 'ADD_NEW') return showToast('Please select a valid category');
 
   if (editingTxId) {
-    const txIndex = (db.transactions[k] ?? []).findIndex(t => t.id === editingTxId);
+    // Use the month where the tx originally lives, not the currently viewed month.
+    const srcKey = editingTxMonth ?? k;
+    const txIndex = (db.transactions[srcKey] ?? []).findIndex(t => t.id === editingTxId);
     if (txIndex > -1) {
-      db.transactions[k][txIndex] = {
-        ...db.transactions[k][txIndex],
+      db.transactions[srcKey][txIndex] = {
+        ...db.transactions[srcKey][txIndex],
         desc, amount: amt, category: cat, type: currentTxType,
         date: date || undefined, notes: notes || undefined,
         updatedAt: Date.now(),
@@ -91,6 +96,7 @@ export function editTx(id: string): void {
   const tx = (db.transactions[k] ?? []).find(t => t.id === id);
   if (!tx) return;
   editingTxId = id;
+  editingTxMonth = k;
   const txDescEl  = inp('txDesc');  if (txDescEl)  txDescEl.value  = tx.desc;
   const txAmtEl   = inp('txAmt');   if (txAmtEl)   txAmtEl.value   = String(tx.amount);
   const txCatEl   = sel('txCat');   if (txCatEl)   txCatEl.value   = tx.category;
@@ -104,6 +110,7 @@ export function editTx(id: string): void {
 
 export function resetTxForm(): void {
   editingTxId = null;
+  editingTxMonth = null;
   const txDescEl  = inp('txDesc');  if (txDescEl)  txDescEl.value  = '';
   const txAmtEl   = inp('txAmt');   if (txAmtEl)   txAmtEl.value   = '';
   const txDateEl  = inp('txDate');  if (txDateEl)  txDateEl.value  = new Date().toISOString().slice(0, 10);
@@ -432,10 +439,12 @@ export function delWealthItem(type: 'assets' | 'debts', id: string): void {
   const item = db.wealth[type].find(i => i.id === id);
   if (!item) return;
   const backup = { ...item };
+  db.deletedIds.push(id);
   (db.wealth[type] as typeof db.wealth.assets) = db.wealth[type].filter(i => i.id !== id) as typeof db.wealth.assets;
   save();
   renderWealth();
   showToast(`Removed "${backup.name}"`, () => {
+    db.deletedIds = db.deletedIds.filter(d => d !== id);
     (db.wealth[type] as typeof db.wealth.assets).push(backup as typeof db.wealth.assets[0]);
     save();
     renderWealth();
@@ -587,12 +596,15 @@ export function applyRecurring(silent = false): number {
       count++;
     }
   });
+  // Always mark this month as processed to prevent boot re-running every page load
+  // when all templates are already present (count = 0 is a valid "already done" state).
+  db.lastAutoAppliedMonth = key;
   if (count > 0) {
-    db.lastAutoAppliedMonth = key;
     save();
     if (!silent) showToast(`Applied ${count} recurring transaction${count > 1 ? 's' : ''}`);
   } else {
     if (!silent) showToast('All recurring transactions already applied this month');
+    else persistOnly(); // persist the marker update without triggering a full re-render
   }
   return count;
 }
@@ -614,7 +626,8 @@ let csvData: string[][] = [];
 const MAX_CSV_BYTES = 5 * 1024 * 1024; // 5 MB
 
 export function handleCsvFile(file: File): void {
-  if (!file.name.toLowerCase().endsWith('.csv') && file.type && file.type !== 'text/csv') {
+  // Extension check only — MIME type is not reliable (varies by OS/browser)
+  if (!file.name.toLowerCase().endsWith('.csv')) {
     showToast('Please upload a .csv file'); return;
   }
   if (file.size > MAX_CSV_BYTES) {
@@ -623,7 +636,10 @@ export function handleCsvFile(file: File): void {
   const reader = new FileReader();
   reader.onload = (evt) => {
     const text = evt.target?.result as string;
-    const rows = text.split('\n').map(r => r.split(','));
+    // Split on \r\n or \n to handle Windows and Unix line endings
+    const rows = text.split(/\r?\n/).map(r => r.split(',').map(f => f.trim()));
+    // Drop empty trailing rows (common when file ends with a newline)
+    while (rows.length > 0 && rows[rows.length - 1].every(c => !c)) rows.pop();
     if (rows.length < 2) { showToast('Invalid CSV — needs at least a header row and one data row'); return; }
 
     csvData = rows;
@@ -637,9 +653,10 @@ export function handleCsvFile(file: File): void {
     });
     headers.forEach((h, i) => {
       const lower = h.toLowerCase();
-      if (lower.includes('date')) (document.getElementById('mapDate') as HTMLSelectElement).value = String(i);
-      if (lower.includes('desc') || lower.includes('detail')) (document.getElementById('mapDesc') as HTMLSelectElement).value = String(i);
-      if (lower.includes('amount') || lower.includes('value')) (document.getElementById('mapAmt') as HTMLSelectElement).value = String(i);
+      // Use optional chaining — elements may not exist in all builds
+      if (lower.includes('date')) (document.getElementById('mapDate') as HTMLSelectElement | null)?.setAttribute('value', String(i));
+      if (lower.includes('desc') || lower.includes('detail')) (document.getElementById('mapDesc') as HTMLSelectElement | null)?.setAttribute('value', String(i));
+      if (lower.includes('amount') || lower.includes('value')) (document.getElementById('mapAmt') as HTMLSelectElement | null)?.setAttribute('value', String(i));
     });
     document.getElementById('csvMapper')?.classList.remove('hidden');
     setText('csvPreview', `Loaded ${rows.length - 1} rows. Select columns above.`);
@@ -668,18 +685,27 @@ export function executeImport(): void {
       const dateStr = row[dateIdx]?.replace(/"/g, '').trim() ?? '';
       if (!dateStr) { skipped++; skippedRows.push(`Row ${i + 1}: missing date`); continue; }
       const parts = dateStr.split(/[-/.]/);
-      let year: string | undefined, month: string | undefined;
+      let year: string | undefined, month: string | undefined, dayPart: string | undefined;
       if (parts.length >= 3) {
-        if (parseInt(parts[0]) > 1900) { year = parts[0]; month = parts[1]; }
-        else if (parseInt(parts[2] ?? '') > 1900) { year = parts[2]; month = parts[1]; }
-        else { year = parts[2]; month = parts[1]; }
+        if (parseInt(parts[0]) > 1900) {
+          // YYYY-MM-DD
+          year = parts[0]; month = parts[1]; dayPart = parts[2];
+        } else if (parseInt(parts[2] ?? '') > 1900) {
+          // DD/MM/YYYY or MM/DD/YYYY — treat middle part as month (most common non-ISO)
+          year = parts[2]; month = parts[1]; dayPart = parts[0];
+        } else {
+          year = parts[2]; month = parts[1]; dayPart = parts[0];
+        }
       }
       if (year && year.length === 2) year = '20' + year;
       const monthInt = parseInt(month ?? '');
-      if (!year || !month || isNaN(monthInt) || monthInt < 1 || monthInt > 12) {
+      const dayInt   = parseInt(dayPart ?? '0');
+      if (!year || !month || isNaN(monthInt) || monthInt < 1 || monthInt > 12 || isNaN(dayInt) || dayInt < 1 || dayInt > 31) {
         skipped++; skippedRows.push(`Row ${i + 1}: unrecognised date "${dateStr}"`); continue;
       }
-      const monthKey  = `${year}-${month.padStart(2, '0')}`;
+      const monthKey = `${year}-${month.padStart(2, '0')}`;
+      // Always store date in YYYY-MM-DD format regardless of input format
+      const isoDate  = `${year}-${month.padStart(2, '0')}-${String(dayInt).padStart(2, '0')}`;
       const cleanDesc = (row[descIdx]?.replace(/"/g, '').trim().slice(0, MAX_DESC_LENGTH)) ?? 'Imported';
       const finalAmt  = Math.abs(rawAmt);
       const type      = rawAmt > 0 ? 'income' as const : 'expense' as const;
@@ -687,7 +713,7 @@ export function executeImport(): void {
       if (!db.transactions[monthKey]) db.transactions[monthKey] = [];
       db.transactions[monthKey].push({
         id: genId(), updatedAt: Date.now(),
-        date: dateStr.slice(0, 10),
+        date: isoDate,
         desc: cleanDesc, amount: finalAmt, category: 'Imported', type,
       });
       count++;
@@ -699,7 +725,8 @@ export function executeImport(): void {
     showToast(msg);
     if (skippedRows.length) console.warn('CSV import skipped rows:\n' + skippedRows.join('\n'));
     csvData = [];
-    (document.getElementById('csvFile') as HTMLInputElement).value = '';
+    const csvFileEl = document.getElementById('csvFile') as HTMLInputElement | null;
+    if (csvFileEl) csvFileEl.value = '';
     document.getElementById('csvMapper')?.classList.add('hidden');
     render();
   } catch (e: unknown) {

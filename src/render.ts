@@ -3,7 +3,7 @@ import { math, fmt, esc, sym, getMonthKey } from './utils';
 import { BUDGET_WARN_PCT, CALENDAR_MAX_CHIPS } from './constants';
 import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats } from './charts';
 import { getMonthPicker } from './main';
-import { getRollover, getCurrentCats, consolidateWealth } from './finance';
+import { getRollover, getCurrentCats, consolidateWealth, isValidMonthKey } from './finance';
 
 export { getRollover, getCurrentCats };
 
@@ -72,7 +72,7 @@ export function render(): void {
     const year = key.split('-')[0];
     let ytd = 0;
     Object.keys(db.transactions).forEach(k => {
-      if (k.startsWith(year))
+      if (isValidMonthKey(k) && k.startsWith(year))
         db.transactions[k].forEach(t => { if (t.type === 'income') ytd += math(t.amount); });
     });
     setText('kpiYTD', `${sym()}${fmt(ytd)}`);
@@ -358,7 +358,11 @@ export function renderWealth(): void {
 export function renderReports(): void {
   try {
     const years = new Set([new Date().getFullYear()]);
-    Object.keys(db.transactions).forEach(k => years.add(parseInt(k.split('-')[0])));
+    Object.keys(db.transactions).forEach(k => {
+      if (!isValidMonthKey(k)) return;
+      const y = parseInt(k.split('-')[0]);
+      if (!isNaN(y)) years.add(y);
+    });
     const sel = document.getElementById('reportYearSelect') as HTMLSelectElement | null;
     if (!sel) return;
 

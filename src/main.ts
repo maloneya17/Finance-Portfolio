@@ -120,12 +120,14 @@ function exportJSON(): void {
   const { cloudURL: _url, syncPassphrase: _pass, ...exportData } = db;
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(blob);
+  a.href = objectUrl;
   a.download = `finance-backup-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+  // Delay revocation — revoking synchronously can cancel the download on some browsers
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
   showToast('JSON backup downloaded');
 }
 
@@ -146,12 +148,13 @@ function exportCSV(): void {
   const csv = rows.join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(blob);
+  a.href = objectUrl;
   a.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 10_000);
   showToast('CSV exported successfully');
 }
 

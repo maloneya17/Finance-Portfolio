@@ -54,7 +54,9 @@ export function saveSyncPassphrase(): void {
   save();
   updateCloudStatus();
   showToast(raw ? 'Encryption passphrase saved.' : 'Encryption disabled — syncing in plain text.');
-  if (inp) inp.value = raw ? '••••••••' : '';
+  // Clear the field — the encryption badge shows current status; leaving bullets
+  // would cause a second click to overwrite the real passphrase with '••••••••'.
+  if (inp) inp.value = '';
 }
 
 export function clearSyncPassphrase(): void {
@@ -66,11 +68,12 @@ export function clearSyncPassphrase(): void {
   showToast('Encryption passphrase cleared — syncing in plain text.');
 }
 
-/** Serialize the database, stripping credentials that must never leave the device. */
+/** Serialize the database, stripping credentials and transient render flags. */
 function buildPayload(): typeof db {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { cloudURL: _u, syncPassphrase: _p, ...rest } = db;
-  return rest as typeof db;
+  // Strip _shifted (transient render flag) from bills — same as save() does for localStorage
+  return { ...rest, bills: rest.bills.map(({ _shifted: _, ...b }) => b) } as typeof db;
 }
 
 export async function manualSync(ui = false): Promise<void> {
@@ -82,7 +85,17 @@ export async function manualSync(ui = false): Promise<void> {
 
   try {
     // ── FETCH ────────────────────────────────────────────────────────────────
-    const response = await fetch(db.cloudURL + '?t=' + Date.now(), { method: 'GET', redirect: 'follow' });
+    // Build the fetch URL safely — the stored cloudURL may already contain a query string.
+    const fetchURL = (() => {
+      try {
+        const u = new URL(db.cloudURL);
+        u.searchParams.set('t', String(Date.now()));
+        return u.toString();
+      } catch {
+        return db.cloudURL + '?t=' + Date.now();
+      }
+    })();
+    const response = await fetch(fetchURL, { method: 'GET', redirect: 'follow' });
     if (!response.ok) throw new Error('Connection failed');
 
     const rawText = await response.text();
@@ -160,8 +173,20 @@ export async function manualSync(ui = false): Promise<void> {
         db.transactions[k].push(rest);
       });
 
+      // billStatus — last-write-wins per bill entry using the 'updated' timestamp
       Object.keys(cloudData.billStatus ?? {}).forEach(date => {
-        db.billStatus[date] = { ...db.billStatus[date], ...cloudData.billStatus[date] };
+        if (!isValidMonthKey(date)) return;
+        const cloudMonth = cloudData.billStatus[date] ?? {};
+        const localMonth = db.billStatus[date] ?? {};
+        const merged: typeof localMonth = { ...localMonth };
+        Object.keys(cloudMonth).forEach(billId => {
+          const cloudEntry = cloudMonth[billId];
+          const localEntry = localMonth[billId];
+          const cloudTs = typeof cloudEntry === 'object' ? (cloudEntry.updated ?? 0) : 0;
+          const localTs = typeof localEntry === 'object' ? (localEntry.updated ?? 0) : 0;
+          if (!localEntry || cloudTs > localTs) merged[billId] = cloudEntry;
+        });
+        db.billStatus[date] = merged;
       });
     }
 
