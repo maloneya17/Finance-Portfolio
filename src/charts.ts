@@ -15,6 +15,7 @@ import {
   type ChartConfiguration,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { sym } from './utils';
 
 Chart.register(
   BarController,
@@ -95,7 +96,7 @@ export function updateDashboardCharts(cats: Record<string, number>): void {
           align: 'end',
           color: isDark ? '#94a3b8' : '#64748b',
           font: { size: 10, weight: 'bold' },
-          formatter: (v: number) => `£${fmt(v)}`,
+          formatter: (v: number) => `${sym()}${fmt(v)}`,
         },
       },
       scales: {
@@ -136,9 +137,9 @@ export function updateDashboardCharts(cats: Record<string, number>): void {
         ctx.font = 'bold 12px Inter';
         ctx.textAlign = 'left';
         ctx.fillStyle = '#10b981';
-        ctx.fillText(`Inc: £${fmt(totalInc)}`, chartArea.left + 10, chartArea.top + 20);
+        ctx.fillText(`Inc: ${sym()}${fmt(totalInc)}`, chartArea.left + 10, chartArea.top + 20);
         ctx.fillStyle = '#f43f5e';
-        ctx.fillText(`Exp: £${fmt(totalExp)}`, chartArea.left + 10, chartArea.top + 40);
+        ctx.fillText(`Exp: ${sym()}${fmt(totalExp)}`, chartArea.left + 10, chartArea.top + 40);
         ctx.restore();
       }
     },

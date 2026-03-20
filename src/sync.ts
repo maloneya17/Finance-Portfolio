@@ -17,7 +17,16 @@ export function updateCloudStatus(): void {
 
 export function saveCloudUrl(): void {
   const url = (document.getElementById('cloudInput') as HTMLInputElement | null)?.value.trim() ?? '';
-  if (url) { db.cloudURL = url; save(); manualSync(true); }
+  if (!url) return;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      showToast('Cloud URL must start with https:// or http://'); return;
+    }
+  } catch {
+    showToast('Please enter a valid URL (e.g. https://…)'); return;
+  }
+  db.cloudURL = url; save(); manualSync(true);
 }
 
 export async function manualSync(ui = false): Promise<void> {
@@ -34,7 +43,9 @@ export async function manualSync(ui = false): Promise<void> {
 
     if (cloudData.status !== 'new') {
       const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds ?? [])]);
-      db.deletedIds = Array.from(allDeleted);
+      // Prune deletedIds to prevent unbounded localStorage growth
+      const deletedArr = Array.from(allDeleted);
+      db.deletedIds = deletedArr.length > 500 ? deletedArr.slice(deletedArr.length - 500) : deletedArr;
 
       // Bills — last-write-wins per id
       const billMap = new Map<string, typeof db.bills[0]>();

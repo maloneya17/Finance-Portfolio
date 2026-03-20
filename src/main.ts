@@ -5,10 +5,10 @@ import { setThemeDefaults } from './charts';
 import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync } from './sync';
-import { debounce, math } from './utils';
+import { debounce, math, setCurrencySymbol, csvEsc } from './utils';
 import {
   setTxType, saveTransaction, editTx, resetTxForm, delTx, checkNewCategory,
-  saveBill, toggleBill, delBill,
+  saveBill, editBill, toggleBill, delBill,
   saveAsset, editAsset, saveDebt, editDebt, cancelWealthEdit, delWealthItem,
   logNetWorth,
   setRecType, saveRecurring, delRecurring, applyRecurring,
@@ -113,17 +113,25 @@ function exportJSON(): void {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
   showToast('JSON backup downloaded');
 }
 
 function exportCSV(): void {
-  const rows: (string | number)[][] = [['Month', 'Date Added', 'Description', 'Category', 'Type', 'Amount']];
+  const rows = [['Month', 'Date Added', 'Description', 'Category', 'Type', 'Amount'].map(csvEsc).join(',')];
   Object.keys(db.transactions).sort().forEach(month => {
     (db.transactions[month] ?? []).forEach(t => {
-      rows.push([month, new Date(t.updatedAt ?? 0).toISOString().slice(0, 10), `"${(t.desc ?? '').replace(/"/g, '""')}"`, t.category, t.type, t.amount]);
+      rows.push([
+        csvEsc(month),
+        csvEsc(new Date(t.updatedAt ?? 0).toISOString().slice(0, 10)),
+        csvEsc(t.desc ?? ''),
+        csvEsc(t.category),
+        csvEsc(t.type),
+        csvEsc(t.amount),
+      ].join(','));
     });
   });
-  const csv = rows.map(r => r.join(',')).join('\n');
+  const csv = rows.join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -131,6 +139,7 @@ function exportCSV(): void {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
   showToast('CSV exported successfully');
 }
 
@@ -153,8 +162,10 @@ function wireEvents(): void {
     if (delTxBtn) { delTx(delTxBtn.dataset['delTx']!); return; }
 
     // Calendar
+    const editBillEl = target.closest<HTMLElement>('[data-edit-bill]');
+    if (editBillEl) { e.stopPropagation(); editBill(editBillEl.dataset['editBill']!); return; }
     const toggleBillEl = target.closest<HTMLElement>('[data-toggle-bill]');
-    if (toggleBillEl && !target.closest('[data-del-bill]')) { toggleBill(toggleBillEl.dataset['toggleBill']!); return; }
+    if (toggleBillEl && !target.closest('[data-del-bill]') && !target.closest('[data-edit-bill]')) { toggleBill(toggleBillEl.dataset['toggleBill']!); return; }
     const delBillEl = target.closest<HTMLElement>('[data-del-bill]');
     if (delBillEl) { e.stopPropagation(); delBill(delBillEl.dataset['delBill']!); return; }
 
@@ -264,6 +275,7 @@ function boot(): void {
   const now = new Date();
   monthPickerEl.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
+  setCurrencySymbol(db.currency);
   wireEvents();
   consolidateWealth();
   renderDropdowns();
@@ -272,6 +284,7 @@ function boot(): void {
   renderSettingsCats();
   updateCloudStatus();
   renderRecurring();
+  if (db.autoRecurring) applyRecurring();
 }
 
 document.addEventListener('DOMContentLoaded', boot);

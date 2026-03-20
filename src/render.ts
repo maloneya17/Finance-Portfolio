@@ -1,11 +1,14 @@
 import { db, save } from './db';
-import { math, fmt, esc, getMonthKey } from './utils';
+import { math, fmt, esc, sym, getMonthKey } from './utils';
 import { BUDGET_WARN_PCT, CALENDAR_MAX_CHIPS } from './constants';
 import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats } from './charts';
 import { getMonthPicker } from './main';
 import { getRollover, getCurrentCats, consolidateWealth } from './finance';
 
 export { getRollover, getCurrentCats };
+
+// ─── Bulk selection state (exported for handlers) ─────────────────────────────
+export const selectedTxIds = new Set<string>();
 
 // ─── Main dashboard render ────────────────────────────────────────────────────
 const now = new Date();
@@ -33,7 +36,7 @@ export function render(): void {
       const matchCat = !catFilter || t.category === catFilter;
       return matchSearch && matchCat;
     });
-    filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+    filtered.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.updatedAt - a.updatedAt);
 
     const list = document.getElementById('listTx');
     if (list) {
@@ -50,7 +53,7 @@ export function render(): void {
               <div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div>
               <div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(t.category)}</div>
             </td>
-            <td class="text-right font-bold ${colorClass} money-val">${sign}£${fmt(val)}</td>
+            <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
             <td class="text-right pr-2">
               <button type="button" data-edit-tx="${t.id}" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button>
               <button type="button" data-del-tx="${t.id}" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button>
@@ -63,9 +66,9 @@ export function render(): void {
 
     const rollover = getRollover(key);
     const kpiInc = document.getElementById('kpiInc');
-    if (kpiInc) kpiInc.innerHTML = `£${fmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: £${fmt(rollover)}</span>`;
-    setText('kpiExp', `£${fmt(exp)}`);
-    setText('kpiSalary', `£${fmt(db.annualIncome)}`);
+    if (kpiInc) kpiInc.innerHTML = `${sym()}${fmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: ${sym()}${fmt(rollover)}</span>`;
+    setText('kpiExp', `${sym()}${fmt(exp)}`);
+    setText('kpiSalary', `${sym()}${fmt(db.annualIncome)}`);
 
     const year = key.split('-')[0];
     let ytd = 0;
@@ -73,15 +76,15 @@ export function render(): void {
       if (k.startsWith(year))
         db.transactions[k].forEach(t => { if (t.type === 'income') ytd += math(t.amount); });
     });
-    setText('kpiYTD', `£${fmt(ytd)}`);
+    setText('kpiYTD', `${sym()}${fmt(ytd)}`);
     const monthNum = parseInt(key.split('-')[1] ?? '1');
     const safeMonth = monthNum >= 1 && monthNum <= 12 ? monthNum : 1;
-    setText('kpiAvg', `£${fmt(ytd / safeMonth)}`);
+    setText('kpiAvg', `${sym()}${fmt(ytd / safeMonth)}`);
 
     let maxCat = 'N/A', maxVal = 0;
     for (const [c, v] of Object.entries(cats)) { if (v > maxVal) { maxVal = v; maxCat = c; } }
     setText('kpiMaxCat', maxCat);
-    setText('kpiMaxVal', `£${fmt(maxVal)}`);
+    setText('kpiMaxVal', `${sym()}${fmt(maxVal)}`);
 
     const savedAmt = inc - exp;
     const savingsRate = inc > 0 ? (savedAmt / inc) * 100 : 0;
@@ -91,7 +94,7 @@ export function render(): void {
       rateEl.innerText = `${savingsRate.toFixed(1)}%`;
       rateEl.className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : 'text-indigo-600 dark:text-indigo-400'}`;
     }
-    setText('kpiSavingsAmt', isDeficit ? `£${fmt(Math.abs(savedAmt))} deficit` : `£${fmt(savedAmt)} saved`);
+    setText('kpiSavingsAmt', isDeficit ? `${sym()}${fmt(Math.abs(savedAmt))} deficit` : `${sym()}${fmt(savedAmt)} saved`);
 
     const todayKey = getMonthKey(now);
     const banner = document.getElementById('monthBanner');
@@ -174,7 +177,7 @@ export function renderBudgets(): void {
             <div class="flex justify-between items-end mb-1">
               <span class="font-bold text-sm text-slate-700 dark:text-slate-200">${esc(c)}</span>
               <div class="text-right">
-                <span class="text-xs font-bold text-slate-500"><span class="money-val">£${fmt(spent)}</span> / <span class="money-val">£${fmt(budget)}</span></span>
+                <span class="text-xs font-bold text-slate-500"><span class="money-val">${sym()}${fmt(spent)}</span> / <span class="money-val">${sym()}${fmt(budget)}</span></span>
                 <span class="block text-[10px] font-bold ${statusClass}">${statusLabel}</span>
               </div>
             </div>
@@ -234,7 +237,7 @@ export function renderCalendar(): void {
         const checkIcon = isPaid ? `<i class="fas fa-check text-emerald-500 mr-1" style="font-size:9px"></i>` : '';
         const shiftTitle = b._shifted ? ` title="Scheduled day ${b.day} — moved to last day of this month"` : '';
         const shiftMark = b._shifted ? ' <span title="Date adjusted" style="font-size:9px">*</span>' : '';
-        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}"${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">£${fmt(b.amount)}</span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}"><i class="fas fa-times-circle"></i></span></div></div>`;
+        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}"${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover:text-indigo-500" data-edit-bill="${b.id}"><i class="fas fa-pencil-alt" style="font-size:9px"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}"><i class="fas fa-times-circle"></i></span></div></div>`;
       });
       if (overflow > 0) billsHtml += `<div class="text-[9px] text-slate-400 font-bold pl-1">+${overflow} more</div>`;
 
@@ -243,12 +246,12 @@ export function renderCalendar(): void {
     }
 
     setText('calendarMonthLabel', new Date(y, m - 1).toLocaleString('default', { month: 'long', year: 'numeric' }));
-    setText('billTotal', `£${fmt(total)}`);
+    setText('billTotal', `${sym()}${fmt(total)}`);
     const rollover = getRollover(key);
     const txs = db.transactions[key] ?? [];
     const mInc = txs.filter(t => t.type === 'income').reduce((a, t) => a + math(t.amount), 0);
     const mExp = txs.filter(t => t.type === 'expense').reduce((a, t) => a + math(t.amount), 0);
-    setText('billSafe', `£${fmt((mInc + rollover) - mExp - unpaidBillTotal)}`);
+    setText('billSafe', `${sym()}${fmt((mInc + rollover) - mExp - unpaidBillTotal)}`);
   } catch (e) {
     console.error('Calendar error:', e);
   }
@@ -275,10 +278,10 @@ export function renderWealth(): void {
       .filter(a => ['Savings', 'Cash', 'Investment'].includes(a.type))
       .reduce((a, b) => a + b.value, 0) + operatingCash;
 
-    setText('wealthNet', `£${fmt(displayTotalAssets - totalDebts)}`);
-    setText('wealthTotalAssets', `£${fmt(displayTotalAssets)}`);
-    setText('wealthTotalDebts', `£${fmt(totalDebts)}`);
-    setText('wealthLiquid', `£${fmt(liquidAssets)}`);
+    setText('wealthNet', `${sym()}${fmt(displayTotalAssets - totalDebts)}`);
+    setText('wealthTotalAssets', `${sym()}${fmt(displayTotalAssets)}`);
+    setText('wealthTotalDebts', `${sym()}${fmt(totalDebts)}`);
+    setText('wealthLiquid', `${sym()}${fmt(liquidAssets)}`);
 
     // History window
     const histData = db.wealth.history ?? {};
@@ -298,13 +301,13 @@ export function renderWealth(): void {
     const currentNet = displayTotalAssets - totalDebts;
     const { avgMonthlyExp, fireTarget, progress, hasData } = calcFireStats(currentNet);
 
-    setText('wealthFireNumber', `£${fmt(fireTarget)}`);
+    setText('wealthFireNumber', `${sym()}${fmt(fireTarget)}`);
     setText('wealthFirePct', `${progress.toFixed(1)}%`);
     const fireBar = document.getElementById('wealthFireBar') as HTMLElement | null;
     if (fireBar) fireBar.style.width = `${progress}%`;
     setText('wealthFireMsg', hasData
-      ? `Based on avg spending of £${fmt(avgMonthlyExp)}/mo (6-month window)`
-      : `Add expense data to calibrate target. (Default: £2k/mo)`);
+      ? `Based on avg spending of ${sym()}${fmt(avgMonthlyExp)}/mo (6-month window)`
+      : `Add expense data to calibrate target. (Default: ${sym()}2k/mo)`);
 
     const listAssets = document.getElementById('listAssets');
     if (listAssets) {
@@ -317,7 +320,7 @@ export function renderWealth(): void {
             `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
               <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span></span>
               <div class="flex gap-2">
-                <span class="text-emerald-600 text-xs font-bold money-val">£${fmt(item.value)}</span>
+                <span class="text-emerald-600 text-xs font-bold money-val">${sym()}${fmt(item.value)}</span>
                 <button type="button" data-edit-asset="${item.id}" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
                 <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
               </div>
@@ -337,7 +340,7 @@ export function renderWealth(): void {
             `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
               <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)}</span>
               <div class="flex gap-2">
-                <span class="text-rose-600 text-xs font-bold money-val">£${fmt(item.value)}</span>
+                <span class="text-rose-600 text-xs font-bold money-val">${sym()}${fmt(item.value)}</span>
                 <button type="button" data-edit-debt="${item.id}" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
                 <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
               </div>
@@ -358,13 +361,14 @@ export function renderReports(): void {
     const sel = document.getElementById('reportYearSelect') as HTMLSelectElement | null;
     if (!sel) return;
 
-    if (sel.options.length === 0) {
-      Array.from(years).sort((a, b) => b - a).forEach(y => {
-        sel.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
-      });
-      const dashYear = parseInt(getMonthPicker().value.split('-')[0]);
-      if (years.has(dashYear)) sel.value = String(dashYear);
-    }
+    const prevValue = sel.value;
+    sel.innerHTML = '';
+    Array.from(years).sort((a, b) => b - a).forEach(y => {
+      sel.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
+    });
+    const dashYear = parseInt(getMonthPicker().value.split('-')[0]);
+    if (prevValue && years.has(Number(prevValue))) sel.value = prevValue;
+    else if (years.has(dashYear)) sel.value = String(dashYear);
 
     const targetYear = sel.value;
     const monthTable = document.getElementById('rptMonthTable');
@@ -389,14 +393,14 @@ export function renderReports(): void {
         monthTable.insertAdjacentHTML('beforeend',
           `<tr class="border-b border-slate-50 dark:border-slate-800">
             <td class="py-3 pl-3 font-medium text-slate-700 dark:text-slate-300">${new Date(Number(targetYear), mo - 1).toLocaleString('default', { month: 'long' })}</td>
-            <td class="text-right text-emerald-600 dark:text-emerald-400 money-val">£${fmt(mInc)}</td>
-            <td class="text-right text-rose-600 dark:text-rose-400 money-val">£${fmt(mExp)}</td>
-            <td class="text-right pr-3 font-bold ${netColor} money-val">£${fmt(net)}</td>
+            <td class="text-right text-emerald-600 dark:text-emerald-400 money-val">${sym()}${fmt(mInc)}</td>
+            <td class="text-right text-rose-600 dark:text-rose-400 money-val">${sym()}${fmt(mExp)}</td>
+            <td class="text-right pr-3 font-bold ${netColor} money-val">${sym()}${fmt(net)}</td>
           </tr>`);
       }
     }
 
-    if (!hasData) monthTable.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 text-xs">No data for ${targetYear}</td></tr>`;
+    if (!hasData) monthTable.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 text-xs">No data for ${esc(targetYear)}</td></tr>`;
 
     updateYearlyChart(chLabels, chInc, chExp);
   } catch (e) {
@@ -460,7 +464,7 @@ export function renderRecurring(): void {
       `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-xs">
         <div><span class="font-bold text-slate-700 dark:text-slate-200">${esc(r.desc)}</span> <span class="text-slate-400 dark:text-slate-500 ml-1">${esc(r.category)}</span></div>
         <div class="flex items-center gap-2">
-          <span class="font-bold ${col}">${sign}£${fmt(r.amount)}</span>
+          <span class="font-bold ${col}">${sign}${sym()}${fmt(r.amount)}</span>
           <button type="button" data-del-recurring="${r.id}" class="text-slate-400 hover:text-rose-500 transition"><i class="fas fa-times"></i></button>
         </div>
       </div>`);
@@ -497,7 +501,7 @@ export function renderUpcomingBills(): void {
       const label = b.daysUntil === 0 ? 'Today' : b.daysUntil === 1 ? 'Tomorrow' : `In ${b.daysUntil}d`;
       list.insertAdjacentHTML('beforeend',
         `<div class="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold">
-          <i class="fas fa-clock"></i>${esc(b.name)} <span class="font-normal money-val">£${fmt(b.amount)}</span>
+          <i class="fas fa-clock"></i>${esc(b.name)} <span class="font-normal money-val">${sym()}${fmt(b.amount)}</span>
           <span class="text-[9px] uppercase bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 rounded-full">${esc(label)}</span>
         </div>`);
     });

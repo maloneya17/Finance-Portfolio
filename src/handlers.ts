@@ -212,6 +212,7 @@ export function saveBill(): void {
 
   if (!name) return showToast('Please enter a bill name');
   if (!amt || amt <= 0) return showToast('Please enter a valid positive amount');
+  if (amt > MAX_TX_AMOUNT) return showToast(`Amount is unreasonably large (max ${db.currency}${MAX_TX_AMOUNT.toLocaleString()})`);
   if (!day || day < 1 || day > 31) return showToast('Day must be between 1 and 31');
 
   if (editingBillId) {
@@ -311,6 +312,7 @@ export function saveAsset(): void {
 
   if (!name) return showToast('Please enter an asset name');
   if (isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
+  if (val > MAX_TX_AMOUNT * 10) return showToast('Value exceeds maximum allowed');
 
   const existing = db.wealth.assets.find(a => a.name.trim().toLowerCase() === name.trim().toLowerCase());
 
@@ -354,6 +356,7 @@ export function saveDebt(): void {
 
   if (!name) return showToast('Please enter a liability name');
   if (isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
+  if (val > MAX_TX_AMOUNT * 10) return showToast('Value exceeds maximum allowed');
 
   const existing = db.wealth.debts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase());
 
