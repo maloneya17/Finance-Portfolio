@@ -351,6 +351,7 @@ export function saveAsset(): void {
 export function editAsset(id: string): void {
   const asset = db.wealth.assets.find(a => a.id === id);
   if (!asset) return;
+  cancelWealthEdit(); // clear any in-progress debt edit before starting asset edit
   editingAssetId = id;
   const anEl = inp('assetName'); if (anEl) anEl.value = asset.name;
   const avEl = inp('assetVal');  if (avEl) avEl.value = String(asset.value);
@@ -402,6 +403,7 @@ export function saveDebt(): void {
 export function editDebt(id: string): void {
   const debt = db.wealth.debts.find(d => d.id === id);
   if (!debt) return;
+  cancelWealthEdit(); // clear any in-progress asset edit before starting debt edit
   editingDebtId = id;
   const dnEl = inp('debtName');   if (dnEl) dnEl.value = debt.name;
   const dvEl = inp('debtVal');    if (dvEl) dvEl.value = String(debt.value);
@@ -545,14 +547,15 @@ export function setRecType(type: 'income' | 'expense'): void {
 }
 
 export function saveRecurring(): void {
-  const desc = (document.getElementById('recDesc') as HTMLInputElement).value.trim().slice(0, MAX_DESC_LENGTH);
-  const amt  = math((document.getElementById('recAmt') as HTMLInputElement).value);
-  const cat  = (document.getElementById('recCat') as HTMLSelectElement).value;
+  const desc = (inp('recDesc')?.value ?? '').trim().slice(0, MAX_DESC_LENGTH);
+  const amt  = math(inp('recAmt')?.value ?? '');
+  const cat  = sel('recCat')?.value ?? '';
   if (!desc) return showToast('Enter a description');
   if (!amt || amt <= 0) return showToast('Enter a valid positive amount');
+  if (amt > MAX_TX_AMOUNT) return showToast(`Amount is unreasonably large (max ${db.currency}${MAX_TX_AMOUNT.toLocaleString()})`);
   db.recurring.push({ id: genId(), desc, amount: amt, category: cat, type: currentRecType });
-  (document.getElementById('recDesc') as HTMLInputElement).value = '';
-  (document.getElementById('recAmt')  as HTMLInputElement).value = '';
+  const rdEl = inp('recDesc'); if (rdEl) rdEl.value = '';
+  const raEl = inp('recAmt');  if (raEl) raEl.value = '';
   save();
   renderRecurring();
 }

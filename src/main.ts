@@ -115,7 +115,10 @@ export function updateCurrencyPrefixes(): void {
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 function exportJSON(): void {
-  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  // Omit cloudURL from backup — it grants read/write access to all financial data
+  // and should not be included in a potentially shareable file
+  const { cloudURL: _url, ...exportData } = db;
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `finance-backup-${new Date().toISOString().slice(0, 10)}.json`;

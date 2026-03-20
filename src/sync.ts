@@ -1,5 +1,6 @@
 import { db, save } from './db';
 import { showToast } from './toast';
+import { isValidMonthKey } from './finance';
 
 export function updateCloudStatus(): void {
   const dot = document.getElementById('statusDot');
@@ -73,11 +74,13 @@ export async function manualSync(ui = false): Promise<void> {
       // Transactions — last-write-wins per tx id
       const allTx = new Map<string, typeof db.transactions[string][0] & { dateKey: string }>();
       Object.keys(cloudData.transactions ?? {}).forEach(date => {
+        if (!isValidMonthKey(date)) return; // reject malformed/injected keys
         (cloudData.transactions[date] ?? []).forEach(t => {
           if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date });
         });
       });
       Object.keys(db.transactions).forEach(date => {
+        if (!isValidMonthKey(date)) return; // skip any previously injected bad keys
         (db.transactions[date] ?? []).forEach(t => {
           if (!allDeleted.has(t.id)) {
             const ex = allTx.get(t.id);

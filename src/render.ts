@@ -11,7 +11,6 @@ export { getRollover, getCurrentCats };
 export const selectedTxIds = new Set<string>();
 
 // ─── Main dashboard render ────────────────────────────────────────────────────
-const now = new Date();
 
 export function render(): void {
   try {
@@ -96,7 +95,7 @@ export function render(): void {
     }
     setText('kpiSavingsAmt', isDeficit ? `${sym()}${fmt(Math.abs(savedAmt))} deficit` : `${sym()}${fmt(savedAmt)} saved`);
 
-    const todayKey = getMonthKey(now);
+    const todayKey = getMonthKey(new Date());
     const banner = document.getElementById('monthBanner');
     if (banner) {
       if (key !== todayKey) {

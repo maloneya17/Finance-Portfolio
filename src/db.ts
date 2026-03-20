@@ -80,7 +80,8 @@ export function save(skipRender = false): void {
 
 export function persistOnly(): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    const toSave = { ...db, bills: db.bills.map(({ _shifted: _, ...b }) => b) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch (e: unknown) {
     console.error('Persist failed:', e);
   }
