@@ -1,6 +1,7 @@
 export const math = (v: string | number | undefined | null): number => {
   const n = Number(v ?? 0);
-  return parseFloat((isNaN(n) ? 0 : n).toFixed(2));
+  if (isNaN(n) || !isFinite(n)) return 0;
+  return parseFloat(n.toFixed(2));
 };
 
 export const fmt = (n: number): string =>
@@ -55,9 +56,14 @@ export function getMonthKey(date: Date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** Escape a value for CSV output — quotes fields containing commas, quotes, or newlines */
+/** Escape a value for CSV output — quotes fields containing commas, quotes, or newlines.
+ *  Also prefixes formula-starting characters (=, +, -, @) to prevent CSV injection. */
 export function csvEsc(s: string | number): string {
-  const str = String(s ?? '');
+  let str = String(s ?? '');
+  // Neutralise formula injection (Excel, LibreOffice, Google Sheets)
+  if (str.length > 0 && ['=', '+', '-', '@', '\t', '\r'].includes(str[0])) {
+    str = "'" + str;
+  }
   if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`;
   }

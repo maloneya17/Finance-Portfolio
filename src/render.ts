@@ -205,7 +205,8 @@ export function renderCalendar(): void {
 
     db.bills.forEach(b => {
       let day = b.day;
-      if (day > daysInMonth) { day = daysInMonth; b._shifted = true; } else { b._shifted = false; }
+      const shifted = day > daysInMonth;
+      if (shifted) { day = daysInMonth; b._shifted = true; } else { b._shifted = false; }
       if (!billMap[day]) billMap[day] = [];
       billMap[day].push(b);
       total += math(b.amount);
@@ -419,7 +420,7 @@ export function renderGoals(): void {
     return;
   }
   db.goals.forEach(g => {
-    const pct = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
+    const pct = g.target > 0 ? Math.min(Math.max((g.current / g.target) * 100, 0), 100) : 0;
     const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-indigo-500' : 'bg-amber-500';
     list.insertAdjacentHTML('beforeend',
       `<div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg mb-2">

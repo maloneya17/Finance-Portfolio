@@ -27,4 +27,5 @@ export const DEFAULTS: AppDB = {
   currency: '£',
   goals: [],
   autoRecurring: false,
+  lastAutoAppliedMonth: '',
 };

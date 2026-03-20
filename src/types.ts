@@ -86,4 +86,5 @@ export interface AppDB {
   currency: string;       // currency symbol, e.g. '£', '$', '€'
   goals: SavingsGoal[];
   autoRecurring: boolean; // auto-apply recurring templates at month start
+  lastAutoAppliedMonth: string; // YYYY-MM key of the last month auto-apply ran
 }

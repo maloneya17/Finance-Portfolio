@@ -39,6 +39,7 @@ function repair(db: AppDB): AppDB {
   if (!db.currency) db.currency = '£';
   if (!db.goals) db.goals = [];
   if (db.autoRecurring === undefined) db.autoRecurring = false;
+  if (!db.lastAutoAppliedMonth) db.lastAutoAppliedMonth = '';
   return db;
 }
 
@@ -57,7 +58,11 @@ export let db: AppDB = load();
 
 export function save(skipRender = false): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    // Prune deletedIds to prevent unbounded growth (keep most recent 500)
+    if (db.deletedIds.length > 500) db.deletedIds = db.deletedIds.slice(db.deletedIds.length - 500);
+    // Strip transient render-only flags before persisting
+    const toSave = { ...db, bills: db.bills.map(({ _shifted: _, ...b }) => b) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch (e: unknown) {
     const err = e as DOMException;
     if (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014) {

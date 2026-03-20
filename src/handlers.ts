@@ -276,6 +276,11 @@ export function toggleBill(id: string): void {
       save();
     });
   } else {
+    // Remove the auto-created expense transaction if it exists
+    const prevStatus = db.billStatus[key][id];
+    if (typeof prevStatus === 'object' && prevStatus.txId) {
+      db.transactions[key] = (db.transactions[key] ?? []).filter(t => t.id !== prevStatus.txId);
+    }
     db.billStatus[key][id] = { paid: false, updated: Date.now() };
     save();
     showToast(`"${bill.name}" marked unpaid`);
@@ -291,6 +296,14 @@ export function delBill(id: string): void {
   const backup = { ...bill };
   db.deletedIds.push(id);
   db.bills = db.bills.filter(b => b.id !== id);
+  // Clean up orphaned expense transactions created by bill-paid toggles
+  Object.keys(db.billStatus).forEach(monthKey => {
+    const entry = db.billStatus[monthKey]?.[id];
+    if (typeof entry === 'object' && entry.txId) {
+      db.transactions[monthKey] = (db.transactions[monthKey] ?? []).filter(t => t.id !== entry.txId);
+    }
+    if (db.billStatus[monthKey]) delete db.billStatus[monthKey][id];
+  });
   save();
   renderCalendar();
   showToast(`Deleted bill "${backup.name}"`, () => {
@@ -306,9 +319,9 @@ let editingAssetId: string | null = null;
 let editingDebtId: string | null = null;
 
 export function saveAsset(): void {
-  const name = (document.getElementById('assetName') as HTMLInputElement).value.trim().slice(0, 100);
-  const val  = math((document.getElementById('assetVal') as HTMLInputElement).value);
-  const type = (document.getElementById('assetType') as HTMLSelectElement).value as AssetType;
+  const name = (inp('assetName')?.value ?? '').trim().slice(0, 100);
+  const val  = math(inp('assetVal')?.value ?? '');
+  const type = (sel('assetType')?.value ?? 'Other') as AssetType;
 
   if (!name) return showToast('Please enter an asset name');
   if (isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
@@ -327,8 +340,8 @@ export function saveAsset(): void {
     } else {
       db.wealth.assets.push({ id: genId(), name, value: val, type });
     }
-    (document.getElementById('assetName') as HTMLInputElement).value = '';
-    (document.getElementById('assetVal') as HTMLInputElement).value = '';
+    const anEl = inp('assetName'); if (anEl) anEl.value = '';
+    const avEl = inp('assetVal');  if (avEl) avEl.value = '';
   }
   consolidateWealth();
   save();
@@ -364,8 +377,9 @@ export function saveDebt(): void {
     const idx = db.wealth.debts.findIndex(d => d.id === editingDebtId);
     if (idx > -1) db.wealth.debts[idx] = {
       ...db.wealth.debts[idx], name, value: val,
-      interestRate: interestRate ?? db.wealth.debts[idx].interestRate,
-      minPayment:   minPayment   ?? db.wealth.debts[idx].minPayment,
+      // Use explicit check so user can clear the field (empty = remove the optional field)
+      interestRate: rateRaw   ? interestRate   : undefined,
+      minPayment:   minPayRaw ? minPayment     : undefined,
     };
     cancelWealthEdit();
   } else {
@@ -571,6 +585,7 @@ export function applyRecurring(silent = false): number {
     }
   });
   if (count > 0) {
+    db.lastAutoAppliedMonth = key;
     save();
     if (!silent) showToast(`Applied ${count} recurring transaction${count > 1 ? 's' : ''}`);
   } else {

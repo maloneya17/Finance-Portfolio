@@ -317,7 +317,10 @@ function boot(): void {
   renderRecurring();
   const currInput = document.getElementById('currencySymbolInput') as HTMLInputElement | null;
   if (currInput) currInput.value = db.currency;
-  if (db.autoRecurring) applyRecurring(true);
+  if (db.autoRecurring) {
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (db.lastAutoAppliedMonth !== currentMonthKey) applyRecurring(true);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', boot);
