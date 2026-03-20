@@ -1,9 +1,12 @@
 import { esc } from './utils';
 
+// Monotonic counter — guarantees unique IDs even when toasts fire in the same millisecond
+let _toastSeq = 0;
+
 export function showToast(msg: string, undoFn?: (() => void) | null): void {
   const container = document.getElementById('toastContainer');
   if (!container) return;
-  const id = 'toast_' + Date.now();
+  const id = 'toast_' + (++_toastSeq);
   const undoHtml = undoFn
     ? `<button class="toast-btn" data-undo="${id}">Undo</button>`
     : '';

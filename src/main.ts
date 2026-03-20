@@ -1,6 +1,6 @@
 import './style.css';
 import { registerSW } from 'virtual:pwa-register';
-import { db, save } from './db';
+import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
 import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals } from './render';
 import { showToast, handleToastUndo } from './toast';
@@ -17,7 +17,7 @@ import {
   editAnnualIncome, resetData, addCatPrompt, delCat,
   handleCsvFile, executeImport,
 } from './handlers';
-import { consolidateWealth } from './finance';
+import { consolidateWealth, isValidMonthKey } from './finance';
 
 // ─── Month picker ─────────────────────────────────────────────────────────────
 let monthPickerEl: HTMLInputElement;
@@ -133,7 +133,7 @@ function exportJSON(): void {
 
 function exportCSV(): void {
   const rows = [['Month', 'Date Added', 'Description', 'Category', 'Type', 'Amount'].map(csvEsc).join(',')];
-  Object.keys(db.transactions).sort().forEach(month => {
+  Object.keys(db.transactions).filter(isValidMonthKey).sort().forEach(month => {
     (db.transactions[month] ?? []).forEach(t => {
       rows.push([
         csvEsc(month),
@@ -332,6 +332,18 @@ function boot(): void {
 }
 
 document.addEventListener('DOMContentLoaded', boot);
+
+// ─── Multi-tab storage sync ───────────────────────────────────────────────────
+// When another tab saves data to the same localStorage key, reload our in-memory
+// db so this tab doesn't blindly overwrite the other tab's changes on next save.
+window.addEventListener('storage', (e: StorageEvent) => {
+  if (e.key !== STORAGE_KEY || !e.newValue) return;
+  syncFromStorage();
+  render();
+  renderWealth();
+  renderCalendar();
+  updateCloudStatus();
+});
 
 // ─── Service Worker (PWA) ─────────────────────────────────────────────────────
 registerSW({

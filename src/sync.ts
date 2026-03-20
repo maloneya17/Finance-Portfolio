@@ -3,6 +3,17 @@ import { showToast } from './toast';
 import { isValidMonthKey } from './finance';
 import { encryptData, decryptData, isEncryptedEnvelope } from './crypto';
 
+// Guard against concurrent syncs (double-click, or save-URL triggering a second sync while one is running)
+let syncInProgress = false;
+
+// 10 MB response limit — protects against malicious/runaway cloud endpoints
+const MAX_SYNC_RESPONSE_BYTES = 10 * 1024 * 1024;
+
+/** Safely return an array from a value that should be an array (guards against corrupted cloud data). */
+function safeArr<T>(v: unknown): T[] {
+  return Array.isArray(v) ? (v as T[]) : [];
+}
+
 export function updateCloudStatus(): void {
   const dot   = document.getElementById('statusDot');
   const txt   = document.getElementById('statusText');
@@ -78,6 +89,9 @@ function buildPayload(): typeof db {
 
 export async function manualSync(ui = false): Promise<void> {
   if (!db.cloudURL) { if (ui) showToast('Please enter a Cloud URL in Settings.'); return; }
+  if (syncInProgress) { if (ui) showToast('Sync already in progress…'); return; }
+  syncInProgress = true;
+
   const ind = document.getElementById('syncIndicator');
   const btn = document.getElementById('btnSync') as HTMLButtonElement | null;
   ind?.classList.remove('hidden');
@@ -98,7 +112,15 @@ export async function manualSync(ui = false): Promise<void> {
     const response = await fetch(fetchURL, { method: 'GET', redirect: 'follow' });
     if (!response.ok) throw new Error('Connection failed');
 
+    // Enforce response size limit before reading body
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > MAX_SYNC_RESPONSE_BYTES) {
+      throw new Error('Cloud response too large (> 10 MB). Data may be corrupted.');
+    }
     const rawText = await response.text();
+    if (rawText.length > MAX_SYNC_RESPONSE_BYTES) {
+      throw new Error('Cloud response too large (> 10 MB). Data may be corrupted.');
+    }
 
     let cloudData: typeof db & { status?: string };
 
@@ -127,7 +149,7 @@ export async function manualSync(ui = false): Promise<void> {
 
       // Bills — last-write-wins per id
       const billMap = new Map<string, typeof db.bills[0]>();
-      [...db.bills, ...(cloudData.bills ?? [])].forEach(b => {
+      [...db.bills, ...safeArr<typeof db.bills[0]>(cloudData.bills)].forEach(b => {
         if (!allDeleted.has(b.id)) {
           const ex = billMap.get(b.id);
           if (!ex || (b.updatedAt ?? 0) > (ex.updatedAt ?? 0)) billMap.set(b.id, b);
@@ -137,12 +159,12 @@ export async function manualSync(ui = false): Promise<void> {
 
       // Assets — local wins
       const assetMap = new Map<string, typeof db.wealth.assets[0]>();
-      (cloudData.wealth?.assets ?? []).forEach(a => assetMap.set(a.name, a));
+      safeArr<typeof db.wealth.assets[0]>(cloudData.wealth?.assets).forEach(a => assetMap.set(a.name, a));
       db.wealth.assets.forEach(a => assetMap.set(a.name, a));
       db.wealth.assets = Array.from(assetMap.values());
 
       const debtMap = new Map<string, typeof db.wealth.debts[0]>();
-      (cloudData.wealth?.debts ?? []).forEach(d => debtMap.set(d.name, d));
+      safeArr<typeof db.wealth.debts[0]>(cloudData.wealth?.debts).forEach(d => debtMap.set(d.name, d));
       db.wealth.debts.forEach(d => debtMap.set(d.name, d));
       db.wealth.debts = Array.from(debtMap.values());
 
@@ -152,7 +174,7 @@ export async function manualSync(ui = false): Promise<void> {
       const allTx = new Map<string, typeof db.transactions[string][0] & { dateKey: string }>();
       Object.keys(cloudData.transactions ?? {}).forEach(date => {
         if (!isValidMonthKey(date)) return; // reject malformed/injected keys
-        (cloudData.transactions[date] ?? []).forEach(t => {
+        safeArr<typeof db.transactions[string][0]>(cloudData.transactions[date]).forEach(t => {
           if (!allDeleted.has(t.id)) allTx.set(t.id, { ...t, dateKey: date });
         });
       });
@@ -212,6 +234,7 @@ export async function manualSync(ui = false): Promise<void> {
     console.error(e);
     if (ui) showToast('Sync failed: ' + (e instanceof Error ? e.message : String(e)));
   } finally {
+    syncInProgress = false;
     setTimeout(() => ind?.classList.add('hidden'), 2000);
     if (ui && btn) { btn.disabled = false; btn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now`; }
   }

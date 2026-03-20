@@ -170,10 +170,19 @@ export function bulkRecategorizeTx(newCat: string): void {
 }
 
 // ─── Category check ───────────────────────────────────────────────────────────
+/** 'ADD_NEW' is a sentinel value in the category select — reject it as an actual name. */
+const RESERVED_CAT_NAMES = new Set(['ADD_NEW']);
+
+function validateCatName(n: string): string | null {
+  if (!n) return null;
+  if (RESERVED_CAT_NAMES.has(n)) { showToast(`"${n}" is a reserved name — choose a different one.`); return null; }
+  return n;
+}
+
 export function checkNewCategory(sel: HTMLSelectElement): void {
   if (sel.value !== 'ADD_NEW') return;
   const raw = prompt('New Category Name:');
-  const n = raw?.trim().slice(0, 50) ?? '';
+  const n = validateCatName(raw?.trim().slice(0, 50) ?? '');
   if (n && !db.categories.includes(n)) {
     db.categories.push(n);
     save();
@@ -197,13 +206,14 @@ export function delCat(c: string): void {
 
 export function addCatPrompt(): void {
   const raw = prompt('Category Name:');
-  const n = raw?.trim().slice(0, 50) ?? '';
-  if (n && !db.categories.includes(n)) {
+  const n = validateCatName(raw?.trim().slice(0, 50) ?? '');
+  if (!n) return;
+  if (!db.categories.includes(n)) {
     db.categories.push(n);
     save();
     renderSettingsCats();
     renderDropdowns();
-  } else if (n) {
+  } else {
     showToast(`Category "${n}" already exists`);
   }
 }
@@ -301,6 +311,20 @@ export function delBill(id: string): void {
   if (!bill) return;
   if (editingBillId === id) cancelBillEdit();
   const backup = { ...bill };
+
+  // Capture associated status entries and linked expense transactions for full undo
+  const statusBackup: Record<string, typeof db.billStatus[string][string]> = {};
+  const txBackup: Record<string, typeof db.transactions[string]> = {};
+  Object.keys(db.billStatus).forEach(monthKey => {
+    const entry = db.billStatus[monthKey]?.[id];
+    if (!entry) return;
+    statusBackup[monthKey] = entry;
+    if (typeof entry === 'object' && entry.txId) {
+      const tx = (db.transactions[monthKey] ?? []).find(t => t.id === entry.txId);
+      if (tx) { if (!txBackup[monthKey]) txBackup[monthKey] = []; txBackup[monthKey].push(tx); }
+    }
+  });
+
   db.deletedIds.push(id);
   db.bills = db.bills.filter(b => b.id !== id);
   // Clean up orphaned expense transactions created by bill-paid toggles
@@ -316,6 +340,15 @@ export function delBill(id: string): void {
   showToast(`Deleted bill "${backup.name}"`, () => {
     db.deletedIds = db.deletedIds.filter(d => d !== id);
     db.bills.push(backup);
+    // Restore status entries and linked transactions
+    Object.keys(statusBackup).forEach(monthKey => {
+      if (!db.billStatus[monthKey]) db.billStatus[monthKey] = {};
+      db.billStatus[monthKey][id] = statusBackup[monthKey];
+    });
+    Object.keys(txBackup).forEach(monthKey => {
+      if (!db.transactions[monthKey]) db.transactions[monthKey] = [];
+      db.transactions[monthKey].push(...txBackup[monthKey]);
+    });
     save();
     renderCalendar();
   });
@@ -338,7 +371,14 @@ export function saveAsset(): void {
 
   if (editingAssetId) {
     const idx = db.wealth.assets.findIndex(a => a.id === editingAssetId);
-    if (idx > -1) db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type };
+    if (idx > -1) {
+      // Guard: renaming to match another asset would silently merge via consolidateWealth()
+      const collision = db.wealth.assets.find(
+        a => a.id !== editingAssetId && a.name.trim().toLowerCase() === name.toLowerCase(),
+      );
+      if (collision) { showToast(`An asset named "${collision.name}" already exists — use a unique name.`); return; }
+      db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type };
+    }
     cancelWealthEdit();
   } else {
     if (existing) {
@@ -383,12 +423,17 @@ export function saveDebt(): void {
 
   if (editingDebtId) {
     const idx = db.wealth.debts.findIndex(d => d.id === editingDebtId);
-    if (idx > -1) db.wealth.debts[idx] = {
-      ...db.wealth.debts[idx], name, value: val,
-      // Use explicit check so user can clear the field (empty = remove the optional field)
-      interestRate: rateRaw   ? interestRate   : undefined,
-      minPayment:   minPayRaw ? minPayment     : undefined,
-    };
+    if (idx > -1) {
+      const collision = db.wealth.debts.find(
+        d => d.id !== editingDebtId && d.name.trim().toLowerCase() === name.toLowerCase(),
+      );
+      if (collision) { showToast(`A liability named "${collision.name}" already exists — use a unique name.`); return; }
+      db.wealth.debts[idx] = {
+        ...db.wealth.debts[idx], name, value: val,
+        interestRate: rateRaw   ? interestRate   : undefined,
+        minPayment:   minPayRaw ? minPayment     : undefined,
+      };
+    }
     cancelWealthEdit();
   } else {
     if (existing) {
@@ -625,6 +670,33 @@ let csvData: string[][] = [];
 
 const MAX_CSV_BYTES = 5 * 1024 * 1024; // 5 MB
 
+/**
+ * RFC 4180-compliant CSV row splitter.
+ * Handles quoted fields containing commas, escaped quotes (""), and plain fields.
+ */
+function splitCsvRow(row: string): string[] {
+  const fields: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < row.length; i++) {
+    const c = row[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (row[i + 1] === '"') { field += '"'; i++; } // escaped quote
+        else inQuotes = false;                          // closing quote
+      } else {
+        field += c;
+      }
+    } else {
+      if (c === '"') { inQuotes = true; }
+      else if (c === ',') { fields.push(field.trim()); field = ''; }
+      else { field += c; }
+    }
+  }
+  fields.push(field.trim());
+  return fields;
+}
+
 export function handleCsvFile(file: File): void {
   // Extension check only — MIME type is not reliable (varies by OS/browser)
   if (!file.name.toLowerCase().endsWith('.csv')) {
@@ -636,8 +708,8 @@ export function handleCsvFile(file: File): void {
   const reader = new FileReader();
   reader.onload = (evt) => {
     const text = evt.target?.result as string;
-    // Split on \r\n or \n to handle Windows and Unix line endings
-    const rows = text.split(/\r?\n/).map(r => r.split(',').map(f => f.trim()));
+    // Split on \r\n or \n (handles Windows/Unix), then proper CSV-field split per row
+    const rows = text.split(/\r?\n/).map(splitCsvRow);
     // Drop empty trailing rows (common when file ends with a newline)
     while (rows.length > 0 && rows[rows.length - 1].every(c => !c)) rows.pop();
     if (rows.length < 2) { showToast('Invalid CSV — needs at least a header row and one data row'); return; }
@@ -677,7 +749,10 @@ export function executeImport(): void {
       const row = csvData[i];
       if (row.length === 0 || (row.length === 1 && !row[0]?.trim())) continue;
 
-      const rawAmtStr = row[amtIdx]?.replace(/[^0-9.-]/g, '') ?? '';
+      // Strip non-numeric chars (currency symbols, spaces, thousands separators)
+      // then handle trailing minus sign used by some bank exports (e.g. "1234.56-")
+      let rawAmtStr = row[amtIdx]?.replace(/[^0-9.-]/g, '') ?? '';
+      if (rawAmtStr.endsWith('-')) rawAmtStr = '-' + rawAmtStr.slice(0, -1);
       let rawAmt = parseFloat(rawAmtStr);
       if (isNaN(rawAmt)) { skipped++; skippedRows.push(`Row ${i + 1}: invalid amount "${row[amtIdx] ?? ''}"`); continue; }
       if (invert) rawAmt *= -1;

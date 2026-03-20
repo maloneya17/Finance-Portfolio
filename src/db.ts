@@ -2,7 +2,7 @@ import type { AppDB } from './types';
 import { DEFAULTS, SCHEMA_VERSION } from './constants';
 import { showToast } from './toast';
 
-const STORAGE_KEY = 'infinityDB';
+export const STORAGE_KEY = 'infinityDB';
 
 function migrate(db: AppDB): AppDB {
   if (!db.schemaVersion) db.schemaVersion = 1;
@@ -91,6 +91,26 @@ export function persistOnly(): void {
 export function clearAndReload(): void {
   localStorage.removeItem(STORAGE_KEY);
   location.reload();
+}
+
+/**
+ * Reload the in-memory db from localStorage in-place.
+ * Called when another browser tab writes to the same storage key so this
+ * tab doesn't silently overwrite the other tab's changes on next save.
+ */
+export function syncFromStorage(): void {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const fresh = repair(migrate(JSON.parse(raw) as AppDB));
+    // Clear fields no longer present (schema changes, deletions) then merge
+    (Object.keys(db) as (keyof AppDB)[]).forEach(k => {
+      if (!(k in fresh)) delete (db as unknown as Record<string, unknown>)[k];
+    });
+    Object.assign(db, fresh);
+  } catch {
+    console.warn('syncFromStorage: could not reload from storage');
+  }
 }
 
 export { SCHEMA_VERSION };
