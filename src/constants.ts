@@ -28,4 +28,5 @@ export const DEFAULTS: AppDB = {
   goals: [],
   autoRecurring: false,
   lastAutoAppliedMonth: '',
+  syncPassphrase: '',
 };

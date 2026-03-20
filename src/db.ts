@@ -40,6 +40,7 @@ function repair(db: AppDB): AppDB {
   if (!db.goals) db.goals = [];
   if (db.autoRecurring === undefined) db.autoRecurring = false;
   if (!db.lastAutoAppliedMonth) db.lastAutoAppliedMonth = '';
+  if (db.syncPassphrase === undefined) db.syncPassphrase = '';
   return db;
 }
 

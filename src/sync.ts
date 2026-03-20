@@ -1,18 +1,32 @@
 import { db, save } from './db';
 import { showToast } from './toast';
 import { isValidMonthKey } from './finance';
+import { encryptData, decryptData, isEncryptedEnvelope } from './crypto';
 
 export function updateCloudStatus(): void {
-  const dot = document.getElementById('statusDot');
-  const txt = document.getElementById('statusText');
+  const dot   = document.getElementById('statusDot');
+  const txt   = document.getElementById('statusText');
   const input = document.getElementById('cloudInput') as HTMLInputElement | null;
+  const lock  = document.getElementById('encryptionBadge');
+
   if (input && db.cloudURL) input.value = db.cloudURL;
+
   if (db.cloudURL) {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
     if (txt) txt.innerText = 'Cloud Linked';
   } else {
     if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-400';
     if (txt) txt.innerText = 'Local Mode';
+  }
+
+  if (lock) {
+    if (db.syncPassphrase) {
+      lock.innerHTML = '<i class="fas fa-lock text-emerald-400 mr-1"></i><span class="text-emerald-400 text-xs font-medium">Encrypted</span>';
+      lock.classList.remove('hidden');
+    } else {
+      lock.innerHTML = '<i class="fas fa-lock-open text-amber-400 mr-1"></i><span class="text-amber-400 text-xs font-medium">Unencrypted</span>';
+      lock.classList.remove('hidden');
+    }
   }
 }
 
@@ -30,6 +44,35 @@ export function saveCloudUrl(): void {
   db.cloudURL = url; save(); manualSync(true);
 }
 
+export function saveSyncPassphrase(): void {
+  const inp = document.getElementById('syncPassphraseInput') as HTMLInputElement | null;
+  const raw = inp?.value ?? '';
+  if (raw.length > 0 && raw.length < 8) {
+    showToast('Passphrase must be at least 8 characters.'); return;
+  }
+  db.syncPassphrase = raw;
+  save();
+  updateCloudStatus();
+  showToast(raw ? 'Encryption passphrase saved.' : 'Encryption disabled — syncing in plain text.');
+  if (inp) inp.value = raw ? '••••••••' : '';
+}
+
+export function clearSyncPassphrase(): void {
+  db.syncPassphrase = '';
+  save();
+  const inp = document.getElementById('syncPassphraseInput') as HTMLInputElement | null;
+  if (inp) inp.value = '';
+  updateCloudStatus();
+  showToast('Encryption passphrase cleared — syncing in plain text.');
+}
+
+/** Serialize the database, stripping credentials that must never leave the device. */
+function buildPayload(): typeof db {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { cloudURL: _u, syncPassphrase: _p, ...rest } = db;
+  return rest as typeof db;
+}
+
 export async function manualSync(ui = false): Promise<void> {
   if (!db.cloudURL) { if (ui) showToast('Please enter a Cloud URL in Settings.'); return; }
   const ind = document.getElementById('syncIndicator');
@@ -38,9 +81,30 @@ export async function manualSync(ui = false): Promise<void> {
   if (ui && btn) { btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Syncing...`; }
 
   try {
+    // ── FETCH ────────────────────────────────────────────────────────────────
     const response = await fetch(db.cloudURL + '?t=' + Date.now(), { method: 'GET', redirect: 'follow' });
     if (!response.ok) throw new Error('Connection failed');
-    const cloudData = await response.json() as typeof db & { status?: string };
+
+    const rawText = await response.text();
+
+    let cloudData: typeof db & { status?: string };
+
+    if (isEncryptedEnvelope(rawText)) {
+      // Cloud blob is encrypted — we need a passphrase to read it
+      if (!db.syncPassphrase) {
+        throw new Error('Cloud data is encrypted but no passphrase is set. Enter your passphrase in Settings → Cloud Sync.');
+      }
+      const decrypted = await decryptData(rawText, db.syncPassphrase);
+      cloudData = JSON.parse(decrypted) as typeof db & { status?: string };
+    } else {
+      // Legacy plain-text or first-time empty response
+      try {
+        cloudData = JSON.parse(rawText) as typeof db & { status?: string };
+      } catch {
+        // Empty or non-JSON response — treat as a fresh cloud slot
+        cloudData = { status: 'new' } as typeof db & { status?: string };
+      }
+    }
 
     if (cloudData.status !== 'new') {
       const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds ?? [])]);
@@ -101,9 +165,19 @@ export async function manualSync(ui = false): Promise<void> {
       });
     }
 
+    // ── PUSH ─────────────────────────────────────────────────────────────────
+    const payload = buildPayload();
+    let body: string;
+
+    if (db.syncPassphrase) {
+      body = await encryptData(JSON.stringify(payload), db.syncPassphrase);
+    } else {
+      body = JSON.stringify(payload);
+    }
+
     await fetch(db.cloudURL, {
       method: 'POST',
-      body: JSON.stringify(db),
+      body,
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     });
 

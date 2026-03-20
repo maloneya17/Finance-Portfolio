@@ -87,4 +87,5 @@ export interface AppDB {
   goals: SavingsGoal[];
   autoRecurring: boolean; // auto-apply recurring templates at month start
   lastAutoAppliedMonth: string; // YYYY-MM key of the last month auto-apply ran
+  syncPassphrase: string;  // AES-256-GCM passphrase; empty = no encryption
 }

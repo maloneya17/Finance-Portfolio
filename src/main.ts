@@ -4,7 +4,7 @@ import { db, save } from './db';
 import { setThemeDefaults } from './charts';
 import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals } from './render';
 import { showToast, handleToastUndo } from './toast';
-import { updateCloudStatus, saveCloudUrl, manualSync } from './sync';
+import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
 import { debounce, math, setCurrencySymbol, csvEsc, sym } from './utils';
 import {
   setTxType, saveTransaction, editTx, resetTxForm, delTx, checkNewCategory,
@@ -115,9 +115,9 @@ export function updateCurrencyPrefixes(): void {
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 function exportJSON(): void {
-  // Omit cloudURL from backup — it grants read/write access to all financial data
-  // and should not be included in a potentially shareable file
-  const { cloudURL: _url, ...exportData } = db;
+  // Omit credentials from backup — cloudURL grants cloud access; syncPassphrase
+  // would allow anyone with the file to decrypt synced data.
+  const { cloudURL: _url, syncPassphrase: _pass, ...exportData } = db;
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -232,6 +232,8 @@ function wireEvents(): void {
         case 'add-cat': addCatPrompt(); break;
         case 'import-csv': executeImport(); break;
         case 'save-cloud-url': saveCloudUrl(); break;
+        case 'save-sync-passphrase': saveSyncPassphrase(); break;
+        case 'clear-sync-passphrase': clearSyncPassphrase(); break;
         case 'export-json': exportJSON(); break;
         case 'export-csv': exportCSV(); break;
         case 'reset-data': resetData(); break;
