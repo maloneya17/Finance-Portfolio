@@ -2,15 +2,17 @@ import './style.css';
 import { registerSW } from 'virtual:pwa-register';
 import { db, save } from './db';
 import { setThemeDefaults } from './charts';
-import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring } from './render';
+import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync } from './sync';
-import { debounce, math, setCurrencySymbol, csvEsc } from './utils';
+import { debounce, math, setCurrencySymbol, csvEsc, sym } from './utils';
 import {
   setTxType, saveTransaction, editTx, resetTxForm, delTx, checkNewCategory,
-  saveBill, editBill, toggleBill, delBill,
+  saveBill, editBill, cancelBillEdit, toggleBill, delBill,
   saveAsset, editAsset, saveDebt, editDebt, cancelWealthEdit, delWealthItem,
   logNetWorth,
+  saveGoal, editGoal, delGoal, cancelGoalEdit,
+  saveCurrency,
   setRecType, saveRecurring, delRecurring, applyRecurring,
   editAnnualIncome, resetData, addCatPrompt, delCat,
   handleCsvFile, executeImport,
@@ -104,6 +106,13 @@ function toggleSidebar(): void {
   document.getElementById('sidebarOverlay')?.classList.toggle('open');
 }
 
+// ─── Currency prefix updater ──────────────────────────────────────────────────
+export function updateCurrencyPrefixes(): void {
+  document.querySelectorAll<HTMLElement>('.curr-prefix').forEach(el => {
+    el.textContent = sym();
+  });
+}
+
 // ─── Export ───────────────────────────────────────────────────────────────────
 function exportJSON(): void {
   const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
@@ -185,6 +194,12 @@ function wireEvents(): void {
     const delCatEl = target.closest<HTMLElement>('[data-del-cat]');
     if (delCatEl) { delCat(delCatEl.dataset['delCat']!); return; }
 
+    // Goals
+    const editGoalEl = target.closest<HTMLElement>('[data-edit-goal]');
+    if (editGoalEl) { editGoal(editGoalEl.dataset['editGoal']!); return; }
+    const delGoalEl = target.closest<HTMLElement>('[data-del-goal]');
+    if (delGoalEl) { delGoal(delGoalEl.dataset['delGoal']!); return; }
+
     // Recurring
     const delRecEl = target.closest<HTMLElement>('[data-del-recurring]');
     if (delRecEl) { delRecurring(delRecEl.dataset['delRecurring']!); return; }
@@ -200,11 +215,15 @@ function wireEvents(): void {
         case 'save-tx': saveTransaction(); break;
         case 'cancel-edit-tx': resetTxForm(); break;
         case 'save-bill': saveBill(); break;
+        case 'cancel-bill': cancelBillEdit(); break;
         case 'save-asset': saveAsset(); break;
         case 'cancel-asset': cancelWealthEdit(); break;
         case 'save-debt': saveDebt(); break;
         case 'cancel-debt': cancelWealthEdit(); break;
         case 'log-net-worth': logNetWorth(); break;
+        case 'save-goal': saveGoal(); break;
+        case 'cancel-goal': cancelGoalEdit(); break;
+        case 'save-currency': saveCurrency(); updateCurrencyPrefixes(); break;
         case 'save-recurring': saveRecurring(); break;
         case 'edit-annual-income': editAnnualIncome(); break;
         case 'add-cat': addCatPrompt(); break;
@@ -265,6 +284,16 @@ function wireEvents(): void {
   // Reports year select
   document.getElementById('reportYearSelect')?.addEventListener('change', renderReports);
 
+  // Auto-recurring toggle
+  const autoToggle = document.getElementById('autoRecurringToggle') as HTMLInputElement | null;
+  if (autoToggle) {
+    autoToggle.checked = db.autoRecurring;
+    autoToggle.addEventListener('change', () => {
+      db.autoRecurring = autoToggle.checked;
+      save();
+    });
+  }
+
   // Sidebar overlay click
   document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
 }
@@ -277,14 +306,18 @@ function boot(): void {
 
   setCurrencySymbol(db.currency);
   wireEvents();
+  updateCurrencyPrefixes();
   consolidateWealth();
   renderDropdowns();
   applyTheme();
   render();
   renderSettingsCats();
+  renderWealth();
   updateCloudStatus();
   renderRecurring();
-  if (db.autoRecurring) applyRecurring();
+  const currInput = document.getElementById('currencySymbolInput') as HTMLInputElement | null;
+  if (currInput) currInput.value = db.currency;
+  if (db.autoRecurring) applyRecurring(true);
 }
 
 document.addEventListener('DOMContentLoaded', boot);

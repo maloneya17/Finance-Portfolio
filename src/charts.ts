@@ -225,7 +225,7 @@ export function updateWealthCharts(
     data: {
       labels: ['Assets', 'Operating Cash', 'Debt'],
       datasets: [{
-        data: [totalAssets, operatingCash, totalDebts],
+        data: [Math.max(0, totalAssets), Math.max(0, operatingCash), Math.max(0, totalDebts)],
         backgroundColor: ['#10b981', '#3b82f6', '#f43f5e'],
         borderWidth: 0,
       }],
@@ -291,6 +291,6 @@ export function calcFireStats(currentNet: number): {
   }
   const avgMonthlyExp = hasData ? totalSpent / FIRE_ROLLING_MONTHS : FIRE_DEFAULT_EXP;
   const fireTarget = avgMonthlyExp * 12 * FIRE_MULTIPLIER;
-  const progress = Math.min((currentNet / fireTarget) * 100, 100);
+  const progress = Math.min(Math.max((currentNet / fireTarget) * 100, 0), 100);
   return { avgMonthlyExp, fireTarget, progress, hasData };
 }

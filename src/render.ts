@@ -348,6 +348,7 @@ export function renderWealth(): void {
         });
       }
     }
+    renderGoals();
   } catch (e) {
     console.error('Wealth render error:', e);
   }
@@ -408,6 +409,38 @@ export function renderReports(): void {
   }
 }
 
+// ─── Goals ────────────────────────────────────────────────────────────────────
+export function renderGoals(): void {
+  const list = document.getElementById('listGoals');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!db.goals || db.goals.length === 0) {
+    list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No goals yet — add one above.</p>';
+    return;
+  }
+  db.goals.forEach(g => {
+    const pct = g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
+    const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-indigo-500' : 'bg-amber-500';
+    list.insertAdjacentHTML('beforeend',
+      `<div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg mb-2">
+        <div class="flex justify-between items-start mb-1">
+          <div>
+            <span class="font-bold text-slate-700 dark:text-slate-200 text-xs">${esc(g.name)}</span>
+            ${g.notes ? `<span class="text-[10px] text-slate-400 ml-2">${esc(g.notes)}</span>` : ''}
+          </div>
+          <div class="flex gap-2 items-center">
+            <span class="text-xs text-slate-500">${sym()}${fmt(g.current)} / ${sym()}${fmt(g.target)}</span>
+            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-indigo-500"><i class="fas fa-pencil-alt" style="font-size:10px"></i></button>
+            <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times" style="font-size:10px"></i></button>
+          </div>
+        </div>
+        <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div class="h-full ${color} rounded-full transition-all" style="width:${pct}%"></div>
+        </div>
+      </div>`);
+  });
+}
+
 // ─── Dropdowns ───────────────────────────────────────────────────────────────
 export function renderDropdowns(): void {
   const sel = document.getElementById('txCat') as HTMLSelectElement | null;
@@ -431,6 +464,15 @@ export function renderDropdowns(): void {
   if (recCat) {
     recCat.innerHTML = '';
     db.categories.forEach(c => recCat.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+  }
+
+  const billCat = document.getElementById('billCat') as HTMLSelectElement | null;
+  if (billCat) {
+    const bc = billCat.value;
+    billCat.innerHTML = '';
+    db.categories.forEach(c => billCat.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+    if (db.categories.includes(bc)) billCat.value = bc;
+    else billCat.value = 'Bills';
   }
 }
 

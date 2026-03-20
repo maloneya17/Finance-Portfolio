@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     headers: {
       'Content-Security-Policy':
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https:;",
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self' https:;",
       'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
     },

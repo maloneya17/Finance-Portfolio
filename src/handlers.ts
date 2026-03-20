@@ -434,7 +434,7 @@ export function logNetWorth(): void {
   const rollover = getRollover(key);
   const txs = db.transactions[key] ?? [];
   let inc = 0, exp = 0;
-  txs.forEach(t => { if (t.type === 'income') inc += t.amount; else exp += t.amount; });
+  txs.forEach(t => { if (t.type === 'income') inc += math(t.amount); else exp += math(t.amount); });
   const net = (assets + (inc + rollover) - exp) - debts;
   if (!db.wealth.history) db.wealth.history = {};
   db.wealth.history[key] = net;
@@ -593,7 +593,15 @@ export function editAnnualIncome(): void {
 // ─── CSV Import ───────────────────────────────────────────────────────────────
 let csvData: string[][] = [];
 
+const MAX_CSV_BYTES = 5 * 1024 * 1024; // 5 MB
+
 export function handleCsvFile(file: File): void {
+  if (!file.name.toLowerCase().endsWith('.csv') && file.type && file.type !== 'text/csv') {
+    showToast('Please upload a .csv file'); return;
+  }
+  if (file.size > MAX_CSV_BYTES) {
+    showToast('File too large — maximum 5 MB'); return;
+  }
   const reader = new FileReader();
   reader.onload = (evt) => {
     const text = evt.target?.result as string;
@@ -672,6 +680,7 @@ export function executeImport(): void {
     if (skipped > 0) msg += ` (${skipped} row${skipped !== 1 ? 's' : ''} skipped — see console for details)`;
     showToast(msg);
     if (skippedRows.length) console.warn('CSV import skipped rows:\n' + skippedRows.join('\n'));
+    csvData = [];
     (document.getElementById('csvFile') as HTMLInputElement).value = '';
     document.getElementById('csvMapper')?.classList.add('hidden');
     render();
