@@ -36,7 +36,15 @@ async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>): Pro
 }
 
 function toBase64(buf: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+  // Spread a large Uint8Array into fromCharCode args hits the JS call-stack limit
+  // (~500 KB). Build the binary string in chunks of 8 KB instead.
+  const bytes = new Uint8Array(buf);
+  const CHUNK = 8192;
+  let str = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    str += String.fromCharCode(...bytes.subarray(i, Math.min(i + CHUNK, bytes.length)));
+  }
+  return btoa(str);
 }
 
 /** Decode a base64 string into a typed Uint8Array<ArrayBuffer>. */

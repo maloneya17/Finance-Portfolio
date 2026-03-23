@@ -300,6 +300,7 @@ export function toggleBill(id: string): void {
     showToast(`"${bill.name}" marked paid — added to expenses`, () => {
       db.billStatus[key][id] = { paid: false, updated: Date.now() };
       db.transactions[key] = (db.transactions[key] ?? []).filter(t => t.id !== txId);
+      if (db.transactions[key]?.length === 0) delete db.transactions[key]; // keep storage tidy
       save();
     });
   } else {
@@ -618,6 +619,7 @@ export function saveRecurring(): void {
   if (!desc) return showToast('Enter a description');
   if (!amt || amt <= 0) return showToast('Enter a valid positive amount');
   if (amt > MAX_TX_AMOUNT) return showToast(`Amount is unreasonably large (max ${db.currency}${MAX_TX_AMOUNT.toLocaleString()})`);
+  if (!cat) return showToast('Please select a category');
   db.recurring.push({ id: genId(), desc, amount: amt, category: cat, type: currentRecType });
   const rdEl = inp('recDesc'); if (rdEl) rdEl.value = '';
   const raEl = inp('recAmt');  if (raEl) raEl.value = '';
@@ -626,10 +628,17 @@ export function saveRecurring(): void {
 }
 
 export function delRecurring(id: string): void {
+  const template = db.recurring.find(r => r.id === id);
+  if (!template) return;
+  const backup = { ...template };
   db.recurring = db.recurring.filter(r => r.id !== id);
   save();
   renderRecurring();
-  showToast('Template removed');
+  showToast(`Removed "${backup.desc}"`, () => {
+    db.recurring.push(backup);
+    save();
+    renderRecurring();
+  });
 }
 
 /** Apply recurring templates to the current month. Returns number of transactions added. */
@@ -776,6 +785,13 @@ export function executeImport(): void {
     let count = 0, skipped = 0;
     const skippedRows: string[] = [];
 
+    // Build a set of content-hash keys for all existing transactions so we can
+    // skip exact duplicates on re-import (date|desc|amount|type fingerprint).
+    const existingKeys = new Set<string>();
+    Object.values(db.transactions).forEach(txs =>
+      txs.forEach(t => existingKeys.add(`${t.date ?? ''}|${t.desc}|${t.amount}|${t.type}`)),
+    );
+
     for (let i = 1; i < csvData.length; i++) {
       const row = csvData[i];
       if (row.length === 0 || (row.length === 1 && !row[0]?.trim())) continue;
@@ -786,6 +802,7 @@ export function executeImport(): void {
       if (rawAmtStr.endsWith('-')) rawAmtStr = '-' + rawAmtStr.slice(0, -1);
       let rawAmt = parseFloat(rawAmtStr);
       if (isNaN(rawAmt)) { skipped++; skippedRows.push(`Row ${i + 1}: invalid amount "${row[amtIdx] ?? ''}"`); continue; }
+      if (rawAmt === 0) { skipped++; skippedRows.push(`Row ${i + 1}: zero amount skipped`); continue; }
       if (invert) rawAmt *= -1;
 
       const dateStr = row[dateIdx]?.replace(/"/g, '').trim() ?? '';
@@ -822,6 +839,11 @@ export function executeImport(): void {
       const cleanDesc = (row[descIdx]?.replace(/"/g, '').trim().slice(0, MAX_DESC_LENGTH)) ?? 'Imported';
       const finalAmt  = Math.abs(rawAmt);
       const type      = rawAmt > 0 ? 'income' as const : 'expense' as const;
+
+      // Skip exact duplicates (same date, description, amount, type)
+      const importKey = `${isoDate}|${cleanDesc}|${finalAmt}|${type}`;
+      if (existingKeys.has(importKey)) { skipped++; skippedRows.push(`Row ${i + 1}: duplicate skipped`); continue; }
+      existingKeys.add(importKey); // prevent duplicates within the same import file too
 
       if (!db.transactions[monthKey]) db.transactions[monthKey] = [];
       db.transactions[monthKey].push({

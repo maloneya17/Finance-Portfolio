@@ -57,6 +57,13 @@ function load(): AppDB {
 
 export let db: AppDB = load();
 
+/**
+ * Monotonic counter incremented on every successful persist (save or persistOnly).
+ * finance.ts uses this to cheaply invalidate the getRollover() cache without
+ * importing a callback or creating a circular dependency.
+ */
+export let saveCount = 0;
+
 export function save(skipRender = false): void {
   try {
     // Prune deletedIds to prevent unbounded growth (keep most recent 500)
@@ -64,6 +71,7 @@ export function save(skipRender = false): void {
     // Strip transient render-only flags before persisting
     const toSave = { ...db, bills: db.bills.map(({ _shifted: _, ...b }) => b) };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    saveCount++;
   } catch (e: unknown) {
     const err = e as DOMException;
     if (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014) {
@@ -83,6 +91,7 @@ export function persistOnly(): void {
   try {
     const toSave = { ...db, bills: db.bills.map(({ _shifted: _, ...b }) => b) };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    saveCount++;
   } catch (e: unknown) {
     console.error('Persist failed:', e);
   }

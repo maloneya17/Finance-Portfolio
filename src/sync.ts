@@ -170,6 +170,40 @@ export async function manualSync(ui = false): Promise<void> {
 
       if (cloudData.budgets) db.budgets = { ...cloudData.budgets, ...db.budgets };
 
+      // Categories — union: add any cloud categories not present locally
+      if (Array.isArray(cloudData.categories)) {
+        const catSet = new Set([...db.categories, ...safeArr<string>(cloudData.categories)]);
+        // Preserve local ordering; append new cloud-only categories at end
+        const newCats = safeArr<string>(cloudData.categories).filter(c => !db.categories.includes(c));
+        if (newCats.length) db.categories = [...db.categories, ...newCats];
+        void catSet; // keep reference to avoid unused-var warning
+      }
+
+      // Goals — merge by id; local copy wins on conflict (no updatedAt on goals)
+      if (Array.isArray(cloudData.goals)) {
+        const goalMap = new Map<string, typeof db.goals[0]>();
+        safeArr<typeof db.goals[0]>(cloudData.goals).forEach(g => {
+          if (!allDeleted.has(g.id)) goalMap.set(g.id, g);
+        });
+        db.goals.forEach(g => { if (!allDeleted.has(g.id)) goalMap.set(g.id, g); });
+        db.goals = Array.from(goalMap.values());
+      }
+
+      // Recurring templates — merge by id; local wins on conflict
+      if (Array.isArray(cloudData.recurring)) {
+        const recMap = new Map<string, typeof db.recurring[0]>();
+        safeArr<typeof db.recurring[0]>(cloudData.recurring).forEach(r => {
+          if (!allDeleted.has(r.id)) recMap.set(r.id, r);
+        });
+        db.recurring.forEach(r => { if (!allDeleted.has(r.id)) recMap.set(r.id, r); });
+        db.recurring = Array.from(recMap.values());
+      }
+
+      // Annual income — adopt cloud value only if local hasn't been set
+      if (typeof cloudData.annualIncome === 'number' && cloudData.annualIncome > 0 && db.annualIncome === 0) {
+        db.annualIncome = cloudData.annualIncome;
+      }
+
       // Transactions — last-write-wins per tx id
       const allTx = new Map<string, typeof db.transactions[string][0] & { dateKey: string }>();
       Object.keys(cloudData.transactions ?? {}).forEach(date => {

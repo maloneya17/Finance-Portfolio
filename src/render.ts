@@ -9,12 +9,17 @@ export { getRollover, getCurrentCats };
 
 // ─── Bulk selection state (exported for handlers) ─────────────────────────────
 export const selectedTxIds = new Set<string>();
+/** Tracks the last-rendered month key so selection can be cleared on month change */
+let _lastRenderKey = '';
 
 // ─── Main dashboard render ────────────────────────────────────────────────────
 
 export function render(): void {
   try {
     const key = getMonthPicker().value;
+    // Clear bulk selection when the user navigates to a different month — stale IDs
+    // from a previous month would pollute db.deletedIds if bulk-deleted accidentally.
+    if (key !== _lastRenderKey) { selectedTxIds.clear(); _lastRenderKey = key; }
     const searchEl = document.getElementById('txSearch') as HTMLInputElement | null;
     const searchTerm = searchEl?.value.toLowerCase() ?? '';
     const data = db.transactions[key] ?? [];
@@ -51,6 +56,7 @@ export function render(): void {
             <td class="py-3 pl-2">
               <div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div>
               <div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(t.category)}</div>
+              ${t.notes ? `<div class="text-[10px] text-slate-400 mt-1 italic truncate max-w-[200px]" title="${esc(t.notes)}">${esc(t.notes)}</div>` : ''}
             </td>
             <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
             <td class="text-right pr-2">
@@ -61,7 +67,17 @@ export function render(): void {
       });
     }
 
-    document.getElementById('emptyState')?.classList.toggle('hidden', filtered.length > 0);
+    const emptyEl = document.getElementById('emptyState');
+    if (emptyEl) {
+      emptyEl.classList.toggle('hidden', filtered.length > 0);
+      // Distinguish "no data at all" from "data exists but filtered out"
+      const msgEl = emptyEl.querySelector('p');
+      if (msgEl) {
+        msgEl.textContent = data.length > 0 && filtered.length === 0
+          ? 'No matching transactions — try a different search or filter.'
+          : 'No transactions this month yet.';
+      }
+    }
 
     const rollover = getRollover(key);
     const kpiInc = document.getElementById('kpiInc');

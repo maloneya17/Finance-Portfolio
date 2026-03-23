@@ -2,14 +2,23 @@
  * Pure financial calculations that depend only on db + utils.
  * No imports from render or handlers — breaks the circular dep chain.
  */
-import { db, persistOnly } from './db';
+import { db, persistOnly, saveCount } from './db';
 import { math } from './utils';
 
 // Month key must match YYYY-MM format with a valid month (01-12)
 const MONTH_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 export function isValidMonthKey(k: string): boolean { return MONTH_KEY_RE.test(k); }
 
+// Lightweight cache — invalidated whenever saveCount changes (i.e., any save/persistOnly).
+// getRollover is called 3+ times per navigation (render, renderCalendar, renderWealth);
+// caching eliminates O(N × months) repeated full-history traversals.
+interface RolloverCache { key: string; val: number; epoch: number; }
+let _rolloverCache: RolloverCache | null = null;
+
 export function getRollover(currentKey: string): number {
+  if (_rolloverCache?.key === currentKey && _rolloverCache.epoch === saveCount) {
+    return _rolloverCache.val;
+  }
   let balance = 0;
   const sortedKeys = Object.keys(db.transactions).filter(isValidMonthKey).sort();
   for (const k of sortedKeys) {
@@ -21,6 +30,7 @@ export function getRollover(currentKey: string): number {
     });
     balance += mInc - mExp;
   }
+  _rolloverCache = { key: currentKey, val: balance, epoch: saveCount };
   return balance;
 }
 
