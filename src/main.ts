@@ -134,16 +134,18 @@ function exportJSON(): void {
 }
 
 function exportCSV(): void {
-  const rows = [['Month', 'Date Added', 'Description', 'Category', 'Type', 'Amount'].map(csvEsc).join(',')];
+  const rows = [['Month', 'Date', 'Last Updated', 'Description', 'Category', 'Type', 'Amount', 'Notes'].map(csvEsc).join(',')];
   Object.keys(db.transactions).filter(isValidMonthKey).sort().forEach(month => {
     (db.transactions[month] ?? []).forEach(t => {
       rows.push([
         csvEsc(month),
+        csvEsc(t.date ?? ''),   // actual transaction date (user-entered, YYYY-MM-DD)
         csvEsc(new Date(t.updatedAt ?? 0).toISOString().slice(0, 10)),
         csvEsc(t.desc ?? ''),
         csvEsc(t.category),
         csvEsc(t.type),
         csvEsc(t.amount),
+        csvEsc(t.notes ?? ''),
       ].join(','));
     });
   });

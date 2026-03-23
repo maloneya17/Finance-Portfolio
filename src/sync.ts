@@ -184,13 +184,13 @@ export async function manualSync(ui = false): Promise<void> {
         });
       }
 
-      // Categories — union: add any cloud categories not present locally
+      // Categories — union: add any cloud categories not present locally.
+      // Preserve local ordering; append new cloud-only categories at end.
       if (Array.isArray(cloudData.categories)) {
-        const catSet = new Set([...db.categories, ...safeArr<string>(cloudData.categories)]);
-        // Preserve local ordering; append new cloud-only categories at end
-        const newCats = safeArr<string>(cloudData.categories).filter(c => !db.categories.includes(c));
+        const newCats = safeArr<string>(cloudData.categories).filter(
+          c => typeof c === 'string' && c.length > 0 && !db.categories.includes(c),
+        );
         if (newCats.length) db.categories = [...db.categories, ...newCats];
-        void catSet; // keep reference to avoid unused-var warning
       }
 
       // Goals — merge by id; local copy wins on conflict (no updatedAt on goals)

@@ -44,12 +44,17 @@ export function getCurrentCats(monthKey: string): Record<string, number> {
 
 export function consolidateWealth(): void {
   let hasChanges = false;
+  const mergedIds: string[] = [];
 
   const assetMap = new Map<string, typeof db.wealth.assets[0]>();
   db.wealth.assets.forEach(a => {
     const key = `${a.name.trim().toLowerCase()}|${(a.type ?? '').toLowerCase()}`;
     if (assetMap.has(key)) {
-      assetMap.get(key)!.value += math(a.value);
+      const ex = assetMap.get(key)!;
+      ex.value += math(a.value);
+      // Keep the most recent updatedAt so sync doesn't overwrite the merge result
+      ex.updatedAt = Math.max(ex.updatedAt ?? 0, a.updatedAt ?? 0) || Date.now();
+      mergedIds.push(a.id); // tombstone the losing id so cloud doesn't resurrect it
       hasChanges = true;
     } else {
       assetMap.set(key, { ...a, value: math(a.value) });
@@ -60,7 +65,10 @@ export function consolidateWealth(): void {
   db.wealth.debts.forEach(d => {
     const key = d.name.trim().toLowerCase();
     if (debtMap.has(key)) {
-      debtMap.get(key)!.value += math(d.value);
+      const ex = debtMap.get(key)!;
+      ex.value += math(d.value);
+      ex.updatedAt = Math.max(ex.updatedAt ?? 0, d.updatedAt ?? 0) || Date.now();
+      mergedIds.push(d.id);
       hasChanges = true;
     } else {
       debtMap.set(key, { ...d, value: math(d.value) });
@@ -68,6 +76,8 @@ export function consolidateWealth(): void {
   });
 
   if (hasChanges) {
+    // Tombstone merged IDs so cloud sync can't resurrect the consumed duplicates
+    db.deletedIds.push(...mergedIds);
     db.wealth.assets = Array.from(assetMap.values());
     db.wealth.debts = Array.from(debtMap.values());
     persistOnly();

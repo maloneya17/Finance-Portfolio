@@ -147,6 +147,9 @@ export function render(): void {
     if (!document.getElementById('view-budget')?.classList.contains('hidden')) {
       renderBudgets();
     }
+    // Keep the bulk action bar in sync — especially important when month change
+    // clears selectedTxIds; without this the bar stays visible showing a stale count.
+    updateBulkBar();
   } catch (e) {
     console.error('Render crash avoided:', e);
   }
@@ -247,6 +250,9 @@ export function renderCalendar(): void {
 
     db.bills.forEach(b => {
       let day = b.day;
+      // Skip bills with a missing/invalid day — they'd be invisible on the calendar
+      // but would still pollute the total and unpaid-bill KPIs.
+      if (!day || isNaN(day) || day < 1) return;
       const shifted = day > daysInMonth;
       if (shifted) { day = daysInMonth; b._shifted = true; } else { b._shifted = false; }
       if (!billMap[day]) billMap[day] = [];

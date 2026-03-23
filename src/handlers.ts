@@ -546,6 +546,7 @@ export function saveGoal(): void {
 
   if (!name) return showToast('Please enter a goal name');
   if (!target || target <= 0) return showToast('Please enter a valid target amount');
+  if (current < 0) return showToast('Current saved amount cannot be negative');
 
   if (editingGoalId) {
     const idx = db.goals.findIndex(g => g.id === editingGoalId);
@@ -780,7 +781,7 @@ export function handleCsvFile(file: File): void {
     setText('csvPreview', `Loaded ${rows.length - 1} rows. Select columns above.`);
   };
   reader.onerror = () => showToast('Could not read file — it may be corrupted or locked.');
-  reader.readAsText(file);
+  reader.readAsText(file, 'utf-8');
 }
 
 /** Abbreviated and full English month names → 2-digit month string */

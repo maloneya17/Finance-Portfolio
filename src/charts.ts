@@ -278,6 +278,7 @@ export function calcFireStats(currentNet: number): {
 } {
   let totalSpent = 0;
   let hasData = false;
+  let monthsWithData = 0;
   const fireD = new Date();
   fireD.setMonth(fireD.getMonth() - (FIRE_ROLLING_MONTHS - 1));
   for (let i = 0; i < FIRE_ROLLING_MONTHS; i++) {
@@ -286,10 +287,12 @@ export function calcFireStats(currentNet: number): {
     let monthExp = 0;
     txs.forEach(t => { if (t.type === 'expense') monthExp += math(t.amount); });
     totalSpent += monthExp;
-    if (monthExp > 0) hasData = true;
+    if (monthExp > 0) { hasData = true; monthsWithData++; }
     fireD.setMonth(fireD.getMonth() + 1);
   }
-  const avgMonthlyExp = hasData ? totalSpent / FIRE_ROLLING_MONTHS : FIRE_DEFAULT_EXP;
+  // Divide by actual months with data so a new user with 1 month of expenses
+  // doesn't get their FIRE target deflated by 5 empty months in the rolling window.
+  const avgMonthlyExp = monthsWithData > 0 ? totalSpent / monthsWithData : FIRE_DEFAULT_EXP;
   const fireTarget = avgMonthlyExp * 12 * FIRE_MULTIPLIER;
   const progress = Math.min(Math.max((currentNet / fireTarget) * 100, 0), 100);
   return { avgMonthlyExp, fireTarget, progress, hasData };
