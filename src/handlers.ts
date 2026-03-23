@@ -1,5 +1,5 @@
 import { db, save, persistOnly, clearAndReload } from './db';
-import { math, fmt, genId, esc, setCurrencySymbol } from './utils';
+import { math, fmt, genId, esc, setCurrencySymbol, symFmt } from './utils';
 import { MAX_TX_AMOUNT, MAX_DESC_LENGTH } from './constants';
 import { showToast } from './toast';
 import {
@@ -74,6 +74,8 @@ export function saveTransaction(): void {
         date: date || undefined, notes: notes || undefined,
         updatedAt: Date.now(),
       };
+    } else {
+      showToast('Transaction no longer exists — it may have been deleted in another tab.');
     }
     resetTxForm();
   } else {
@@ -129,6 +131,7 @@ export function delTx(id: string): void {
   const backup = { ...tx };
   db.deletedIds.push(id);
   db.transactions[k] = db.transactions[k].filter(t => t.id !== id);
+  if (db.transactions[k].length === 0) delete db.transactions[k]; // keep storage tidy
   if (editingTxId === id) resetTxForm();
   save();
   showToast(`Deleted "${tx.desc.slice(0, 25)}"`, () => {
@@ -147,6 +150,7 @@ export function bulkDeleteTx(): void {
   const backups = (db.transactions[k] ?? []).filter(t => ids.includes(t.id));
   db.deletedIds.push(...ids);
   db.transactions[k] = (db.transactions[k] ?? []).filter(t => !ids.includes(t.id));
+  if (db.transactions[k]?.length === 0) delete db.transactions[k]; // keep storage tidy
   selectedTxIds.clear();
   save();
   showToast(`Deleted ${ids.length} transaction${ids.length > 1 ? 's' : ''}`, () => {
@@ -278,12 +282,18 @@ export function toggleBill(id: string): void {
   const billCat = bill.category ?? 'Bills';
 
   if (!isPaid) {
+    // Use the bill's scheduled day (clamped to the last day of the current month)
+    const [billYear, billMonth] = key.split('-').map(Number);
+    const daysInMonth = new Date(billYear, billMonth, 0).getDate();
+    const billDay = Math.min(bill.day, daysInMonth);
+    const billDateStr = `${key}-${String(billDay).padStart(2, '0')}`;
+
     const txId = genId();
     db.billStatus[key][id] = { paid: true, updated: Date.now(), txId };
     if (!db.transactions[key]) db.transactions[key] = [];
     db.transactions[key].push({
       id: txId, updatedAt: Date.now(),
-      date: new Date().toISOString().slice(0, 10),
+      date: billDateStr,
       desc: bill.name, amount: math(bill.amount), category: billCat, type: 'expense',
     });
     save();
@@ -510,7 +520,7 @@ export function logNetWorth(): void {
   db.wealth.history[key] = net;
   save();
   renderWealth();
-  showToast(`Logged Net Worth of ${db.currency}${fmt(net)} for ${key}`);
+  showToast(`Logged Net Worth of ${symFmt(net)} for ${key}`);
 }
 
 // ─── Savings Goals ────────────────────────────────────────────────────────────
@@ -580,7 +590,8 @@ export function delGoal(id: string): void {
 
 // ─── Currency ─────────────────────────────────────────────────────────────────
 export function saveCurrency(): void {
-  const val = (inp('currencySymbolInput')?.value ?? '').trim().slice(0, 3);
+  // Strip HTML-unsafe chars — the symbol is interpolated into innerHTML in render.ts
+  const val = (inp('currencySymbolInput')?.value ?? '').trim().slice(0, 5).replace(/[<>&"']/g, '');
   if (!val) return showToast('Please enter a currency symbol');
   db.currency = val;
   setCurrencySymbol(val);
@@ -723,25 +734,45 @@ export function handleCsvFile(file: File): void {
       sel.innerHTML = '';
       headers.forEach((h, i) => sel.insertAdjacentHTML('beforeend', `<option value="${i}">${esc(h.trim())}</option>`));
     });
+    // Auto-select the most likely column for each field based on header names.
+    // Use .value = (not setAttribute) so the <select> element reflects the change immediately.
     headers.forEach((h, i) => {
-      const lower = h.toLowerCase();
-      // Use optional chaining — elements may not exist in all builds
-      if (lower.includes('date')) (document.getElementById('mapDate') as HTMLSelectElement | null)?.setAttribute('value', String(i));
-      if (lower.includes('desc') || lower.includes('detail')) (document.getElementById('mapDesc') as HTMLSelectElement | null)?.setAttribute('value', String(i));
-      if (lower.includes('amount') || lower.includes('value')) (document.getElementById('mapAmt') as HTMLSelectElement | null)?.setAttribute('value', String(i));
+      const lower = h.trim().toLowerCase();
+      const mapDate = document.getElementById('mapDate') as HTMLSelectElement | null;
+      const mapDesc = document.getElementById('mapDesc') as HTMLSelectElement | null;
+      const mapAmt  = document.getElementById('mapAmt')  as HTMLSelectElement | null;
+      if (lower.includes('date'))                          { if (mapDate) mapDate.value = String(i); }
+      if (lower.includes('desc') || lower.includes('detail') || lower.includes('narr') || lower.includes('ref')) { if (mapDesc) mapDesc.value = String(i); }
+      if (lower.includes('amount') || lower.includes('value') || lower.includes('debit') || lower.includes('credit')) { if (mapAmt) mapAmt.value = String(i); }
     });
     document.getElementById('csvMapper')?.classList.remove('hidden');
     setText('csvPreview', `Loaded ${rows.length - 1} rows. Select columns above.`);
   };
+  reader.onerror = () => showToast('Could not read file — it may be corrupted or locked.');
   reader.readAsText(file);
 }
 
+/** Abbreviated and full English month names → 2-digit month string */
+const MONTH_NAME_MAP: Record<string, string> = {
+  jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06',
+  jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12',
+  january:'01', february:'02', march:'03', april:'04', june:'06',
+  july:'07', august:'08', september:'09', october:'10', november:'11', december:'12',
+};
+
 export function executeImport(): void {
   try {
-    const dateIdx = parseInt((document.getElementById('mapDate') as HTMLSelectElement).value);
-    const descIdx = parseInt((document.getElementById('mapDesc') as HTMLSelectElement).value);
-    const amtIdx  = parseInt((document.getElementById('mapAmt') as HTMLSelectElement).value);
-    const invert  = (document.getElementById('mapInvert') as HTMLInputElement).checked;
+    const dateSelect = document.getElementById('mapDate') as HTMLSelectElement | null;
+    const descSelect = document.getElementById('mapDesc') as HTMLSelectElement | null;
+    const amtSelect  = document.getElementById('mapAmt')  as HTMLSelectElement | null;
+    const invertEl   = document.getElementById('mapInvert') as HTMLInputElement | null;
+    if (!dateSelect || !descSelect || !amtSelect || !invertEl) {
+      showToast('Import UI not ready — please reload the page and try again.'); return;
+    }
+    const dateIdx = parseInt(dateSelect.value);
+    const descIdx = parseInt(descSelect.value);
+    const amtIdx  = parseInt(amtSelect.value);
+    const invert  = invertEl.checked;
     let count = 0, skipped = 0;
     const skippedRows: string[] = [];
 
@@ -759,17 +790,24 @@ export function executeImport(): void {
 
       const dateStr = row[dateIdx]?.replace(/"/g, '').trim() ?? '';
       if (!dateStr) { skipped++; skippedRows.push(`Row ${i + 1}: missing date`); continue; }
-      const parts = dateStr.split(/[-/.]/);
+      const parts = dateStr.split(/[-/. ]/);
       let year: string | undefined, month: string | undefined, dayPart: string | undefined;
+
+      // Helper: resolve a part that may be a numeric month or an abbreviated/full month name
+      const resolveMonth = (s: string): string => MONTH_NAME_MAP[s.toLowerCase()] ?? s;
+
       if (parts.length >= 3) {
-        if (parseInt(parts[0]) > 1900) {
-          // YYYY-MM-DD
-          year = parts[0]; month = parts[1]; dayPart = parts[2];
-        } else if (parseInt(parts[2] ?? '') > 1900) {
-          // DD/MM/YYYY or MM/DD/YYYY — treat middle part as month (most common non-ISO)
-          year = parts[2]; month = parts[1]; dayPart = parts[0];
+        const p0num = parseInt(parts[0]);
+        const p2num = parseInt(parts[2] ?? '');
+        if (p0num > 1900) {
+          // ISO: YYYY-MM-DD (possibly with named month: 2024-Jan-15)
+          year = parts[0]; month = resolveMonth(parts[1]); dayPart = parts[2];
+        } else if (p2num > 1900) {
+          // DD/MM/YYYY or MM/DD/YYYY or DD-Mon-YYYY — treat middle part as month
+          year = parts[2]; month = resolveMonth(parts[1]); dayPart = parts[0];
         } else {
-          year = parts[2]; month = parts[1]; dayPart = parts[0];
+          // 2-digit year: YY-MM-DD or DD/MM/YY
+          year = parts[2]; month = resolveMonth(parts[1]); dayPart = parts[0];
         }
       }
       if (year && year.length === 2) year = '20' + year;

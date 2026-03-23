@@ -87,7 +87,8 @@ function switchView(id: string): void {
   if (id === 'reports') renderReports();
   if (id === 'bills') renderCalendar();
   if (id === 'wealth') renderWealth();
-  if (id === 'budget') renderBudgets();
+  // Note: render() below already calls renderBudgets() when the budget view is visible,
+  // so we don't call it explicitly here to avoid a redundant double-render.
   render();
   // Close sidebar on mobile
   document.getElementById('sidebar')?.classList.remove('open');
@@ -339,9 +340,13 @@ document.addEventListener('DOMContentLoaded', boot);
 window.addEventListener('storage', (e: StorageEvent) => {
   if (e.key !== STORAGE_KEY || !e.newValue) return;
   syncFromStorage();
+  // Refresh all views that might be visible and all data-driven components
   render();
   renderWealth();
   renderCalendar();
+  renderDropdowns();      // categories may have changed in the other tab
+  renderSettingsCats();   // ditto
+  renderRecurring();      // recurring templates may have changed
   updateCloudStatus();
 });
 

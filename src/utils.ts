@@ -56,6 +56,13 @@ export function getMonthKey(date: Date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/**
+ * Format a value with the currency symbol, correctly placing the minus sign
+ * before the symbol for negative values: "-£100.00" not "£-100.00".
+ */
+export const symFmt = (n: number): string =>
+  n < 0 ? `-${sym()}${fmt(Math.abs(n))}` : `${sym()}${fmt(n)}`;
+
 /** Escape a value for CSV output — quotes fields containing commas, quotes, or newlines.
  *  Also prefixes formula-starting characters (=, +, -, @) to prevent CSV injection. */
 export function csvEsc(s: string | number): string {

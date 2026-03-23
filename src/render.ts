@@ -1,5 +1,5 @@
 import { db, save } from './db';
-import { math, fmt, esc, sym, getMonthKey } from './utils';
+import { math, fmt, esc, sym, symFmt, getMonthKey } from './utils';
 import { BUDGET_WARN_PCT, CALENDAR_MAX_CHIPS } from './constants';
 import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats } from './charts';
 import { getMonthPicker } from './main';
@@ -65,7 +65,9 @@ export function render(): void {
 
     const rollover = getRollover(key);
     const kpiInc = document.getElementById('kpiInc');
-    if (kpiInc) kpiInc.innerHTML = `${sym()}${fmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: ${sym()}${fmt(rollover)}</span>`;
+    // esc(sym()) for defence-in-depth; symFmt for correct "-£X" display on negative rollover
+    const safeSym = esc(sym());
+    if (kpiInc) kpiInc.innerHTML = `${symFmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: ${rollover < 0 ? '-' + safeSym + fmt(Math.abs(rollover)) : safeSym + fmt(rollover)}</span>`;
     setText('kpiExp', `${sym()}${fmt(exp)}`);
     setText('kpiSalary', `${sym()}${fmt(db.annualIncome)}`);
 
@@ -161,7 +163,8 @@ export function renderBudgets(): void {
   if (barsDiv) {
     barsDiv.innerHTML = '';
     let hasBudget = false;
-    setText('budgetMonthLabel', getMonthPicker().value);
+    const [bmy, bmm] = getMonthPicker().value.split('-').map(Number);
+    setText('budgetMonthLabel', new Date(bmy, bmm - 1).toLocaleString('default', { month: 'long', year: 'numeric' }));
     Object.keys(db.budgets).forEach(c => {
       const budget = db.budgets[c];
       if (budget > 0) {
@@ -251,7 +254,7 @@ export function renderCalendar(): void {
     const txs = db.transactions[key] ?? [];
     const mInc = txs.filter(t => t.type === 'income').reduce((a, t) => a + math(t.amount), 0);
     const mExp = txs.filter(t => t.type === 'expense').reduce((a, t) => a + math(t.amount), 0);
-    setText('billSafe', `${sym()}${fmt((mInc + rollover) - mExp - unpaidBillTotal)}`);
+    setText('billSafe', symFmt((mInc + rollover) - mExp - unpaidBillTotal));
   } catch (e) {
     console.error('Calendar error:', e);
   }
@@ -278,10 +281,10 @@ export function renderWealth(): void {
       .filter(a => ['Savings', 'Cash', 'Investment'].includes(a.type))
       .reduce((a, b) => a + b.value, 0) + operatingCash;
 
-    setText('wealthNet', `${sym()}${fmt(displayTotalAssets - totalDebts)}`);
-    setText('wealthTotalAssets', `${sym()}${fmt(displayTotalAssets)}`);
+    setText('wealthNet', symFmt(displayTotalAssets - totalDebts));
+    setText('wealthTotalAssets', symFmt(displayTotalAssets));
     setText('wealthTotalDebts', `${sym()}${fmt(totalDebts)}`);
-    setText('wealthLiquid', `${sym()}${fmt(liquidAssets)}`);
+    setText('wealthLiquid', symFmt(liquidAssets));
 
     // History window
     const histData = db.wealth.history ?? {};
@@ -400,7 +403,7 @@ export function renderReports(): void {
             <td class="py-3 pl-3 font-medium text-slate-700 dark:text-slate-300">${new Date(Number(targetYear), mo - 1).toLocaleString('default', { month: 'long' })}</td>
             <td class="text-right text-emerald-600 dark:text-emerald-400 money-val">${sym()}${fmt(mInc)}</td>
             <td class="text-right text-rose-600 dark:text-rose-400 money-val">${sym()}${fmt(mExp)}</td>
-            <td class="text-right pr-3 font-bold ${netColor} money-val">${sym()}${fmt(net)}</td>
+            <td class="text-right pr-3 font-bold ${netColor} money-val">${symFmt(net)}</td>
           </tr>`);
       }
     }

@@ -212,6 +212,11 @@ export async function manualSync(ui = false): Promise<void> {
       });
     }
 
+    // ── PERSIST MERGE ────────────────────────────────────────────────────────
+    // Persist the merged local state immediately so a failed push doesn't lose
+    // the data we just pulled from the cloud.
+    save(true);
+
     // ── PUSH ─────────────────────────────────────────────────────────────────
     const payload = buildPayload();
     let body: string;
@@ -228,7 +233,6 @@ export async function manualSync(ui = false): Promise<void> {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     });
 
-    save(true);
     if (ui) showToast('Sync Successful!');
   } catch (e: unknown) {
     console.error(e);

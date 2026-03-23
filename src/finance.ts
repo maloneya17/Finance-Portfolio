@@ -5,8 +5,8 @@
 import { db, persistOnly } from './db';
 import { math } from './utils';
 
-// Month key must match YYYY-MM format
-const MONTH_KEY_RE = /^\d{4}-\d{2}$/;
+// Month key must match YYYY-MM format with a valid month (01-12)
+const MONTH_KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 export function isValidMonthKey(k: string): boolean { return MONTH_KEY_RE.test(k); }
 
 export function getRollover(currentKey: string): number {
