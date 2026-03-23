@@ -36,7 +36,11 @@ export function render(): void {
     // Filtered transaction list
     const catFilter = (document.getElementById('txCatFilter') as HTMLSelectElement | null)?.value ?? '';
     const filtered = data.filter(t => {
-      const matchSearch = t.desc.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm);
+      const matchSearch = !searchTerm
+        || t.desc.toLowerCase().includes(searchTerm)
+        || t.category.toLowerCase().includes(searchTerm)
+        || (t.notes ?? '').toLowerCase().includes(searchTerm)
+        || String(t.amount).includes(searchTerm);
       const matchCat = !catFilter || t.category === catFilter;
       return matchSearch && matchCat;
     });
@@ -51,9 +55,13 @@ export function render(): void {
           ? 'text-emerald-600 dark:text-emerald-400'
           : 'text-rose-600 dark:text-rose-400';
         const sign = t.type === 'income' ? '+' : '-';
+        const isChecked = selectedTxIds.has(t.id);
         list.insertAdjacentHTML('beforeend', `
-          <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group">
-            <td class="py-3 pl-2">
+          <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group${isChecked ? ' bg-indigo-50 dark:bg-indigo-900/10' : ''}">
+            <td class="pl-2 py-3 w-8">
+              <input type="checkbox" data-tx-checkbox="${t.id}" ${isChecked ? 'checked' : ''} class="accent-indigo-600 rounded cursor-pointer">
+            </td>
+            <td class="py-3">
               <div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div>
               <div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(t.category)}</div>
               ${t.notes ? `<div class="text-[10px] text-slate-400 mt-1 italic truncate max-w-[200px]" title="${esc(t.notes)}">${esc(t.notes)}</div>` : ''}
@@ -65,6 +73,12 @@ export function render(): void {
             </td>
           </tr>`);
       });
+      // Keep select-all checkbox in sync
+      const selectAll = document.getElementById('selectAllTx') as HTMLInputElement | null;
+      if (selectAll) {
+        selectAll.checked = filtered.length > 0 && filtered.every(t => selectedTxIds.has(t.id));
+        selectAll.indeterminate = !selectAll.checked && filtered.some(t => selectedTxIds.has(t.id));
+      }
     }
 
     const emptyEl = document.getElementById('emptyState');
@@ -146,6 +160,16 @@ export function getCurrentCatsFromPicker(): Record<string, number> {
 function setText(id: string, text: string): void {
   const el = document.getElementById(id);
   if (el) el.innerText = text;
+}
+
+// ─── Bulk action bar ──────────────────────────────────────────────────────────
+/** Show/hide the bulk-action bar and update its selection count. */
+export function updateBulkBar(): void {
+  const count = selectedTxIds.size;
+  const bar = document.getElementById('bulkBar');
+  bar?.classList.toggle('hidden', count === 0);
+  const countEl = document.getElementById('bulkCount');
+  if (countEl) countEl.textContent = `${count} selected`;
 }
 
 // ─── Budgets ──────────────────────────────────────────────────────────────────
@@ -444,12 +468,21 @@ export function renderGoals(): void {
   db.goals.forEach(g => {
     const pct = g.target > 0 ? Math.min(Math.max((g.current / g.target) * 100, 0), 100) : 0;
     const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-indigo-500' : 'bg-amber-500';
+    let deadlineHtml = '';
+    if (g.deadline) {
+      const dlDate  = new Date(g.deadline + 'T00:00:00'); // force local TZ parse
+      const daysLeft = Math.ceil((dlDate.getTime() - Date.now()) / 86_400_000);
+      const dlColor  = pct >= 100 ? 'text-emerald-500' : daysLeft < 0 ? 'text-rose-500' : daysLeft <= 30 ? 'text-amber-500' : 'text-slate-400';
+      const dlLabel  = pct >= 100 ? 'Goal reached!' : daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`;
+      deadlineHtml = `<span class="text-[10px] font-medium ${dlColor} ml-1"><i class="far fa-calendar-alt mr-0.5"></i>${esc(dlLabel)}</span>`;
+    }
     list.insertAdjacentHTML('beforeend',
       `<div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg mb-2">
         <div class="flex justify-between items-start mb-1">
           <div>
             <span class="font-bold text-slate-700 dark:text-slate-200 text-xs">${esc(g.name)}</span>
             ${g.notes ? `<span class="text-[10px] text-slate-400 ml-2">${esc(g.notes)}</span>` : ''}
+            ${deadlineHtml}
           </div>
           <div class="flex gap-2 items-center">
             <span class="text-xs text-slate-500">${sym()}${fmt(g.current)} / ${sym()}${fmt(g.target)}</span>
@@ -496,6 +529,15 @@ export function renderDropdowns(): void {
     db.categories.forEach(c => billCat.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
     if (db.categories.includes(bc)) billCat.value = bc;
     else billCat.value = 'Bills';
+  }
+
+  // Bulk recategorise select — populated with the same category list
+  const bulkCat = document.getElementById('bulkCatSel') as HTMLSelectElement | null;
+  if (bulkCat) {
+    const bv = bulkCat.value;
+    bulkCat.innerHTML = '<option value="">Pick category…</option>';
+    db.categories.forEach(c => bulkCat.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+    if (db.categories.includes(bv)) bulkCat.value = bv;
   }
 }
 

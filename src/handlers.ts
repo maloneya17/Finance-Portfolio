@@ -1,7 +1,8 @@
-import { db, save, persistOnly, clearAndReload } from './db';
+import { db, save, persistOnly, clearAndReload, STORAGE_KEY } from './db';
 import { math, fmt, genId, esc, setCurrencySymbol, symFmt } from './utils';
 import { MAX_TX_AMOUNT, MAX_DESC_LENGTH } from './constants';
 import { showToast } from './toast';
+import { showTextInputModal, showConfirmModal } from './modal';
 import {
   render,
   renderCalendar,
@@ -183,9 +184,11 @@ function validateCatName(n: string): string | null {
   return n;
 }
 
-export function checkNewCategory(sel: HTMLSelectElement): void {
+export async function checkNewCategory(sel: HTMLSelectElement): Promise<void> {
   if (sel.value !== 'ADD_NEW') return;
-  const raw = prompt('New Category Name:');
+  // Reset to a valid option while the modal is open so no ADD_NEW sentinel remains
+  sel.value = db.categories[0] ?? '';
+  const raw = await showTextInputModal({ title: 'New Category', placeholder: 'e.g. Groceries', confirmLabel: 'Add' });
   const n = validateCatName(raw?.trim().slice(0, 50) ?? '');
   if (n && !db.categories.includes(n)) {
     db.categories.push(n);
@@ -193,14 +196,18 @@ export function checkNewCategory(sel: HTMLSelectElement): void {
     renderDropdowns();
     sel.value = n;
   } else if (n) {
-    sel.value = n;
-  } else {
-    sel.value = db.categories[0] ?? '';
+    sel.value = n; // category already exists — select it
   }
 }
 
-export function delCat(c: string): void {
-  if (!confirm(`Delete '${c}'?`)) return;
+export async function delCat(c: string): Promise<void> {
+  const ok = await showConfirmModal({
+    title: `Delete "${c}"?`,
+    message: 'Existing transactions keep their category label but the category will no longer appear in filters or budgets.',
+    confirmLabel: 'Delete',
+    dangerous: true,
+  });
+  if (!ok) return;
   db.categories = db.categories.filter(x => x !== c);
   delete db.budgets[c];
   save();
@@ -208,8 +215,8 @@ export function delCat(c: string): void {
   renderDropdowns();
 }
 
-export function addCatPrompt(): void {
-  const raw = prompt('Category Name:');
+export async function addCatPrompt(): Promise<void> {
+  const raw = await showTextInputModal({ title: 'Add Category', placeholder: 'Category Name', confirmLabel: 'Add' });
   const n = validateCatName(raw?.trim().slice(0, 50) ?? '');
   if (!n) return;
   if (!db.categories.includes(n)) {
@@ -388,15 +395,16 @@ export function saveAsset(): void {
         a => a.id !== editingAssetId && a.name.trim().toLowerCase() === name.toLowerCase(),
       );
       if (collision) { showToast(`An asset named "${collision.name}" already exists — use a unique name.`); return; }
-      db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type };
+      db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type, updatedAt: Date.now() };
     }
     cancelWealthEdit();
   } else {
     if (existing) {
       existing.value += val;
+      existing.updatedAt = Date.now();
       showToast(`${db.currency}${fmt(val)} added to "${existing.name}"`);
     } else {
-      db.wealth.assets.push({ id: genId(), name, value: val, type });
+      db.wealth.assets.push({ id: genId(), name, value: val, type, updatedAt: Date.now() });
     }
     const anEl = inp('assetName'); if (anEl) anEl.value = '';
     const avEl = inp('assetVal');  if (avEl) avEl.value = '';
@@ -443,15 +451,17 @@ export function saveDebt(): void {
         ...db.wealth.debts[idx], name, value: val,
         interestRate: rateRaw   ? interestRate   : undefined,
         minPayment:   minPayRaw ? minPayment     : undefined,
+        updatedAt: Date.now(),
       };
     }
     cancelWealthEdit();
   } else {
     if (existing) {
       existing.value += val;
+      existing.updatedAt = Date.now();
       showToast(`${db.currency}${fmt(val)} added to "${existing.name}"`);
     } else {
-      db.wealth.debts.push({ id: genId(), name, value: val, interestRate, minPayment });
+      db.wealth.debts.push({ id: genId(), name, value: val, interestRate, minPayment, updatedAt: Date.now() });
     }
     const dnEl2 = inp('debtName');   if (dnEl2) dnEl2.value = '';
     const dvEl2 = inp('debtVal');    if (dvEl2) dvEl2.value = '';
@@ -528,24 +538,26 @@ export function logNetWorth(): void {
 let editingGoalId: string | null = null;
 
 export function saveGoal(): void {
-  const name    = (inp('goalName')?.value ?? '').trim().slice(0, MAX_DESC_LENGTH);
-  const target  = math(inp('goalTarget')?.value ?? '');
-  const current = math(inp('goalCurrent')?.value ?? '');
-  const notes   = (inp('goalNotes')?.value ?? '').trim().slice(0, 200);
+  const name     = (inp('goalName')?.value ?? '').trim().slice(0, MAX_DESC_LENGTH);
+  const target   = math(inp('goalTarget')?.value ?? '');
+  const current  = math(inp('goalCurrent')?.value ?? '');
+  const notes    = (inp('goalNotes')?.value ?? '').trim().slice(0, 200);
+  const deadline = (inp('goalDeadline')?.value ?? '').trim() || undefined;
 
   if (!name) return showToast('Please enter a goal name');
   if (!target || target <= 0) return showToast('Please enter a valid target amount');
 
   if (editingGoalId) {
     const idx = db.goals.findIndex(g => g.id === editingGoalId);
-    if (idx > -1) db.goals[idx] = { ...db.goals[idx], name, target, current, notes: notes || undefined };
+    if (idx > -1) db.goals[idx] = { ...db.goals[idx], name, target, current, notes: notes || undefined, deadline };
     cancelGoalEdit();
   } else {
-    db.goals.push({ id: genId(), name, target, current, notes: notes || undefined });
-    if (inp('goalName'))    inp('goalName')!.value    = '';
-    if (inp('goalTarget'))  inp('goalTarget')!.value  = '';
-    if (inp('goalCurrent')) inp('goalCurrent')!.value = '';
-    if (inp('goalNotes'))   inp('goalNotes')!.value   = '';
+    db.goals.push({ id: genId(), name, target, current, notes: notes || undefined, deadline });
+    if (inp('goalName'))     inp('goalName')!.value     = '';
+    if (inp('goalTarget'))   inp('goalTarget')!.value   = '';
+    if (inp('goalCurrent'))  inp('goalCurrent')!.value  = '';
+    if (inp('goalNotes'))    inp('goalNotes')!.value    = '';
+    if (inp('goalDeadline')) inp('goalDeadline')!.value = '';
   }
   save();
   renderWealth();
@@ -555,10 +567,11 @@ export function editGoal(id: string): void {
   const goal = db.goals.find(g => g.id === id);
   if (!goal) return;
   editingGoalId = id;
-  if (inp('goalName'))    inp('goalName')!.value    = goal.name;
-  if (inp('goalTarget'))  inp('goalTarget')!.value  = String(goal.target);
-  if (inp('goalCurrent')) inp('goalCurrent')!.value = String(goal.current);
-  if (inp('goalNotes'))   inp('goalNotes')!.value   = goal.notes ?? '';
+  if (inp('goalName'))     inp('goalName')!.value     = goal.name;
+  if (inp('goalTarget'))   inp('goalTarget')!.value   = String(goal.target);
+  if (inp('goalCurrent'))  inp('goalCurrent')!.value  = String(goal.current);
+  if (inp('goalNotes'))    inp('goalNotes')!.value     = goal.notes ?? '';
+  if (inp('goalDeadline')) inp('goalDeadline')!.value  = goal.deadline ?? '';
   const sbtn = btn('btnSaveGoal'); if (sbtn) sbtn.innerText = 'Update Goal';
   document.getElementById('btnCancelGoal')?.classList.remove('hidden');
   document.getElementById('goalSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -566,10 +579,11 @@ export function editGoal(id: string): void {
 
 export function cancelGoalEdit(): void {
   editingGoalId = null;
-  if (inp('goalName'))    inp('goalName')!.value    = '';
-  if (inp('goalTarget'))  inp('goalTarget')!.value  = '';
-  if (inp('goalCurrent')) inp('goalCurrent')!.value = '';
-  if (inp('goalNotes'))   inp('goalNotes')!.value   = '';
+  if (inp('goalName'))     inp('goalName')!.value     = '';
+  if (inp('goalTarget'))   inp('goalTarget')!.value   = '';
+  if (inp('goalCurrent'))  inp('goalCurrent')!.value  = '';
+  if (inp('goalNotes'))    inp('goalNotes')!.value     = '';
+  if (inp('goalDeadline')) inp('goalDeadline')!.value  = '';
   const sbtn = btn('btnSaveGoal'); if (sbtn) sbtn.innerText = '+ Add Goal';
   document.getElementById('btnCancelGoal')?.classList.add('hidden');
 }
@@ -675,13 +689,21 @@ export function applyRecurring(silent = false): number {
 }
 
 // ─── Annual income ────────────────────────────────────────────────────────────
-export function editAnnualIncome(): void {
-  const v = prompt('Annual Salary:', String(db.annualIncome));
-  if (v === null) return;
-  const parsed = math(v);
+export async function editAnnualIncome(): Promise<void> {
+  const raw = await showTextInputModal({
+    title: 'Annual Salary',
+    label: 'Enter your gross annual salary',
+    defaultValue: String(db.annualIncome || ''),
+    inputType: 'number',
+    placeholder: '0',
+    confirmLabel: 'Save',
+  });
+  if (raw === null) return;
+  const parsed = math(raw);
   if (isNaN(parsed) || parsed < 0) return showToast('Please enter a valid non-negative salary');
   if (parsed > MAX_TX_AMOUNT * 10) return showToast('Value exceeds maximum allowed');
   db.annualIncome = parsed;
+  db.annualIncomeUpdatedAt = Date.now();
   save();
 }
 
@@ -871,13 +893,52 @@ export function executeImport(): void {
 }
 
 // ─── Reset ────────────────────────────────────────────────────────────────────
-export function resetData(): void {
-  const answer = prompt('Type RESET to permanently delete all your data. This cannot be undone.');
+export async function resetData(): Promise<void> {
+  const answer = await showTextInputModal({
+    title: 'Reset All Data',
+    message: 'This permanently deletes all your data and cannot be undone.',
+    label: 'Type RESET to confirm:',
+    placeholder: 'RESET',
+    confirmLabel: 'Delete Everything',
+    dangerous: true,
+  });
   if (answer?.trim() === 'RESET') {
     clearAndReload();
   } else if (answer !== null) {
     showToast('Reset cancelled — type RESET exactly to confirm');
   }
+}
+
+// ─── JSON backup restore ──────────────────────────────────────────────────────
+export function importJsonBackup(): void {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    let text: string;
+    try { text = await file.text(); } catch { showToast('Could not read file'); return; }
+    let parsed: Record<string, unknown>;
+    try { parsed = JSON.parse(text); } catch { showToast('Invalid JSON — could not parse file'); return; }
+    if (typeof parsed['schemaVersion'] !== 'number' || !parsed['transactions']) {
+      showToast('Invalid backup — expected a Finance Tracker JSON export');
+      return;
+    }
+    const ok = await showConfirmModal({
+      title: 'Restore from backup?',
+      message: 'All current data will be replaced. Sync credentials (cloud URL & passphrase) are preserved.',
+      confirmLabel: 'Restore',
+      dangerous: true,
+    });
+    if (!ok) return;
+    // Preserve sync credentials from current session; restore everything else
+    parsed['cloudURL'] = db.cloudURL;
+    parsed['syncPassphrase'] = db.syncPassphrase;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    location.reload();
+  };
+  input.click();
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

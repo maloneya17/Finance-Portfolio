@@ -157,18 +157,32 @@ export async function manualSync(ui = false): Promise<void> {
       });
       db.bills = Array.from(billMap.values());
 
-      // Assets — local wins
+      // Assets — last-write-wins per id using updatedAt; ties go to local.
+      // Legacy assets without updatedAt use 0 so newer entries always win.
       const assetMap = new Map<string, typeof db.wealth.assets[0]>();
-      safeArr<typeof db.wealth.assets[0]>(cloudData.wealth?.assets).forEach(a => assetMap.set(a.name, a));
-      db.wealth.assets.forEach(a => assetMap.set(a.name, a));
+      [...safeArr<typeof db.wealth.assets[0]>(cloudData.wealth?.assets), ...db.wealth.assets].forEach(a => {
+        if (allDeleted.has(a.id)) return;
+        const ex = assetMap.get(a.id);
+        if (!ex || (a.updatedAt ?? 0) >= (ex.updatedAt ?? 0)) assetMap.set(a.id, a);
+      });
       db.wealth.assets = Array.from(assetMap.values());
 
+      // Debts — last-write-wins per id using updatedAt
       const debtMap = new Map<string, typeof db.wealth.debts[0]>();
-      safeArr<typeof db.wealth.debts[0]>(cloudData.wealth?.debts).forEach(d => debtMap.set(d.name, d));
-      db.wealth.debts.forEach(d => debtMap.set(d.name, d));
+      [...safeArr<typeof db.wealth.debts[0]>(cloudData.wealth?.debts), ...db.wealth.debts].forEach(d => {
+        if (allDeleted.has(d.id)) return;
+        const ex = debtMap.get(d.id);
+        if (!ex || (d.updatedAt ?? 0) >= (ex.updatedAt ?? 0)) debtMap.set(d.id, d);
+      });
       db.wealth.debts = Array.from(debtMap.values());
 
-      if (cloudData.budgets) db.budgets = { ...cloudData.budgets, ...db.budgets };
+      // Budgets — cloud contributes missing categories; local wins for existing keys.
+      // This ensures a budget deleted locally is not resurrected by the next sync.
+      if (cloudData.budgets) {
+        Object.entries(cloudData.budgets as Record<string, number>).forEach(([cat, val]) => {
+          if (!(cat in db.budgets)) db.budgets[cat] = val;
+        });
+      }
 
       // Categories — union: add any cloud categories not present locally
       if (Array.isArray(cloudData.categories)) {
@@ -199,9 +213,17 @@ export async function manualSync(ui = false): Promise<void> {
         db.recurring = Array.from(recMap.values());
       }
 
-      // Annual income — adopt cloud value only if local hasn't been set
-      if (typeof cloudData.annualIncome === 'number' && cloudData.annualIncome > 0 && db.annualIncome === 0) {
-        db.annualIncome = cloudData.annualIncome;
+      // Annual income — last-write-wins using annualIncomeUpdatedAt timestamp.
+      // Falls back to "adopt cloud only if local is 0" for entries without timestamps.
+      if (typeof cloudData.annualIncome === 'number' && cloudData.annualIncome > 0) {
+        const cloudTs = typeof cloudData.annualIncomeUpdatedAt === 'number' ? cloudData.annualIncomeUpdatedAt : 0;
+        const localTs = db.annualIncomeUpdatedAt ?? 0;
+        if (cloudTs > localTs) {
+          db.annualIncome = cloudData.annualIncome;
+          db.annualIncomeUpdatedAt = cloudTs;
+        } else if (localTs === 0 && db.annualIncome === 0) {
+          db.annualIncome = cloudData.annualIncome; // legacy: adopt if local never set
+        }
       }
 
       // Transactions — last-write-wins per tx id

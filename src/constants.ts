@@ -20,6 +20,7 @@ export const DEFAULTS: AppDB = {
   wealth: { assets: [], debts: [], history: {} },
   deletedIds: [],
   annualIncome: 0,
+  annualIncomeUpdatedAt: 0,
   cloudURL: '',
   theme: 'light',
   budgets: {},

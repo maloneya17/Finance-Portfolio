@@ -221,11 +221,22 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Bulk action bar — shown when ≥1 transaction is checked -->
+                    <div id="bulkBar" class="hidden mb-3 flex flex-wrap items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                        <span id="bulkCount" class="text-xs font-bold text-indigo-700 dark:text-indigo-300 min-w-[70px]">0 selected</span>
+                        <select id="bulkCatSel" class="flex-1 min-w-[120px] p-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500">
+                            <option value="">Pick category…</option>
+                        </select>
+                        <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition whitespace-nowrap">Recategorise</button>
+                        <button type="button" data-action="bulk-delete" class="text-xs font-bold px-3 py-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-500 transition">Delete</button>
+                        <button type="button" data-action="bulk-clear" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium px-2">✕ Clear</button>
+                    </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse" aria-label="Transaction list">
                             <thead>
                                 <tr class="text-xs text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800">
-                                    <th class="py-2 font-bold pl-2" scope="col">Description</th>
+                                    <th class="py-2 pl-2 w-8"><input type="checkbox" id="selectAllTx" class="accent-indigo-600 rounded cursor-pointer" title="Select all visible"></th>
+                                    <th class="py-2 font-bold" scope="col">Description</th>
                                     <th class="py-2 font-bold text-right" scope="col">Amount</th>
                                     <th class="py-2 font-bold text-right pr-2" scope="col">Actions</th>
                                 </tr>
@@ -443,6 +454,10 @@
                     <input type="number" id="goalTarget" step="0.01" placeholder="Target amount" class="p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
                     <input type="number" id="goalCurrent" step="0.01" placeholder="Current saved" class="p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
                     <input type="text" id="goalNotes" placeholder="Notes (optional)" class="col-span-2 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
+                    <div class="col-span-2 flex items-center gap-2">
+                        <label class="text-[10px] uppercase font-bold text-slate-500 whitespace-nowrap">Deadline (optional)</label>
+                        <input type="date" id="goalDeadline" class="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
+                    </div>
                     <button type="button" id="btnSaveGoal" data-action="save-goal" class="col-span-2 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">+ Add Goal</button>
                 </form>
                 <div id="listGoals" class="space-y-2"></div>
@@ -586,10 +601,14 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Export Data</h3>
                 <p class="text-xs text-slate-500 mb-4">Download your financial data for backup or analysis.</p>
-                <div class="flex gap-3">
+                <div class="flex gap-3 flex-wrap">
                     <button type="button" data-action="export-json"
                         class="flex-1 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 dark:hover:bg-slate-600 transition">
                         <i class="fas fa-download mr-2"></i>JSON Backup
+                    </button>
+                    <button type="button" data-action="import-json"
+                        class="flex-1 py-2 bg-slate-600 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-500 dark:hover:bg-slate-600 transition">
+                        <i class="fas fa-upload mr-2"></i>Restore JSON
                     </button>
                     <button type="button" data-action="export-csv"
                         class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-500 transition">

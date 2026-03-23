@@ -2,7 +2,7 @@ import './style.css';
 import { registerSW } from 'virtual:pwa-register';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
-import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals } from './render';
+import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
 import { debounce, math, setCurrencySymbol, csvEsc, sym } from './utils';
@@ -15,7 +15,8 @@ import {
   saveCurrency,
   setRecType, saveRecurring, delRecurring, applyRecurring,
   editAnnualIncome, resetData, addCatPrompt, delCat,
-  handleCsvFile, executeImport,
+  handleCsvFile, executeImport, importJsonBackup,
+  bulkDeleteTx, bulkRecategorizeTx,
 } from './handlers';
 import { consolidateWealth, isValidMonthKey } from './finance';
 
@@ -239,9 +240,17 @@ function wireEvents(): void {
         case 'save-sync-passphrase': saveSyncPassphrase(); break;
         case 'clear-sync-passphrase': clearSyncPassphrase(); break;
         case 'export-json': exportJSON(); break;
+        case 'import-json': importJsonBackup(); break;
         case 'export-csv': exportCSV(); break;
         case 'reset-data': resetData(); break;
         case 'toggle-sidebar': toggleSidebar(); break;
+        case 'bulk-delete': bulkDeleteTx(); break;
+        case 'bulk-recat': {
+          const catSel = document.getElementById('bulkCatSel') as HTMLSelectElement | null;
+          bulkRecategorizeTx(catSel?.value ?? '');
+          break;
+        }
+        case 'bulk-clear': selectedTxIds.clear(); render(); break;
       }
     }
   });
@@ -267,6 +276,30 @@ function wireEvents(): void {
 
   // Category dropdown — "Add New" check
   document.getElementById('txCat')?.addEventListener('change', (e) => checkNewCategory(e.target as HTMLSelectElement));
+
+  // Transaction checkbox selection (delegated)
+  root.addEventListener('change', (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    if (target.id === 'selectAllTx') {
+      // Select / deselect all currently-visible filtered rows
+      const visibleIds = Array.from(
+        document.querySelectorAll<HTMLInputElement>('[data-tx-checkbox]'),
+      ).map(cb => cb.dataset['txCheckbox']!);
+      if (target.checked) visibleIds.forEach(id => selectedTxIds.add(id));
+      else visibleIds.forEach(id => selectedTxIds.delete(id));
+      render(); // re-render to sync checkbox states
+      return;
+    }
+    if (target.dataset['txCheckbox']) {
+      const id = target.dataset['txCheckbox']!;
+      if (target.checked) selectedTxIds.add(id);
+      else selectedTxIds.delete(id);
+      updateBulkBar();
+      // Update row highlight
+      target.closest('tr')?.classList.toggle('bg-indigo-50', target.checked);
+      target.closest('tr')?.classList.toggle('dark:bg-indigo-900/10', target.checked);
+    }
+  });
 
   // Search debounce
   const debouncedRender = debounce(render, 200);

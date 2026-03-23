@@ -31,6 +31,7 @@ export interface BillStatusEntry {
 
 export interface Asset {
   id: string;
+  updatedAt?: number;   // timestamp of last edit — used for last-write-wins sync
   name: string;
   value: number;
   type: AssetType;
@@ -38,6 +39,7 @@ export interface Asset {
 
 export interface Debt {
   id: string;
+  updatedAt?: number;   // timestamp of last edit — used for last-write-wins sync
   name: string;
   value: number;
   interestRate?: number;  // annual % e.g. 5.5 for 5.5% APR
@@ -50,6 +52,7 @@ export interface SavingsGoal {
   target: number;
   current: number;
   notes?: string;
+  deadline?: string;  // YYYY-MM-DD — optional target completion date
 }
 
 export interface WealthHistory {
@@ -79,6 +82,7 @@ export interface AppDB {
   wealth: WealthData;
   deletedIds: string[];
   annualIncome: number;
+  annualIncomeUpdatedAt: number;  // timestamp of last income change — used for LWW sync
   cloudURL: string;
   theme: 'light' | 'dark';
   budgets: Record<string, number>;

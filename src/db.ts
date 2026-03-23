@@ -36,6 +36,7 @@ function repair(db: AppDB): AppDB {
   if (!db.recurring) db.recurring = [];
   if (!db.deletedIds) db.deletedIds = [];
   if (typeof db.annualIncome !== 'number') db.annualIncome = 0;
+  if (typeof db.annualIncomeUpdatedAt !== 'number') db.annualIncomeUpdatedAt = 0;
   if (!db.currency) db.currency = '£';
   if (!db.goals) db.goals = [];
   if (db.autoRecurring === undefined) db.autoRecurring = false;
