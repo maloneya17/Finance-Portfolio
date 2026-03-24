@@ -93,6 +93,10 @@
                 <span id="statusDot" class="w-2 h-2 rounded-full bg-slate-600"></span>
                 <span id="statusText">Local Only</span>
             </div>
+            <!-- Offline indicator — shown when device loses network -->
+            <div id="offlineBanner" class="hidden mt-2 text-[10px] text-center font-bold text-amber-400 bg-amber-900/20 border border-amber-800/40 rounded-lg py-1.5 px-2 flex items-center justify-center gap-1.5">
+                <i class="fas fa-wifi-slash"></i> Device Offline
+            </div>
         </div>
     </div>
 
@@ -218,6 +222,11 @@
                                 <input type="text" id="txNotes" placeholder="Optional memo" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
                             </div>
                         </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase" for="txTags">Tags</label>
+                            <input type="text" id="txTags" placeholder="e.g. tax-deductible, work, joint" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" aria-describedby="txTagsHint">
+                            <p id="txTagsHint" class="text-[10px] text-slate-400 mt-0.5">Comma-separated labels</p>
+                        </div>
                         <div class="flex items-center gap-2 mt-2">
                             <button type="button" data-action="save-tx" id="btnSubmitTx"
                                 class="flex-1 py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition">Add Transaction</button>
@@ -235,7 +244,7 @@
                                 <i class="fas fa-redo-alt"></i> Recurring
                             </button>
                         </div>
-                        <div class="flex gap-2 w-full sm:w-auto">
+                        <div class="flex gap-2 w-full sm:w-auto flex-wrap">
                             <select id="txCatFilter" aria-label="Filter by category"
                                 class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none focus:border-indigo-500 transition cursor-pointer">
                                 <option value="">All Categories</option>
@@ -245,7 +254,38 @@
                                     class="pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition w-36">
                                 <i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs" aria-hidden="true"></i>
                             </div>
+                            <button type="button" id="btnFilterToggle" data-action="toggle-filter"
+                                aria-expanded="false" aria-controls="advFilterPanel"
+                                class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-500 transition flex items-center gap-1">
+                                <i class="fas fa-sliders-h text-[10px]"></i> Filter
+                            </button>
                         </div>
+                    </div>
+                    <!-- Advanced filter panel -->
+                    <div id="advFilterPanel" class="hidden mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterDateFrom">Date From</label>
+                                <input type="date" id="filterDateFrom" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterDateTo">Date To</label>
+                                <input type="date" id="filterDateTo" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterAmtMin">Min Amount</label>
+                                <input type="number" id="filterAmtMin" min="0" step="0.01" placeholder="0.00" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterAmtMax">Max Amount</label>
+                                <input type="number" id="filterAmtMax" min="0" step="0.01" placeholder="No limit" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                            </div>
+                        </div>
+                        <div class="flex justify-end mt-2">
+                            <button type="button" data-action="clear-filters" class="text-[10px] font-bold text-rose-500 hover:underline">Clear Filters</button>
+                        </div>
+                    </div>
+                    <div class="sr-only" aria-live="polite" id="filterStatus"></div>
                     </div>
                     <!-- Bulk action bar — shown when ≥1 transaction is checked -->
                     <div id="bulkBar" class="hidden mb-3 flex flex-wrap items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">

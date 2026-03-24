@@ -1,4 +1,5 @@
 import { db, save } from './db';
+import { showToast } from './toast';
 import { math, fmt, esc, sym, symFmt, getMonthKey } from './utils';
 import { BUDGET_WARN_PCT, CALENDAR_MAX_CHIPS } from './constants';
 import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats } from './charts';
@@ -39,21 +40,50 @@ export function render(): void {
     });
 
     // Filtered transaction list
-    const catFilter = (document.getElementById('txCatFilter') as HTMLSelectElement | null)?.value ?? '';
+    const catFilter    = (document.getElementById('txCatFilter')  as HTMLSelectElement | null)?.value ?? '';
+    const dateFrom     = (document.getElementById('filterDateFrom') as HTMLInputElement | null)?.value ?? '';
+    const dateTo       = (document.getElementById('filterDateTo')   as HTMLInputElement | null)?.value ?? '';
+    const amtMinStr    = (document.getElementById('filterAmtMin')   as HTMLInputElement | null)?.value ?? '';
+    const amtMaxStr    = (document.getElementById('filterAmtMax')   as HTMLInputElement | null)?.value ?? '';
+    const amtMin       = amtMinStr ? parseFloat(amtMinStr) : null;
+    const amtMax       = amtMaxStr ? parseFloat(amtMaxStr) : null;
+    const hasAdvFilter = !!(dateFrom || dateTo || amtMinStr || amtMaxStr);
+
+    // Highlight the filter button when advanced filters are active
+    const filterBtn = document.getElementById('btnFilterToggle');
+    if (filterBtn) {
+      filterBtn.classList.toggle('border-indigo-500', hasAdvFilter);
+      filterBtn.classList.toggle('text-indigo-500', hasAdvFilter);
+      filterBtn.classList.toggle('bg-indigo-50', hasAdvFilter);
+      filterBtn.classList.toggle('dark:bg-indigo-900/20', hasAdvFilter);
+    }
+
     const filtered = data.filter(t => {
+      const txDate = t.date ?? '';
       const matchSearch = !searchTerm
         || t.desc.toLowerCase().includes(searchTerm)
         || t.category.toLowerCase().includes(searchTerm)
         || (t.notes ?? '').toLowerCase().includes(searchTerm)
-        || String(t.amount).includes(searchTerm);
-      const matchCat = !catFilter || t.category === catFilter;
-      return matchSearch && matchCat;
+        || String(t.amount).includes(searchTerm)
+        || (t.tags ?? []).some(tag => tag.includes(searchTerm));
+      const matchCat    = !catFilter || t.category === catFilter;
+      const matchFrom   = !dateFrom || txDate >= dateFrom;
+      const matchTo     = !dateTo   || txDate <= dateTo;
+      const matchAmt    = (amtMin === null || t.amount >= amtMin) && (amtMax === null || t.amount <= amtMax);
+      return matchSearch && matchCat && matchFrom && matchTo && matchAmt;
     });
     filtered.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.updatedAt - a.updatedAt);
 
+    // Update screen-reader live region with result count
+    const filterStatus = document.getElementById('filterStatus');
+    if (filterStatus && (searchTerm || catFilter || hasAdvFilter)) {
+      filterStatus.textContent = `${filtered.length} transaction${filtered.length !== 1 ? 's' : ''} shown`;
+    }
+
     const list = document.getElementById('listTx');
     if (list) {
-      list.innerHTML = '';
+      // Use DocumentFragment to batch all DOM insertions in one reflow
+      const frag = document.createDocumentFragment();
       filtered.forEach(t => {
         const val = math(t.amount);
         const colorClass = t.type === 'income'
@@ -61,23 +91,33 @@ export function render(): void {
           : 'text-rose-600 dark:text-rose-400';
         const sign = t.type === 'income' ? '+' : '-';
         const isChecked = selectedTxIds.has(t.id);
-        list.insertAdjacentHTML('beforeend', `
-          <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group${isChecked ? ' bg-indigo-50 dark:bg-indigo-900/10' : ''}">
-            <td class="pl-2 py-3 w-8">
-              <input type="checkbox" data-tx-checkbox="${t.id}" ${isChecked ? 'checked' : ''} class="accent-indigo-600 rounded cursor-pointer">
-            </td>
-            <td class="py-3">
-              <div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div>
-              <div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(t.category)}</div>
-              ${t.notes ? `<div class="text-[10px] text-slate-400 mt-1 italic truncate max-w-[200px]" title="${esc(t.notes)}">${esc(t.notes)}</div>` : ''}
-            </td>
-            <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
-            <td class="text-right pr-2">
-              <button type="button" data-edit-tx="${t.id}" class="text-slate-300 hover:text-indigo-500 transition px-2"><i class="fas fa-pencil-alt"></i></button>
-              <button type="button" data-del-tx="${t.id}" class="text-slate-300 hover:text-rose-500 transition px-2"><i class="fas fa-trash-alt"></i></button>
-            </td>
-          </tr>`);
+        // Build tag chips HTML (all values from stored tags array, already sanitized on save)
+        const tagsHtml = (t.tags ?? []).length
+          ? `<div class="flex flex-wrap gap-1 mt-1">${(t.tags!).map(tag =>
+              `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">#${esc(tag)}</span>`
+            ).join('')}</div>`
+          : '';
+        const tr = document.createElement('tr');
+        tr.className = `border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group${isChecked ? ' bg-indigo-50 dark:bg-indigo-900/10' : ''}`;
+        tr.innerHTML = `
+          <td class="pl-2 py-3 w-8">
+            <input type="checkbox" data-tx-checkbox="${esc(t.id)}" ${isChecked ? 'checked' : ''} class="accent-indigo-600 rounded cursor-pointer">
+          </td>
+          <td class="py-3">
+            <div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div>
+            <div class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500">${esc(t.category)}</div>
+            ${t.notes ? `<div class="text-[10px] text-slate-400 mt-1 italic truncate max-w-[200px]" title="${esc(t.notes)}">${esc(t.notes)}</div>` : ''}
+            ${tagsHtml}
+          </td>
+          <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
+          <td class="text-right pr-2">
+            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-300 hover:text-indigo-500 transition px-2" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt"></i></button>
+            <button type="button" data-del-tx="${esc(t.id)}" class="text-slate-300 hover:text-rose-500 transition px-2" aria-label="Delete ${esc(t.desc)}"><i class="fas fa-trash-alt"></i></button>
+          </td>`;
+        frag.appendChild(tr);
       });
+      list.innerHTML = '';
+      list.appendChild(frag);
       // Keep select-all checkbox in sync
       const selectAll = document.getElementById('selectAllTx') as HTMLInputElement | null;
       if (selectAll) {
@@ -269,6 +309,45 @@ export function renderBudgets(): void {
     });
     document.getElementById('budgetEmpty')?.classList.toggle('hidden', hasBudget);
   }
+
+  // ─ Budget alerts (only for current month to avoid noise on historical views) ─
+  checkBudgetAlerts();
+}
+
+// Budget alert state: track which alerts have already been shown this session
+// so we don't spam the user on every re-render.
+const _shownBudgetAlerts = new Set<string>();
+
+function checkBudgetAlerts(): void {
+  const todayKey = getMonthKey(new Date());
+  if (getMonthPicker().value !== todayKey) return; // only alert on current month
+  const cats = getCurrentCats(todayKey);
+  Object.keys(db.budgets).forEach(c => {
+    const budget = db.budgets[c];
+    if (!budget) return;
+    const spent = cats[c] ?? 0;
+    const pct = (spent / budget) * 100;
+    // 100% alert
+    const overKey = `over:${c}:${todayKey}`;
+    if (pct >= 100 && !_shownBudgetAlerts.has(overKey)) {
+      _shownBudgetAlerts.add(overKey);
+      showBudgetAlert(c, spent, budget, true);
+    }
+    // 80% alert (only if not already over 100%)
+    const warnKey = `warn:${c}:${todayKey}`;
+    if (pct >= BUDGET_WARN_PCT && pct < 100 && !_shownBudgetAlerts.has(warnKey)) {
+      _shownBudgetAlerts.add(warnKey);
+      showBudgetAlert(c, spent, budget, false);
+    }
+  });
+}
+
+function showBudgetAlert(cat: string, spent: number, budget: number, over: boolean): void {
+  const pct = Math.round((spent / budget) * 100);
+  const msg = over
+    ? `⚠️ ${cat} budget exceeded! Spent ${sym()}${fmt(spent)} of ${sym()}${fmt(budget)} (${pct}%)`
+    : `📊 ${cat} budget at ${pct}% — ${sym()}${fmt(budget - spent)} remaining`;
+  showToast(msg);
 }
 
 // ─── Calendar ─────────────────────────────────────────────────────────────────

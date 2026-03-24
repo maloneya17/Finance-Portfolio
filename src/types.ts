@@ -10,6 +10,7 @@ export interface Transaction {
   category: string;
   type: TxType;
   notes?: string;     // optional memo / extra detail
+  tags?: string[];    // user-defined labels e.g. ["tax-deductible", "work", "joint"]
 }
 
 export interface Bill {

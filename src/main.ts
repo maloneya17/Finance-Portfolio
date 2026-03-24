@@ -256,6 +256,27 @@ function wireEvents(): void {
           break;
         }
         case 'bulk-clear': selectedTxIds.clear(); render(); break;
+        case 'toggle-filter': {
+          const panel = document.getElementById('advFilterPanel');
+          const btn   = document.getElementById('btnFilterToggle');
+          if (panel) {
+            const open = panel.classList.toggle('hidden') === false;
+            btn?.setAttribute('aria-expanded', String(open));
+          }
+          break;
+        }
+        case 'clear-filters': {
+          (document.getElementById('filterDateFrom') as HTMLInputElement | null)
+            && ((document.getElementById('filterDateFrom') as HTMLInputElement).value = '');
+          (document.getElementById('filterDateTo')   as HTMLInputElement | null)
+            && ((document.getElementById('filterDateTo')   as HTMLInputElement).value = '');
+          (document.getElementById('filterAmtMin')   as HTMLInputElement | null)
+            && ((document.getElementById('filterAmtMin')   as HTMLInputElement).value = '');
+          (document.getElementById('filterAmtMax')   as HTMLInputElement | null)
+            && ((document.getElementById('filterAmtMax')   as HTMLInputElement).value = '');
+          render();
+          break;
+        }
       }
     }
   });
@@ -313,6 +334,11 @@ function wireEvents(): void {
   // Category filter
   document.getElementById('txCatFilter')?.addEventListener('change', render);
 
+  // Advanced filter inputs — re-render on any change
+  ['filterDateFrom', 'filterDateTo', 'filterAmtMin', 'filterAmtMax'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', render);
+  });
+
   // Month picker
   monthPickerEl.addEventListener('change', render);
 
@@ -343,6 +369,20 @@ function wireEvents(): void {
 
   // Sidebar overlay click
   document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
+
+  // ─── Online / offline status indicator ─────────────────────────────────────
+  function updateOfflineBanner(): void {
+    const banner = document.getElementById('offlineBanner');
+    if (!banner) return;
+    if (navigator.onLine) {
+      banner.classList.add('hidden');
+    } else {
+      banner.classList.remove('hidden');
+    }
+  }
+  window.addEventListener('online',  updateOfflineBanner);
+  window.addEventListener('offline', updateOfflineBanner);
+  updateOfflineBanner(); // initialise on boot
 }
 
 // ─── Auth overlay ─────────────────────────────────────────────────────────────

@@ -53,11 +53,19 @@ export function saveTransaction(): void {
   const dateEl  = document.getElementById('txDate')  as HTMLInputElement | null;
   const notesEl = document.getElementById('txNotes') as HTMLInputElement | null;
 
+  const tagsEl  = document.getElementById('txTags') as HTMLInputElement | null;
+
   const desc  = descEl?.value.trim().slice(0, MAX_DESC_LENGTH) ?? '';
   const amt   = math(amtEl?.value ?? '');
   const cat   = catEl?.value ?? '';
   const date  = dateEl?.value ?? '';
   const notes = notesEl?.value.trim().slice(0, 200) ?? '';
+  // Parse comma-separated tags: trim, lowercase, remove empty, max 10 tags of 30 chars each
+  const tags  = (tagsEl?.value ?? '')
+    .split(',')
+    .map(t => t.trim().toLowerCase().slice(0, 30))
+    .filter(t => t.length > 0)
+    .slice(0, 10);
 
   if (!desc) return showToast('Please enter a description');
   if (!amt || amt <= 0) return showToast('Please enter a valid positive amount');
@@ -73,6 +81,7 @@ export function saveTransaction(): void {
         ...db.transactions[srcKey][txIndex],
         desc, amount: amt, category: cat, type: currentTxType,
         date: date || undefined, notes: notes || undefined,
+        tags: tags.length ? tags : undefined,
         updatedAt: Date.now(),
       };
     } else {
@@ -85,10 +94,12 @@ export function saveTransaction(): void {
       id: genId(), updatedAt: Date.now(),
       desc, amount: amt, category: cat, type: currentTxType,
       date: date || undefined, notes: notes || undefined,
+      tags: tags.length ? tags : undefined,
     });
     if (descEl) descEl.value = '';
     if (amtEl)  amtEl.value  = '';
     if (notesEl) notesEl.value = '';
+    if (tagsEl)  tagsEl.value  = '';
     // Keep date as today, keep category for fast repeat entry
   }
   save();
@@ -105,6 +116,7 @@ export function editTx(id: string): void {
   const txCatEl   = sel('txCat');   if (txCatEl)   txCatEl.value   = tx.category;
   const txDateEl  = inp('txDate');  if (txDateEl)  txDateEl.value  = tx.date ?? '';
   const txNotesEl = inp('txNotes'); if (txNotesEl) txNotesEl.value = tx.notes ?? '';
+  const txTagsEl  = inp('txTags');  if (txTagsEl)  txTagsEl.value  = (tx.tags ?? []).join(', ');
   setTxType(tx.type);
   setText('txFormTitle', 'Edit Transaction');
   const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Update Transaction';
@@ -118,6 +130,7 @@ export function resetTxForm(): void {
   const txAmtEl   = inp('txAmt');   if (txAmtEl)   txAmtEl.value   = '';
   const txDateEl  = inp('txDate');  if (txDateEl)  txDateEl.value  = new Date().toISOString().slice(0, 10);
   const txNotesEl = inp('txNotes'); if (txNotesEl) txNotesEl.value = '';
+  const txTagsEl  = inp('txTags');  if (txTagsEl)  txTagsEl.value  = '';
   const txCatEl   = sel('txCat');   if (txCatEl?.options.length) txCatEl.selectedIndex = 0;
   setText('txFormTitle', 'Add Transaction');
   const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Add Transaction';
