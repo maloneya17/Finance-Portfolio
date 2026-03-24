@@ -841,7 +841,7 @@ export function executeImport(): void {
       let rawAmtStr = row[amtIdx]?.replace(/[^0-9.-]/g, '') ?? '';
       if (rawAmtStr.endsWith('-')) rawAmtStr = '-' + rawAmtStr.slice(0, -1);
       let rawAmt = parseFloat(rawAmtStr);
-      if (isNaN(rawAmt)) { skipped++; skippedRows.push(`Row ${i + 1}: invalid amount "${row[amtIdx] ?? ''}"`); continue; }
+      if (isNaN(rawAmt) || !isFinite(rawAmt)) { skipped++; skippedRows.push(`Row ${i + 1}: invalid amount "${row[amtIdx] ?? ''}"`); continue; }
       if (rawAmt === 0) { skipped++; skippedRows.push(`Row ${i + 1}: zero amount skipped`); continue; }
       if (invert) rawAmt *= -1;
 

@@ -114,7 +114,7 @@ export async function manualSync(ui = false): Promise<void> {
 
     // Enforce response size limit before reading body
     const contentLength = response.headers.get('content-length');
-    if (contentLength && parseInt(contentLength) > MAX_SYNC_RESPONSE_BYTES) {
+    if (contentLength && parseInt(contentLength, 10) > MAX_SYNC_RESPONSE_BYTES) {
       throw new Error('Cloud response too large (> 10 MB). Data may be corrupted.');
     }
     const rawText = await response.text();
@@ -283,11 +283,12 @@ export async function manualSync(ui = false): Promise<void> {
       body = JSON.stringify(payload);
     }
 
-    await fetch(db.cloudURL, {
+    const pushRes = await fetch(db.cloudURL, {
       method: 'POST',
       body,
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     });
+    if (!pushRes.ok) throw new Error(`Upload failed (${pushRes.status} ${pushRes.statusText})`);
 
     if (ui) showToast('Sync Successful!');
   } catch (e: unknown) {
