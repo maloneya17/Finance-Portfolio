@@ -2,80 +2,316 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CORE */
+/* ─── CORE ─────────────────────────────────────────────────────────────────── */
 body { transition: background-color 0.3s, color 0.3s; }
+
+/* ─── NAVIGATION ────────────────────────────────────────────────────────────── */
 .nav-item { transition: all 0.2s ease; }
 .nav-item:hover { transform: translateX(4px); }
+.nav-item:hover i { transform: scale(1.15); transition: transform 0.2s ease; }
 .nav-item.active { box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transform: translateX(0); }
 
-/* CALENDAR */
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; border-radius: 12px; overflow: hidden; }
-.calendar-day { min-height: 130px; padding: 8px; position: relative; transition: background-color 0.2s; }
+/* ─── BUTTON MICRO-INTERACTIONS ─────────────────────────────────────────────── */
+/* Every interactive button gets a lift on hover and a press-down on active */
+button:not([disabled]):not([data-action="toggle-theme"]):not([data-action="toggle-privacy"]) {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.15s ease,
+              color 0.15s ease,
+              opacity 0.15s ease;
+}
+/* Primary / action buttons: lift on hover */
+button.btn-lift:not([disabled]):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+/* All buttons: press feedback */
+button:not([disabled]):active {
+  transform: scale(0.96) !important;
+}
 
-/* BILLS */
-.bill-chip { display: flex; justify-content: space-between; align-items: center; font-size: 10px; padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; cursor: pointer; border-left: 3px solid transparent; }
+/* ─── FOCUS VISIBLE RINGS ────────────────────────────────────────────────────── */
+/* Keyboard-only visible focus — doesn't show on mouse clicks */
+:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+/* Remove redundant focus ring on elements that already have custom styling */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none; /* handled by Tailwind focus:ring classes */
+}
+[role="button"]:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* ─── CALENDAR ────────────────────────────────────────────────────────────────── */
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; border-radius: 12px; overflow: hidden; }
+.calendar-day { min-height: 130px; padding: 8px; position: relative; transition: background-color 0.2s; content-visibility: auto; }
+
+/* ─── BILLS ───────────────────────────────────────────────────────────────────── */
+.bill-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background-color 0.15s ease, transform 0.15s ease, border-left-color 0.15s ease;
+}
+.bill-chip:hover {
+  transform: translateX(2px);
+  border-left-color: currentColor;
+}
 .bill-chip:hover .btn-delete-bill { opacity: 1; }
 .btn-delete-bill { opacity: 0; transition: opacity 0.2s; }
 
-/* ANIMATION */
+/* ─── CARD HOVER LIFT ────────────────────────────────────────────────────────── */
+/* KPI cards and main cards get a subtle lift on hover */
+.card {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+.dark .card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+/* Suppress lift on cards that contain forms (transaction form, bill form etc.) */
+.card.no-lift:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ─── ANIMATIONS ──────────────────────────────────────────────────────────────── */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .fade-in { animation: fadeIn 0.3s ease-in-out; }
 
-/* PRIVACY MODE BLUR */
+@keyframes slideInRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+.slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Save success pulse on the Add Transaction button */
+@keyframes successPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.tx-save-success { animation: successPulse 0.55s ease-out; }
+
+/* ─── PRIVACY MODE BLUR ───────────────────────────────────────────────────────── */
 body.privacy-active .money-val,
 body.privacy-active canvas,
 body.privacy-active .bill-amt {
-    filter: blur(10px);
-    opacity: 0.25;
-    user-select: none;
-    transition: filter 0.3s ease, opacity 0.3s ease;
+  filter: blur(10px);
+  opacity: 0.25;
+  user-select: none;
+  transition: filter 0.3s ease, opacity 0.3s ease;
 }
 
-/* VIEW TRANSITIONS */
-@keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.view-enter { animation: viewIn 0.25s ease-out forwards; }
+/* ─── VIEW TRANSITIONS ────────────────────────────────────────────────────────── */
+/* Smoother: scale + translate, with a subtle spring */
+@keyframes viewIn {
+  from { opacity: 0; transform: scale(0.98) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+.view-enter { animation: viewIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
 
-/* MOBILE TRANSACTION CARDS */
+/* ─── MOBILE TRANSACTION CARDS ────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-    #listTx thead { display: none; }
-    #listTx tr { display: flex; flex-wrap: wrap; padding: 0.75rem 0.5rem; border-bottom: 1px solid #f1f5f9; }
-    .dark #listTx tr { border-color: #1e293b; }
-    #listTx tr td:first-child { flex: 1 1 100%; margin-bottom: 4px; }
-    #listTx tr td:nth-child(2) { flex: 1; font-size: 0.9rem; }
-    #listTx tr td:nth-child(3) { flex: 0; }
+  #listTx thead { display: none; }
+  /* Each row becomes a rounded card */
+  #listTx tr {
+    display: grid;
+    grid-template-columns: 24px 1fr auto auto;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .dark #listTx tr { border-color: #1e293b; }
+  /* Hide select-all checkbox col on mobile */
+  #listTx tr td:first-child { display: flex; align-items: center; }
+  #listTx tr td:nth-child(2) { font-size: 0.875rem; min-width: 0; }
+  #listTx tr td:nth-child(3) { font-size: 0.8125rem; white-space: nowrap; }
+  #listTx tr td:nth-child(4) { display: flex; }
 }
 
-/* BILL PAID CHIP */
-.bill-chip.paid { opacity: 0.65; }
+/* ─── BILL PAID STATE ─────────────────────────────────────────────────────────── */
+.bill-chip.paid { opacity: 0.6; }
 .bill-chip.paid .bill-name { text-decoration: line-through; }
 
-/* PROGRESS BARS */
-.progress-bar-bg { height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden; }
-.dark .progress-bar-bg { background: #1e293b; }
-.progress-bar-fill { height: 8px; border-radius: 9999px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-
-/* TOAST */
-#toastContainer { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
-.toast { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; background: #1e293b; color: #f1f5f9; border-radius: 0.75rem; font-size: 0.8125rem; font-weight: 500; box-shadow: 0 4px 24px rgba(0,0,0,0.25); animation: fadeIn 0.3s ease; pointer-events: all; min-width: 200px; }
-.toast-btn { background: none; border: none; color: #818cf8; font-weight: 700; cursor: pointer; font-size: 0.8125rem; padding: 0; margin-left: auto; white-space: nowrap; }
-
-/* MOBILE SIDEBAR */
-@media (max-width: 768px) {
-    #sidebar { position: fixed; left: -280px; height: 100vh; transition: left 0.3s ease; z-index: 200; overflow-y: auto; }
-    #sidebar.open { left: 0; }
-    #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; display: none; }
-    #sidebarOverlay.open { display: block; }
-    #mobileMenuBtn { display: flex !important; }
-    #main-content { padding: 1rem; }
+/* ─── PROGRESS BARS ───────────────────────────────────────────────────────────── */
+.progress-bar-bg {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
 }
-@media (min-width: 769px) { #mobileMenuBtn { display: none !important; } }
+.dark .progress-bar-bg { background: #1e293b; }
+.progress-bar-fill {
+  height: 8px;
+  border-radius: 9999px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-/* AUTH */
+/* ─── TOAST ────────────────────────────────────────────────────────────────────── */
+#toastContainer {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+  max-width: calc(100vw - 3rem);
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #1e293b;
+  color: #f1f5f9;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06);
+  animation: slideInRight 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+  pointer-events: all;
+  min-width: 200px;
+  backdrop-filter: blur(12px);
+}
+@keyframes toastOut { to { opacity: 0; transform: translateX(12px); } }
+.toast.dismissing { animation: toastOut 0.2s ease-in forwards; }
+.toast-btn {
+  background: none;
+  border: none;
+  color: #818cf8;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  padding: 0;
+  margin-left: auto;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.toast-btn:hover { color: #a5b4fc; }
+
+/* ─── MOBILE SIDEBAR ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar {
+    position: fixed;
+    left: -280px;
+    /* Use dynamic viewport height so the sidebar fills correctly when mobile
+       browser chrome (address bar) is shown or hidden */
+    height: 100dvh;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 200;
+    overflow-y: auto;
+    /* Safe area for notched devices */
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+  #sidebar.open { left: 0; box-shadow: 0 0 40px rgba(0,0,0,0.4); }
+  #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; display: none; }
+  #sidebarOverlay.open { display: block; }
+  #mobileMenuBtn { display: flex !important; }
+  #main-content { padding: 1rem; }
+}
+@media (min-width: 769px) { #mobileMenuBtn { display: none !important; } #fabAddTx { display: none !important; } }
+
+/* ─── MOBILE TOUCH TARGETS ────────────────────────────────────────────────────── */
+/* Ensure all interactive controls meet 44×44px minimum on touch devices */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    /* Prevent iOS from zooming on focus — needs font-size ≥ 16px */
+    font-size: max(16px, 0.875rem) !important;
+    min-height: 44px;
+  }
+  button {
+    min-height: 44px;
+  }
+  /* Exception: very small icon-only buttons (delete/edit inside rows) */
+  [data-del-tx],
+  [data-edit-tx],
+  [data-del-bill],
+  [data-edit-bill] {
+    min-height: 32px;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* ─── FLOATING ACTION BUTTON (mobile quick-add transaction) ──────────────────── */
+#fabAddTx {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 40;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #4f46e5;
+  color: white;
+  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.5);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+#fabAddTx:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 28px rgba(79, 70, 229, 0.65);
+}
+#fabAddTx:active { transform: scale(0.92); }
+
+/* ─── SKELETON LOADERS ────────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* ─── AUTH ────────────────────────────────────────────────────────────────────── */
 @keyframes authShake {
-    0%, 100% { transform: translateX(0); }
-    20%       { transform: translateX(-8px); }
-    40%       { transform: translateX(8px); }
-    60%       { transform: translateX(-5px); }
-    80%       { transform: translateX(5px); }
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px); }
 }
 .auth-shake { animation: authShake 0.4s ease-in-out; border-color: #f43f5e !important; }
+
+/* ─── MONEY VALUE FORMATTING ──────────────────────────────────────────────────── */
+/* Tabular numbers so values don't shift width as they update */
+.money-val {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ─── TAG CHIPS ───────────────────────────────────────────────────────────────── */
+/* Smooth appearance for new tags added after save */
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.tag-chip:hover { transform: scale(1.05); }

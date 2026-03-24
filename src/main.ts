@@ -225,7 +225,18 @@ function wireEvents(): void {
         case 'sync': manualSync(true); break;
         case 'go-current-month': goToCurrentMonth(); break;
         case 'apply-recurring': applyRecurring(); break;
-        case 'save-tx': saveTransaction(); break;
+        case 'save-tx': {
+          saveTransaction();
+          // Brief success pulse on the submit button to confirm the save
+          const submitBtn = document.getElementById('btnSubmitTx');
+          if (submitBtn) {
+            submitBtn.classList.remove('tx-save-success');
+            // Reflow trick: force the browser to re-evaluate so re-adding the class restarts the animation
+            void (submitBtn as HTMLElement).offsetWidth;
+            submitBtn.classList.add('tx-save-success');
+          }
+          break;
+        }
         case 'cancel-edit-tx': resetTxForm(); break;
         case 'save-bill': saveBill(); break;
         case 'cancel-bill': cancelBillEdit(); break;
@@ -369,6 +380,16 @@ function wireEvents(): void {
 
   // Sidebar overlay click
   document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
+
+  // Mobile FAB — switch to transactions view and focus the description input
+  document.getElementById('fabAddTx')?.addEventListener('click', () => {
+    switchView('dashboard');
+    setTimeout(() => {
+      const txDesc = document.getElementById('txDesc') as HTMLInputElement | null;
+      txDesc?.focus();
+      txDesc?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  });
 
   // ─── Online / offline status indicator ─────────────────────────────────────
   function updateOfflineBanner(): void {

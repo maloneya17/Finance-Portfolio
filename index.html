@@ -22,8 +22,9 @@
     <div id="toastContainer" role="region" aria-live="assertive" aria-atomic="false"></div>
     <div id="sidebarOverlay"></div>
     <button id="mobileMenuBtn" type="button" data-action="toggle-sidebar" style="display:none"
-        class="fixed top-4 left-4 z-[201] bg-slate-900 text-white p-2.5 rounded-lg shadow-lg items-center justify-center">
-        <i class="fas fa-bars"></i>
+        aria-label="Open navigation menu"
+        class="fixed top-3 left-3 z-[201] bg-slate-900 text-white w-11 h-11 rounded-xl shadow-lg flex items-center justify-center">
+        <i class="fas fa-bars text-base"></i>
     </button>
 
     <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between z-50">
@@ -110,11 +111,11 @@
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110">
                         <i class="fas fa-edit text-6xl"></i>
                     </div>
-                    <p class="text-xs text-slate-400 font-bold uppercase mb-1">Annual Income Target</p>
+                    <p class="text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-1">Annual Income Target</p>
                     <h2 class="text-3xl font-extrabold money-val" id="kpiSalary">£0.00</h2>
-                    <div class="mt-4 flex gap-4 text-xs font-medium text-slate-400">
-                        <span><i class="fas fa-calendar-check text-emerald-400"></i> YTD: <span id="kpiYTD" class="text-white money-val">£0</span></span>
-                        <span><i class="fas fa-clock text-indigo-400"></i> Avg: <span id="kpiAvg" class="text-white money-val">£0</span></span>
+                    <div class="mt-4 flex gap-4 text-xs font-medium text-slate-300">
+                        <span><i class="fas fa-calendar-check text-emerald-400 mr-1"></i>YTD: <span id="kpiYTD" class="text-white money-val font-bold">£0</span></span>
+                        <span><i class="fas fa-clock text-indigo-300 mr-1"></i>Avg: <span id="kpiAvg" class="text-white money-val font-bold">£0</span></span>
                     </div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-emerald-500 rounded-2xl p-6 shadow-sm"
@@ -129,7 +130,8 @@
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-violet-500 rounded-2xl p-6 shadow-sm">
                     <div class="overflow-hidden">
                         <p class="text-xs text-slate-400 font-bold uppercase">Top Category</p>
-                        <h3 class="text-xl font-bold text-violet-600 dark:text-violet-400 mt-1 truncate" id="kpiMaxCat">N/A</h3>
+                        <h3 class="text-xl font-bold text-violet-600 dark:text-violet-400 mt-1 truncate cursor-default"
+                            id="kpiMaxCat" title="N/A">N/A</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 money-val" id="kpiMaxVal">£0.00</p>
                     </div>
                 </div>
@@ -186,7 +188,7 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm h-fit sticky top-6">
+                <div class="card no-lift bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm h-fit sticky top-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="txFormTitle">Add Transaction</h3>
                     </div>
@@ -229,7 +231,7 @@
                         </div>
                         <div class="flex items-center gap-2 mt-2">
                             <button type="button" data-action="save-tx" id="btnSubmitTx"
-                                class="flex-1 py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition">Add Transaction</button>
+                                class="btn-lift flex-1 py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition">Add Transaction</button>
                             <button type="button" data-action="cancel-edit-tx" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline px-2">Cancel</button>
                         </div>
                     </form>
@@ -309,8 +311,14 @@
                             </thead>
                             <tbody id="listTx" class="text-sm text-slate-700 dark:text-slate-300" aria-live="polite" aria-relevant="all"></tbody>
                         </table>
-                        <div id="emptyState" class="hidden py-12 text-center" aria-live="polite">
-                            <p class="text-slate-400 font-medium text-sm">No transactions found.</p>
+                        <div id="emptyState" class="hidden py-14 text-center" aria-live="polite">
+                            <div class="flex justify-center mb-4">
+                                <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                    <i class="fas fa-receipt text-2xl text-slate-300 dark:text-slate-600"></i>
+                                </div>
+                            </div>
+                            <p class="text-slate-600 dark:text-slate-300 font-bold text-base mb-1">No transactions yet</p>
+                            <p class="text-slate-400 text-sm" id="emptyStateMsg">Add your first transaction to get started.</p>
                         </div>
                     </div>
                 </div>
@@ -867,6 +875,12 @@
 
         </div>
     </div>
+
+    <!-- Mobile FAB: quick-add transaction (hidden on desktop via CSS) -->
+    <button id="fabAddTx" type="button" aria-label="Add transaction"
+        title="Add transaction">
+        <i class="fas fa-plus text-xl"></i>
+    </button>
 
 </body>
 </html>

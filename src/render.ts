@@ -129,12 +129,12 @@ export function render(): void {
     const emptyEl = document.getElementById('emptyState');
     if (emptyEl) {
       emptyEl.classList.toggle('hidden', filtered.length > 0);
-      // Distinguish "no data at all" from "data exists but filtered out"
-      const msgEl = emptyEl.querySelector('p');
+      // Update the sub-message to distinguish "no data" from "filtered out"
+      const msgEl = document.getElementById('emptyStateMsg');
       if (msgEl) {
         msgEl.textContent = data.length > 0 && filtered.length === 0
-          ? 'No matching transactions — try a different search or filter.'
-          : 'No transactions this month yet.';
+          ? 'No results match your search or filters.'
+          : 'Add your first transaction to get started.';
       }
     }
 
@@ -172,6 +172,9 @@ export function render(): void {
     let maxCat = 'N/A', maxVal = 0;
     for (const [c, v] of Object.entries(cats)) { if (v > maxVal) { maxVal = v; maxCat = c; } }
     setText('kpiMaxCat', maxCat);
+    // Keep tooltip in sync so truncated names are readable on hover
+    const maxCatEl = document.getElementById('kpiMaxCat');
+    if (maxCatEl) maxCatEl.title = maxCat;
     setText('kpiMaxVal', `${sym()}${fmt(maxVal)}`);
 
     const savedAmt = inc - exp;
