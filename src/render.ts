@@ -511,7 +511,7 @@ export function renderDropdowns(): void {
   if (sel) {
     const cur = sel.value;
     sel.innerHTML = '';
-    db.categories.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+    db.categories.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
     sel.insertAdjacentHTML('beforeend', `<option value="ADD_NEW">+ New Category...</option>`);
     if (db.categories.includes(cur)) sel.value = cur;
   }
@@ -520,21 +520,21 @@ export function renderDropdowns(): void {
   if (filter) {
     const cf = filter.value;
     filter.innerHTML = '<option value="">All Categories</option>';
-    db.categories.forEach(c => filter.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+    db.categories.forEach(c => filter.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
     if (db.categories.includes(cf)) filter.value = cf;
   }
 
   const recCat = document.getElementById('recCat') as HTMLSelectElement | null;
   if (recCat) {
     recCat.innerHTML = '';
-    db.categories.forEach(c => recCat.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+    db.categories.forEach(c => recCat.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
   }
 
   const billCat = document.getElementById('billCat') as HTMLSelectElement | null;
   if (billCat) {
     const bc = billCat.value;
     billCat.innerHTML = '';
-    db.categories.forEach(c => billCat.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+    db.categories.forEach(c => billCat.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
     if (db.categories.includes(bc)) billCat.value = bc;
     else billCat.value = 'Bills';
   }
@@ -544,7 +544,7 @@ export function renderDropdowns(): void {
   if (bulkCat) {
     const bv = bulkCat.value;
     bulkCat.innerHTML = '<option value="">Pick category…</option>';
-    db.categories.forEach(c => bulkCat.insertAdjacentHTML('beforeend', `<option value="${c}">${esc(c)}</option>`));
+    db.categories.forEach(c => bulkCat.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
     if (db.categories.includes(bv)) bulkCat.value = bv;
   }
 }

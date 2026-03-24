@@ -873,6 +873,11 @@ export function executeImport(): void {
       if (!year || !month || isNaN(monthInt) || monthInt < 1 || monthInt > 12 || isNaN(dayInt) || dayInt < 1 || dayInt > 31) {
         skipped++; skippedRows.push(`Row ${i + 1}: unrecognised date "${dateStr}"`); continue;
       }
+      // Reject calendar-impossible dates (e.g. Feb 30, Apr 31). new Date rolls over
+      // to the next month for out-of-range days, so a mismatch means the day was invalid.
+      if (new Date(parseInt(year, 10), monthInt - 1, dayInt).getDate() !== dayInt) {
+        skipped++; skippedRows.push(`Row ${i + 1}: invalid date "${dateStr}" (day out of range for month)`); continue;
+      }
       const monthKey = `${year}-${month.padStart(2, '0')}`;
       // Always store date in YYYY-MM-DD format regardless of input format
       const isoDate  = `${year}-${month.padStart(2, '0')}-${String(dayInt).padStart(2, '0')}`;

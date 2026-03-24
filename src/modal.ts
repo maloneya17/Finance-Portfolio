@@ -65,13 +65,18 @@ export function showTextInputModal(opts: TextInputModalOpts): Promise<string | n
     inputEl.focus();
     if (opts.inputType !== 'number') inputEl.select();
 
-    const cleanup = (val: string | null) => { overlay.remove(); resolve(val); };
+    // Hoist so cleanup() can always deregister the keydown listener regardless
+    // of how the modal is dismissed (button, overlay, Enter, or Escape).
+    let kbHandler: (e: KeyboardEvent) => void;
+    const cleanup = (val: string | null) => {
+      document.removeEventListener('keydown', kbHandler);
+      overlay.remove();
+      resolve(val);
+    };
     card.querySelector('#_modalConfirm')!.addEventListener('click', () => cleanup(inputEl.value));
     card.querySelector('#_modalCancel')!.addEventListener('click', () => cleanup(null));
     overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(null); });
-    const kbHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { document.removeEventListener('keydown', kbHandler); cleanup(null); }
-    };
+    kbHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') cleanup(null); };
     document.addEventListener('keydown', kbHandler);
     inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') cleanup(inputEl.value); });
   });
@@ -108,13 +113,16 @@ export function showConfirmModal(opts: ConfirmModalOpts): Promise<boolean> {
     document.body.appendChild(overlay);
     (card.querySelector('#_modalConfirm') as HTMLButtonElement | null)?.focus();
 
-    const cleanup = (val: boolean) => { overlay.remove(); resolve(val); };
+    let kbHandler: (e: KeyboardEvent) => void;
+    const cleanup = (val: boolean) => {
+      document.removeEventListener('keydown', kbHandler);
+      overlay.remove();
+      resolve(val);
+    };
     card.querySelector('#_modalConfirm')!.addEventListener('click', () => cleanup(true));
     card.querySelector('#_modalCancel')!.addEventListener('click', () => cleanup(false));
     overlay.addEventListener('click', e => { if (e.target === overlay) cleanup(false); });
-    const kbHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { document.removeEventListener('keydown', kbHandler); cleanup(false); }
-    };
+    kbHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') cleanup(false); };
     document.addEventListener('keydown', kbHandler);
   });
 }

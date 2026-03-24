@@ -26,5 +26,8 @@ export function handleToastUndo(e: MouseEvent): void {
   const id = btn.dataset['undo'];
   if (!id) return;
   const el = document.getElementById(id) as (HTMLElement & { _undoFn?: () => void }) | null;
-  if (el?._undoFn) { el._undoFn(); el.remove(); }
+  if (el?._undoFn) {
+    try { el._undoFn(); } catch (err) { console.error('Undo error:', err); }
+    el.remove();
+  }
 }
