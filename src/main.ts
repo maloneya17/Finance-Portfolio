@@ -1,5 +1,6 @@
 import './style.css';
 import { registerSW } from 'virtual:pwa-register';
+import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin } from './auth';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
 import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar } from './render';
@@ -217,6 +218,7 @@ function wireEvents(): void {
     if (btn) {
       const action = btn.dataset['action'];
       switch (action) {
+        case 'lock': logout(); showAuthOverlay(); break;
         case 'toggle-theme': toggleTheme(); break;
         case 'toggle-privacy': togglePrivacy(); break;
         case 'sync': manualSync(true); break;
@@ -342,10 +344,170 @@ function wireEvents(): void {
   document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);
 }
 
+// ─── Auth overlay ─────────────────────────────────────────────────────────────
+function showAuthOverlay(): void {
+  const overlay = document.getElementById('authOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+
+  if (hasAccount()) {
+    document.getElementById('authSetup')?.classList.add('hidden');
+    const loginPanel = document.getElementById('authLogin');
+    loginPanel?.classList.remove('hidden');
+    const welcome = document.getElementById('authWelcome');
+    if (welcome) welcome.textContent = `Welcome back, ${getStoredUsername()}!`;
+    // Clear any previous PIN + error, then focus
+    const pinEl = document.getElementById('authLoginPin') as HTMLInputElement | null;
+    if (pinEl) pinEl.value = '';
+    document.getElementById('authLoginError')?.classList.add('hidden');
+    setTimeout(() => pinEl?.focus(), 80);
+  } else {
+    document.getElementById('authLogin')?.classList.add('hidden');
+    document.getElementById('authSetup')?.classList.remove('hidden');
+    document.getElementById('authSetupError')?.classList.add('hidden');
+    setTimeout(() => (document.getElementById('authUsername') as HTMLInputElement | null)?.focus(), 80);
+  }
+}
+
+function hideAuthOverlay(): void {
+  document.getElementById('authOverlay')?.classList.add('hidden');
+}
+
+/** Wires the auth overlay buttons (create account, unlock, forgot PIN). */
+function wireAuthEvents(): void {
+  // ── Create Account ──────────────────────────────────────────────────────────
+  document.getElementById('btnCreateAccount')?.addEventListener('click', async () => {
+    const username   = (document.getElementById('authUsername')   as HTMLInputElement).value;
+    const pin        = (document.getElementById('authNewPin')     as HTMLInputElement).value;
+    const confirmPin = (document.getElementById('authConfirmPin') as HTMLInputElement).value;
+    const errorEl    = document.getElementById('authSetupError');
+    const btnEl      = document.getElementById('btnCreateAccount') as HTMLButtonElement;
+
+    if (pin !== confirmPin) {
+      if (errorEl) { errorEl.textContent = 'PINs do not match.'; errorEl.classList.remove('hidden'); }
+      return;
+    }
+
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating…';
+
+    const err = await createAccount(username, pin);
+
+    btnEl.disabled = false;
+    btnEl.innerHTML = '<i class="fas fa-user-plus mr-2"></i>Create Account';
+
+    if (err) {
+      if (errorEl) { errorEl.textContent = err; errorEl.classList.remove('hidden'); }
+    } else {
+      errorEl?.classList.add('hidden');
+      hideAuthOverlay();
+      bootApp();
+    }
+  });
+
+  // ── Unlock (Login) ──────────────────────────────────────────────────────────
+  const doLogin = async (): Promise<void> => {
+    const pinEl   = document.getElementById('authLoginPin') as HTMLInputElement;
+    const errorEl = document.getElementById('authLoginError');
+    const btnEl   = document.getElementById('btnUnlock') as HTMLButtonElement;
+
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verifying…';
+
+    const err = await verifyPin(pinEl.value);
+
+    btnEl.disabled = false;
+    btnEl.innerHTML = '<i class="fas fa-unlock mr-2"></i>Unlock';
+
+    if (err) {
+      if (errorEl) { errorEl.textContent = err; errorEl.classList.remove('hidden'); }
+      pinEl.value = '';
+      // Shake animation on the input
+      pinEl.classList.add('auth-shake');
+      pinEl.addEventListener('animationend', () => pinEl.classList.remove('auth-shake'), { once: true });
+    } else {
+      errorEl?.classList.add('hidden');
+      hideAuthOverlay();
+    }
+  };
+
+  document.getElementById('btnUnlock')?.addEventListener('click', doLogin);
+  document.getElementById('authLoginPin')?.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') void doLogin();
+  });
+
+  // ── Forgot PIN ──────────────────────────────────────────────────────────────
+  document.getElementById('btnForgotPin')?.addEventListener('click', async () => {
+    const ok = await import('./modal').then(m => m.showConfirmModal({
+      title:   'Forgot PIN',
+      message: 'This will remove your login credentials. Your portfolio data will NOT be deleted. You\'ll be asked to create a new account.',
+      confirmLabel: 'Remove & Reset Login',
+      dangerous: true,
+    }));
+    if (ok) {
+      deleteAccount();
+      (document.getElementById('authNewPin')     as HTMLInputElement).value = '';
+      (document.getElementById('authConfirmPin') as HTMLInputElement).value = '';
+      (document.getElementById('authUsername')   as HTMLInputElement).value = '';
+      showAuthOverlay(); // re-show create-account panel
+    }
+  });
+
+  // ── Change PIN (Settings view) ──────────────────────────────────────────────
+  document.getElementById('btnChangePin')?.addEventListener('click', async () => {
+    const currentEl = document.getElementById('changePinCurrent') as HTMLInputElement;
+    const newEl     = document.getElementById('changePinNew')     as HTMLInputElement;
+    const confirmEl = document.getElementById('changePinConfirm') as HTMLInputElement;
+    const errorEl   = document.getElementById('changePinError');
+    const successEl = document.getElementById('changePinSuccess');
+    const btnEl     = document.getElementById('btnChangePin') as HTMLButtonElement;
+
+    errorEl?.classList.add('hidden');
+    successEl?.classList.add('hidden');
+    btnEl.disabled = true;
+    btnEl.textContent = 'Updating…';
+
+    const err = await changePin(currentEl.value, newEl.value, confirmEl.value);
+
+    btnEl.disabled = false;
+    btnEl.textContent = 'Update PIN';
+
+    if (err) {
+      if (errorEl) { errorEl.textContent = err; errorEl.classList.remove('hidden'); }
+    } else {
+      currentEl.value = '';
+      newEl.value     = '';
+      confirmEl.value = '';
+      successEl?.classList.remove('hidden');
+    }
+  });
+}
+
+/** Populates the Security card in Settings with the current username. */
+function refreshAuthSettingsCard(): void {
+  const card = document.getElementById('authSettingsCard');
+  if (!card) return;
+  if (hasAccount()) {
+    card.classList.remove('hidden');
+    const uEl = document.getElementById('authSettingsUsername');
+    if (uEl) uEl.textContent = getStoredUsername();
+  } else {
+    card.classList.add('hidden');
+  }
+}
+
 // ─── Boot ─────────────────────────────────────────────────────────────────────
-function boot(): void {
-  monthPickerEl = document.getElementById('monthPicker') as HTMLInputElement;
+
+/** Guard against bootApp() being called more than once (e.g. if auth events fire twice). */
+let _appBooted = false;
+
+/** Full app initialisation — only called after the user is authenticated. */
+function bootApp(): void {
+  if (_appBooted) return;
+  _appBooted = true;
+
   const now = new Date();
+  monthPickerEl = document.getElementById('monthPicker') as HTMLInputElement;
   monthPickerEl.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   setCurrencySymbol(db.currency);
@@ -359,12 +521,25 @@ function boot(): void {
   renderWealth();
   updateCloudStatus();
   renderRecurring();
+  refreshAuthSettingsCard();
   const currInput = document.getElementById('currencySymbolInput') as HTMLInputElement | null;
   if (currInput) currInput.value = db.currency;
   if (db.autoRecurring) {
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     if (db.lastAutoAppliedMonth !== currentMonthKey) applyRecurring(true);
   }
+}
+
+function boot(): void {
+  wireAuthEvents();
+
+  if (!isLoggedIn()) {
+    showAuthOverlay();
+    // bootApp() will be called once authentication succeeds.
+    return;
+  }
+
+  bootApp();
 }
 
 document.addEventListener('DOMContentLoaded', boot);
