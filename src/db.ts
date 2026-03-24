@@ -32,6 +32,9 @@ function repair(db: AppDB): AppDB {
   if (!db.wealth.history) db.wealth.history = {};
   if (!db.budgets) db.budgets = {};
   if (!db.categories) db.categories = [...DEFAULTS.categories];
+  // 'Bills' and 'Imported' are relied on by core features (bill toggles, CSV import).
+  // Ensure they always exist even after a category was deleted from an old backup.
+  if (!db.categories.includes('Bills')) db.categories.push('Bills');
   if (!db.categories.includes('Imported')) db.categories.push('Imported');
   if (!db.recurring) db.recurring = [];
   if (!db.deletedIds) db.deletedIds = [];

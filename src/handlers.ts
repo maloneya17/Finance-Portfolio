@@ -315,6 +315,7 @@ export function toggleBill(id: string): void {
     const prevStatus = db.billStatus[key][id];
     if (typeof prevStatus === 'object' && prevStatus.txId) {
       db.transactions[key] = (db.transactions[key] ?? []).filter(t => t.id !== prevStatus.txId);
+      if (db.transactions[key]?.length === 0) delete db.transactions[key]; // keep storage tidy
     }
     db.billStatus[key][id] = { paid: false, updated: Date.now() };
     save();
@@ -385,16 +386,25 @@ export function saveAsset(): void {
   if (isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
   if (val > MAX_TX_AMOUNT * 10) return showToast('Value exceeds maximum allowed');
 
-  const existing = db.wealth.assets.find(a => a.name.trim().toLowerCase() === name.trim().toLowerCase());
+  // Match on name AND type — consistent with consolidateWealth()'s deduplication key.
+  // Two assets with the same name but different types are distinct (e.g. "Savings"/Savings
+  // vs "Savings"/Investment) and must not be silently merged.
+  const existing = db.wealth.assets.find(
+    a => a.name.trim().toLowerCase() === name.trim().toLowerCase()
+      && (a.type ?? 'Other').toLowerCase() === type.toLowerCase(),
+  );
 
   if (editingAssetId) {
     const idx = db.wealth.assets.findIndex(a => a.id === editingAssetId);
     if (idx > -1) {
-      // Guard: renaming to match another asset would silently merge via consolidateWealth()
+      // Guard: renaming to match another asset of the SAME type would silently merge
+      // via consolidateWealth(). Different-type assets with the same name are allowed.
       const collision = db.wealth.assets.find(
-        a => a.id !== editingAssetId && a.name.trim().toLowerCase() === name.toLowerCase(),
+        a => a.id !== editingAssetId
+          && a.name.trim().toLowerCase() === name.toLowerCase()
+          && (a.type ?? 'Other').toLowerCase() === type.toLowerCase(),
       );
-      if (collision) { showToast(`An asset named "${collision.name}" already exists — use a unique name.`); return; }
+      if (collision) { showToast(`An asset named "${collision.name}" (${type}) already exists — use a unique name.`); return; }
       db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type, updatedAt: Date.now() };
     }
     cancelWealthEdit();
