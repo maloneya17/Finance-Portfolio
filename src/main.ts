@@ -3,7 +3,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin } from './auth';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
-import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar } from './render';
+import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
 import { debounce, math, setCurrencySymbol, csvEsc, sym } from './utils';
@@ -89,6 +89,7 @@ function switchView(id: string): void {
   if (id === 'reports') renderReports();
   if (id === 'bills') renderCalendar();
   if (id === 'wealth') renderWealth();
+  if (id === 'insights') renderInsights();
   // Note: render() below already calls renderBudgets() when the budget view is visible,
   // so we don't call it explicitly here to avoid a redundant double-render.
   render();

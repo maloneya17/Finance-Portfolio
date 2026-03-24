@@ -3,7 +3,12 @@ import { math, fmt, esc, sym, symFmt, getMonthKey } from './utils';
 import { BUDGET_WARN_PCT, CALENDAR_MAX_CHIPS } from './constants';
 import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats } from './charts';
 import { getMonthPicker } from './main';
-import { getRollover, getCurrentCats, consolidateWealth, isValidMonthKey } from './finance';
+import {
+  getRollover, getCurrentCats, consolidateWealth, isValidMonthKey,
+  getSpendingVelocity, getDailyBurnRate, getMonthEndForecast,
+  getCashRunway, getDebtPayoffPlans, getHealthScore, getRecentMonthKeys,
+  type VelocityEntry,
+} from './finance';
 
 export { getRollover, getCurrentCats };
 
@@ -128,6 +133,24 @@ export function render(): void {
       rateEl.className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : 'text-indigo-600 dark:text-indigo-400'}`;
     }
     setText('kpiSavingsAmt', isDeficit ? `${sym()}${fmt(Math.abs(savedAmt))} deficit` : `${sym()}${fmt(savedAmt)} saved`);
+
+    // ─ Second-row KPIs: daily burn, month-end projection, cash runway ─────────
+    const totalAssets = db.wealth.assets.reduce((a, b) => a + math(b.value), 0);
+    const totalDebts  = db.wealth.debts.reduce((a, b) => a + math(b.value), 0);
+    const netWorthKpi = totalAssets + (inc + rollover - exp) - totalDebts;
+    setText('kpiBurnRate', `${sym()}${fmt(getDailyBurnRate(key))}`);
+    setText('kpiForecast', `${sym()}${fmt(getMonthEndForecast(key))}`);
+    const runwayVal = getCashRunway(netWorthKpi, key);
+    const runwayKpiEl = document.getElementById('kpiRunway');
+    if (runwayKpiEl) {
+      runwayKpiEl.textContent = (!isFinite(runwayVal) || runwayVal > 999)
+        ? '999+ mo' : `${runwayVal.toFixed(1)} mo`;
+      runwayKpiEl.className = `text-2xl font-bold mt-1 money-val ${
+        runwayVal >= 6 ? 'text-teal-600 dark:text-teal-400' :
+        runwayVal >= 3 ? 'text-amber-600 dark:text-amber-400' :
+                         'text-rose-600 dark:text-rose-400'
+      }`;
+    }
 
     const todayKey = getMonthKey(new Date());
     const banner = document.getElementById('monthBanner');
@@ -400,6 +423,7 @@ export function renderWealth(): void {
       }
     }
     renderGoals();
+    renderDebtPlanner();
   } catch (e) {
     console.error('Wealth render error:', e);
   }
@@ -625,3 +649,207 @@ export function renderUpcomingBills(): void {
   }
 }
 
+// ─── Debt Payoff Planner ──────────────────────────────────────────────────────
+export function renderDebtPlanner(): void {
+  const container = document.getElementById('debtPlanner');
+  if (!container) return;
+
+  const plans = getDebtPayoffPlans();
+  if (plans.length === 0) {
+    container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Add liabilities with an interest rate or minimum payment to see payoff projections.</p>';
+    return;
+  }
+
+  container.innerHTML = plans.map(p => {
+    const never  = p.monthsToPayoff <= 0;
+    const yr     = Math.floor(p.monthsToPayoff / 12);
+    const mo     = p.monthsToPayoff % 12;
+    const timeStr = never ? '∞'
+      : yr > 0 ? `${yr}y ${mo}m` : `${mo}m`;
+
+    return `
+      <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">${esc(p.name)}</span>
+            ${p.annualRate > 0
+              ? `<span class="shrink-0 text-[10px] font-bold bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 px-1.5 py-0.5 rounded">${p.annualRate}% APR</span>`
+              : '<span class="shrink-0 text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">0% interest</span>'}
+          </div>
+          <div class="text-[10px] text-slate-500 mt-1">
+            Balance: <span class="font-semibold money-val">${symFmt(p.balance)}</span>
+            ${p.monthlyPayment > 0 ? `&nbsp;·&nbsp;Payment: <span class="font-semibold money-val">${symFmt(p.monthlyPayment)}/mo</span>` : ''}
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <div class="text-base font-bold ${never ? 'text-rose-500' : 'text-slate-700 dark:text-slate-200'}">${timeStr}</div>
+          ${!never && p.totalInterest > 0
+            ? `<div class="text-[10px] text-rose-400 money-val">${symFmt(p.totalInterest)} interest</div>`
+            : never ? '<div class="text-[10px] text-rose-400">Increase payment!</div>' : ''}
+          <div class="text-[10px] text-slate-400">${esc(p.payoffDateStr)}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── Insights view ────────────────────────────────────────────────────────────
+export function renderInsights(): void {
+  try {
+    const key = getMonthPicker().value;
+
+    // Net worth (needed for runway + health score)
+    const totalAssets = db.wealth.assets.reduce((a, b) => a + math(b.value), 0);
+    const totalDebts  = db.wealth.debts.reduce((a, b) => a + math(b.value), 0);
+    const txs = db.transactions[key] ?? [];
+    let mInc = 0, mExp = 0;
+    txs.forEach(t => { if (t.type === 'income') mInc += math(t.amount); else mExp += math(t.amount); });
+    const rollover = getRollover(key);
+    const netWorth = totalAssets + (mInc + rollover - mExp) - totalDebts;
+    const { fireTarget } = calcFireStats(netWorth);
+
+    // ─ Health score ───────────────────────────────────────────────────────────
+    const health = getHealthScore(key, netWorth, fireTarget);
+    const healthScoreEl = document.getElementById('insHealthScore');
+    if (healthScoreEl) {
+      healthScoreEl.textContent = String(health.total);
+      healthScoreEl.className = `text-5xl font-extrabold ${
+        health.total >= 75 ? 'text-emerald-400' :
+        health.total >= 50 ? 'text-amber-400' : 'text-rose-400'}`;
+    }
+    const healthLabelEl = document.getElementById('insHealthLabel');
+    if (healthLabelEl) {
+      healthLabelEl.textContent =
+        health.total >= 75 ? '✓ Excellent financial health' :
+        health.total >= 50 ? '~ Good — room to improve' :
+                             '! Needs attention';
+    }
+    const breakdownEl = document.getElementById('insHealthBreakdown');
+    if (breakdownEl) {
+      const items = [
+        { label: 'Savings rate',     val: health.savings, max: 40 },
+        { label: 'Budget adherence', val: health.budget,  max: 30 },
+        { label: '6-mo runway',      val: health.runway,  max: 20 },
+        { label: 'FIRE progress',    val: health.fire,    max: 10 },
+      ];
+      breakdownEl.innerHTML = items.map(({ label, val, max }) => `
+        <div>
+          <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+            <span>${label}</span><span class="font-bold">${val}/${max}</span>
+          </div>
+          <div class="w-full bg-slate-700 rounded-full h-1.5">
+            <div class="bg-indigo-400 h-1.5 rounded-full" style="width:${Math.round((val / max) * 100)}%"></div>
+          </div>
+        </div>`).join('');
+    }
+
+    // ─ KPI cards ──────────────────────────────────────────────────────────────
+    const dailyBurn = getDailyBurnRate(key);
+    const forecast  = getMonthEndForecast(key);
+    const runway    = getCashRunway(netWorth, key);
+    setText('insDailyBurn', `${sym()}${fmt(dailyBurn)}`);
+    setText('insForecast',  `${sym()}${fmt(forecast)}`);
+    const insRunwayEl = document.getElementById('insRunway');
+    if (insRunwayEl) {
+      insRunwayEl.textContent = (!isFinite(runway) || runway > 999) ? '999+ mo' : `${runway.toFixed(1)} mo`;
+      insRunwayEl.className = `text-2xl font-bold mt-1 ${
+        runway >= 6 ? 'text-teal-600 dark:text-teal-400' :
+        runway >= 3 ? 'text-amber-600 dark:text-amber-400' :
+                      'text-rose-600 dark:text-rose-400'}`;
+    }
+
+    // ─ Spending velocity grid ─────────────────────────────────────────────────
+    const velocity      = getSpendingVelocity(key);
+    const velocityGrid  = document.getElementById('insVelocityGrid');
+    const velocityEmpty = document.getElementById('insVelocityEmpty');
+    const withData      = velocity.filter(v => v.current > 0 || v.avg > 0);
+
+    if (velocityGrid && velocityEmpty) {
+      if (withData.length === 0) {
+        velocityGrid.classList.add('hidden');
+        velocityEmpty.classList.remove('hidden');
+      } else {
+        velocityGrid.classList.remove('hidden');
+        velocityEmpty.classList.add('hidden');
+        velocityGrid.innerHTML = withData.map(v => {
+          const isUp    = v.diff > 0;
+          const isNew   = v.avg === 0 && v.current > 0;
+          const colorCls = isUp ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-emerald-600 dark:text-emerald-400';
+          const bgCls   = isNew ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30'
+                        : isUp  ? 'bg-rose-50 dark:bg-rose-900/10 border-rose-100 dark:border-rose-900/30'
+                                 : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-100 dark:border-emerald-900/30';
+          const arrow   = isNew ? '<span class="text-amber-500 text-[10px] font-bold">NEW</span>'
+                        : isUp  ? '<i class="fas fa-arrow-up text-rose-500 text-[10px]"></i>'
+                                 : '<i class="fas fa-arrow-down text-emerald-500 text-[10px]"></i>';
+          const pctStr  = isNew ? '' : `${isUp ? '+' : ''}${v.pct.toFixed(0)}%`;
+          return `
+            <div class="p-3 rounded-xl border ${bgCls}">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">${esc(v.category)}</span>
+                <div class="flex items-center gap-1 text-xs font-bold ${colorCls} shrink-0 ml-1">${arrow} ${pctStr}</div>
+              </div>
+              <div class="text-lg font-bold text-slate-800 dark:text-white money-val">${symFmt(v.current)}</div>
+              ${v.avg > 0 ? `<div class="text-[10px] text-slate-500 mt-0.5 money-val">Avg: ${symFmt(v.avg)}</div>` : ''}
+            </div>`;
+        }).join('');
+      }
+    }
+
+    // ─ Top movers ─────────────────────────────────────────────────────────────
+    const movers  = velocity.filter(v => v.avg > 0);
+    const topUp   = [...movers].sort((a, b) => b.diff - a.diff).slice(0, 3).filter(v => v.diff > 0);
+    const topDown = [...movers].sort((a, b) => a.diff - b.diff).slice(0, 3).filter(v => v.diff < 0);
+
+    const renderMover = (v: VelocityEntry, up: boolean) => {
+      const sign  = up ? '+' : '';
+      const color = up ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400';
+      return `
+        <div class="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
+          <div>
+            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">${esc(v.category)}</span>
+            <div class="text-[10px] text-slate-400 money-val">${symFmt(v.current)} vs ${symFmt(v.avg)} avg</div>
+          </div>
+          <span class="text-sm font-bold ${color} money-val">${sign}${symFmt(Math.abs(v.diff))}</span>
+        </div>`;
+    };
+
+    const topUpEl    = document.getElementById('insTopUp');
+    const topUpEmpty = document.getElementById('insTopUpEmpty');
+    if (topUpEl && topUpEmpty) {
+      topUpEmpty.classList.toggle('hidden', topUp.length > 0);
+      topUpEl.innerHTML = topUp.map(v => renderMover(v, true)).join('');
+    }
+    const topDownEl    = document.getElementById('insTopDown');
+    const topDownEmpty = document.getElementById('insTopDownEmpty');
+    if (topDownEl && topDownEmpty) {
+      topDownEmpty.classList.toggle('hidden', topDown.length > 0);
+      topDownEl.innerHTML = topDown.map(v => renderMover(v, false)).join('');
+    }
+
+    // ─ Savings momentum (last 7 months mini bar chart) ────────────────────────
+    const savingsMomentumEl = document.getElementById('insSavingsMomentum');
+    if (savingsMomentumEl) {
+      const recentKeys = [...getRecentMonthKeys(key, 6), key];
+      savingsMomentumEl.innerHTML = recentKeys.map(k => {
+        const arr = db.transactions[k] ?? [];
+        let ki = 0, ke = 0;
+        arr.forEach(t => { if (t.type === 'income') ki += math(t.amount); else ke += math(t.amount); });
+        const rate      = ki > 0 ? ((ki - ke) / ki) * 100 : 0;
+        const monthName = new Date(k + '-01').toLocaleDateString('default', { month: 'short', year: '2-digit' });
+        const barColor  = rate >= 20 ? 'bg-emerald-500' : rate >= 0 ? 'bg-amber-400' : 'bg-rose-500';
+        const barWidth  = Math.min(Math.abs(rate), 100);
+        const rateColor = rate >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500';
+        return `
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-500 w-12 shrink-0">${monthName}</span>
+            <div class="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div class="${barColor} h-2 rounded-full transition-all duration-700" style="width:${barWidth}%"></div>
+            </div>
+            <span class="text-[10px] font-bold w-10 text-right ${rateColor}">${rate.toFixed(0)}%</span>
+          </div>`;
+      }).join('');
+    }
+  } catch (e) {
+    console.error('Insights render error:', e);
+  }
+}

@@ -57,6 +57,9 @@
                 <div role="button" tabindex="0" data-nav="reports" id="nav-reports"
                     class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
                     <i class="fas fa-chart-line w-5" aria-hidden="true"></i> Reports</div>
+                <div role="button" tabindex="0" data-nav="insights" id="nav-insights"
+                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    <i class="fas fa-brain w-5" aria-hidden="true"></i> Insights</div>
                 <div role="button" tabindex="0" data-nav="settings" id="nav-settings"
                     class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
                     <i class="fas fa-sliders-h w-5" aria-hidden="true"></i> Settings</div>
@@ -130,6 +133,25 @@
                     <p class="text-xs text-slate-400 font-bold uppercase">Savings Rate</p>
                     <h3 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="kpiSavingsRate">0%</h3>
                     <p class="text-xs text-slate-500 mt-1 money-val" id="kpiSavingsAmt">£0.00 saved</p>
+                </div>
+            </div>
+
+            <!-- Advanced KPI row: Burn Rate / Forecast / Runway -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-orange-500 rounded-2xl p-5 shadow-sm"
+                    title="Average daily spend so far this month">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Daily Burn Rate</p>
+                    <h3 class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1 money-val" id="kpiBurnRate">—</h3>
+                </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-sky-500 rounded-2xl p-5 shadow-sm"
+                    title="Projected month-end spend at current daily burn rate">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Month-End Forecast</p>
+                    <h3 class="text-2xl font-bold text-sky-600 dark:text-sky-400 mt-1 money-val" id="kpiForecast">—</h3>
+                </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-teal-500 rounded-2xl p-5 shadow-sm"
+                    title="Months your net worth covers at current burn rate">
+                    <p class="text-xs text-slate-400 font-bold uppercase">Cash Runway</p>
+                    <h3 class="text-2xl font-bold mt-1" id="kpiRunway">—</h3>
                 </div>
             </div>
 
@@ -466,6 +488,9 @@
                 </form>
                 <div id="listGoals" class="space-y-2"></div>
             </div>
+
+            <!-- Debt Payoff Planner -->
+            <div id="debtPlanner" class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mt-6"></div>
         </div>
 
         <!-- REPORTS -->
@@ -487,6 +512,70 @@
                         <table class="w-full text-sm"><tbody id="rptMonthTable"></tbody></table>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- INSIGHTS -->
+        <div id="view-insights" class="view-section hidden fade-in max-w-7xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Financial Insights</h2>
+            </div>
+
+            <!-- Health Score -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card bg-slate-900 text-white rounded-2xl p-6 shadow-lg flex flex-col justify-center">
+                    <p class="text-xs text-slate-400 font-bold uppercase mb-2">Financial Health Score</p>
+                    <div class="flex items-end gap-3">
+                        <h2 class="text-5xl font-extrabold" id="insHealthScore">—</h2>
+                        <span class="text-slate-400 text-lg font-bold mb-1">/ 100</span>
+                    </div>
+                    <p class="text-sm font-semibold mt-2" id="insHealthLabel">Loading…</p>
+                    <p class="text-xs text-slate-400 mt-3" id="insHealthBreakdown"></p>
+                </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-orange-500 rounded-2xl p-6 shadow-sm flex flex-col justify-center">
+                    <p class="text-xs text-slate-400 font-bold uppercase mb-1">Daily Burn Rate</p>
+                    <h3 class="text-3xl font-bold text-orange-600 dark:text-orange-400 money-val" id="insDailyBurn">—</h3>
+                    <p class="text-xs text-slate-500 mt-2">Average spend per day this month</p>
+                </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-center">
+                    <div class="mb-3">
+                        <p class="text-xs text-slate-400 font-bold uppercase mb-1">Month-End Forecast</p>
+                        <h3 class="text-3xl font-bold text-sky-600 dark:text-sky-400 money-val" id="insForecast">—</h3>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase mb-1">Cash Runway</p>
+                        <h3 class="text-2xl font-bold" id="insRunway">—</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spending Velocity -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-8">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-1">Spending Velocity</h3>
+                <p class="text-xs text-slate-500 mb-4">This month vs. 3-month rolling average per category</p>
+                <div id="insVelocityGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                <p id="insVelocityEmpty" class="hidden text-sm text-slate-400 text-center py-4">No category data yet.</p>
+            </div>
+
+            <!-- Top Movers -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+                    <h3 class="font-bold text-rose-600 mb-3"><i class="fas fa-arrow-trend-up mr-2"></i>Biggest Increases</h3>
+                    <div id="insTopUp" class="space-y-2"></div>
+                    <p id="insTopUpEmpty" class="hidden text-sm text-slate-400 text-center py-3">No increases this month.</p>
+                </div>
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+                    <h3 class="font-bold text-emerald-600 mb-3"><i class="fas fa-arrow-trend-down mr-2"></i>Biggest Decreases</h3>
+                    <div id="insTopDown" class="space-y-2"></div>
+                    <p id="insTopDownEmpty" class="hidden text-sm text-slate-400 text-center py-3">No decreases this month.</p>
+                </div>
+            </div>
+
+            <!-- Savings Momentum -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-1">Savings Momentum</h3>
+                <p class="text-xs text-slate-500 mb-4">Monthly savings over the last 6 months</p>
+                <div id="insSavingsMomentum" class="space-y-2"></div>
             </div>
         </div>
 
