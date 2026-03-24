@@ -616,13 +616,16 @@ export function delGoal(id: string): void {
 
 // ─── Currency ─────────────────────────────────────────────────────────────────
 export function saveCurrency(): void {
-  // Strip HTML-unsafe chars — the symbol is interpolated into innerHTML in render.ts
-  const val = (inp('currencySymbolInput')?.value ?? '').trim().slice(0, 5).replace(/[<>&"']/g, '');
-  if (!val) return showToast('Please enter a currency symbol');
-  db.currency = val;
-  setCurrencySymbol(val);
+  const raw = (inp('currencySymbolInput')?.value ?? '').trim().slice(0, 5);
+  // Allowlist: only Unicode currency/letter/digit characters — no HTML, no scripts.
+  // \p{Sc} = currency symbols (£ $ € ¥ …), \p{L} = letters, \p{N} = digits.
+  if (!raw || !/^[\p{Sc}\p{L}\p{N}]{1,5}$/u.test(raw)) {
+    return showToast('Invalid currency symbol (letters, digits, and currency signs only)');
+  }
+  db.currency = raw;
+  setCurrencySymbol(raw);
   save();
-  showToast(`Currency set to "${val}"`);
+  showToast(`Currency set to "${raw}"`);
 }
 
 // ─── Recurring templates ──────────────────────────────────────────────────────

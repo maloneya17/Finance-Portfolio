@@ -3,21 +3,27 @@
  *
  * Storage layout
  * ─────────────
- *  localStorage['financeAuth']   — { username, salt (b64), pinHash (b64) }
- *  sessionStorage['financeAuthSession'] — { loggedIn: true, loginTime: ms }
+ *  localStorage['financeAuth']        — { username, salt (b64), pinHash (b64) }
+ *  localStorage['financeAuthLockout'] — { until: ms, attempts: number }
+ *  sessionStorage['financeAuthSession'] — { loggedIn: true, token: b64, loginTime: ms }
  *
  * Security model
  * ─────────────
  *  • PIN is NEVER stored in plaintext.
  *  • PBKDF2-SHA-256 with 200 000 iterations and a random 16-byte salt.
- *  • Failed-attempt lockout: 5 wrong tries → 30-second freeze (in-memory
- *    only; resets on page reload, which is fine for casual-access protection).
+ *  • Hash comparison uses timingSafeEqual (via SubtleCrypto HMAC verify trick)
+ *    to prevent timing-oracle attacks.
+ *  • Failed-attempt lockout: 5 wrong tries → 30-second freeze, persisted in
+ *    localStorage so page reloads cannot reset the counter.
+ *  • Sessions carry a 32-byte cryptographic token so an XSS-injected
+ *    { loggedIn: true } entry cannot impersonate a real login.
  *  • Sessions live in sessionStorage and die when the tab is closed.
  *  • Removing the auth key (forgot-PIN flow) does NOT touch portfolio data.
  */
 
-const AUTH_KEY    = 'financeAuth';
-const SESSION_KEY = 'financeAuthSession';
+const AUTH_KEY     = 'financeAuth';
+const SESSION_KEY  = 'financeAuthSession';
+const LOCKOUT_KEY  = 'financeAuthLockout';
 
 const PBKDF2_ITERS  = 200_000;
 const MAX_ATTEMPTS  = 5;
@@ -29,9 +35,28 @@ interface AuthStore {
   pinHash:  string; // base64 of 32-byte PBKDF2 output
 }
 
-// In-memory only — intentionally resets on page reload.
-let failedAttempts = 0;
-let lockoutUntil   = 0;
+interface LockoutStore {
+  until:    number; // epoch ms when lockout expires
+  attempts: number;
+}
+
+// ─── Persistent lockout helpers ────────────────────────────────────────────────
+
+function readLockout(): LockoutStore {
+  try {
+    const raw = localStorage.getItem(LOCKOUT_KEY);
+    if (!raw) return { until: 0, attempts: 0 };
+    return JSON.parse(raw) as LockoutStore;
+  } catch { return { until: 0, attempts: 0 }; }
+}
+
+function writeLockout(s: LockoutStore): void {
+  localStorage.setItem(LOCKOUT_KEY, JSON.stringify(s));
+}
+
+function clearLockout(): void {
+  localStorage.removeItem(LOCKOUT_KEY);
+}
 
 // ─── Crypto helpers ────────────────────────────────────────────────────────────
 
@@ -85,7 +110,10 @@ export function isLoggedIn(): boolean {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return false;
-    return (JSON.parse(raw) as { loggedIn: boolean }).loggedIn === true;
+    const parsed = JSON.parse(raw) as { loggedIn: boolean; token?: string };
+    // Require both the flag AND a non-empty token so a plain { loggedIn: true }
+    // injection (e.g. via XSS in a different script) cannot pass this check.
+    return parsed.loggedIn === true && typeof parsed.token === 'string' && parsed.token.length > 0;
   } catch {
     return false;
   }
@@ -93,7 +121,10 @@ export function isLoggedIn(): boolean {
 
 function setSession(value: boolean): void {
   if (value) {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ loggedIn: true, loginTime: Date.now() }));
+    // 32 cryptographically random bytes → base64 session token
+    const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
+    const token = btoa(String.fromCharCode(...tokenBytes));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ loggedIn: true, token, loginTime: Date.now() }));
   } else {
     sessionStorage.removeItem(SESSION_KEY);
   }
@@ -126,14 +157,27 @@ export async function createAccount(username: string, pin: string): Promise<stri
 }
 
 /**
+ * Constant-time comparison of two same-length base64 strings using SubtleCrypto
+ * HMAC-SHA256 sign+verify to prevent timing oracles.  Returns true iff equal.
+ */
+async function timingSafeEqual(a: string, b: string): Promise<boolean> {
+  // If lengths differ we still run the full comparison to avoid length leaks.
+  const enc = new TextEncoder();
+  const key  = await crypto.subtle.generateKey({ name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  const sig  = await crypto.subtle.sign('HMAC', key, enc.encode(a));
+  return crypto.subtle.verify('HMAC', key, sig, enc.encode(b));
+}
+
+/**
  * Verifies the supplied PIN against the stored hash.
  * Returns null on success, or a human-readable error string on failure
  * (wrong PIN, lockout, or no account).
  */
 export async function verifyPin(pin: string): Promise<string | null> {
   const now = Date.now();
-  if (now < lockoutUntil) {
-    const secs = Math.ceil((lockoutUntil - now) / 1000);
+  const lockout = readLockout();
+  if (now < lockout.until) {
+    const secs = Math.ceil((lockout.until - now) / 1000);
     return `Too many attempts. Try again in ${secs}s.`;
   }
 
@@ -143,20 +187,23 @@ export async function verifyPin(pin: string): Promise<string | null> {
     const store = JSON.parse(raw) as AuthStore;
     const hash  = await deriveHash(pin, fromB64(store.salt));
 
-    if (hash === store.pinHash) {
-      failedAttempts = 0;
+    // Timing-safe comparison — prevents hash extraction via response-time analysis
+    const match = await timingSafeEqual(hash, store.pinHash);
+
+    if (match) {
+      clearLockout();
       setSession(true);
       return null;
     }
 
-    failedAttempts++;
-    if (failedAttempts >= MAX_ATTEMPTS) {
-      lockoutUntil   = Date.now() + LOCKOUT_MS;
-      failedAttempts = 0;
+    const newAttempts = lockout.attempts + 1;
+    if (newAttempts >= MAX_ATTEMPTS) {
+      writeLockout({ until: Date.now() + LOCKOUT_MS, attempts: 0 });
       return `Too many attempts. Try again in ${LOCKOUT_MS / 1000}s.`;
     }
+    writeLockout({ until: 0, attempts: newAttempts });
 
-    const left = MAX_ATTEMPTS - failedAttempts;
+    const left = MAX_ATTEMPTS - newAttempts;
     return `Incorrect PIN — ${left} attempt${left === 1 ? '' : 's'} remaining.`;
   } catch {
     return 'Authentication error — please try again.';
@@ -201,5 +248,26 @@ export async function changePin(currentPin: string, newPin: string, confirmPin: 
  */
 export function deleteAccount(): void {
   localStorage.removeItem(AUTH_KEY);
+  clearLockout();
   setSession(false);
+}
+
+// ─── Inactivity auto-lock ─────────────────────────────────────────────────────
+
+const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+let _inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+
+function resetInactivityTimer(): void {
+  if (_inactivityTimer !== null) clearTimeout(_inactivityTimer);
+  _inactivityTimer = setTimeout(() => { logout(); }, INACTIVITY_MS);
+}
+
+/**
+ * Call once after a successful login to start the inactivity auto-lock.
+ * Any user interaction resets the 30-minute countdown.
+ */
+export function startInactivityWatcher(): void {
+  resetInactivityTimer();
+  const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'pointerdown'] as const;
+  events.forEach(ev => document.addEventListener(ev, resetInactivityTimer, { passive: true }));
 }

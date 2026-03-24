@@ -10,8 +10,12 @@ export const fmt = (n: number): string =>
     maximumFractionDigits: 2,
   });
 
-export const genId = (): string =>
-  Date.now().toString(36) + Math.random().toString(36).substring(2);
+// Cryptographically secure random ID — 16 random bytes → 32-char hex string.
+// Avoids Math.random() (predictable PRNG) and timestamp-based prefixes.
+export const genId = (): string => {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+};
 
 export const esc = (s: string | null | undefined): string =>
   String(s ?? '')

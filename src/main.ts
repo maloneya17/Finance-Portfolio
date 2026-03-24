@@ -1,6 +1,6 @@
 import './style.css';
 import { registerSW } from 'virtual:pwa-register';
-import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin } from './auth';
+import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin, startInactivityWatcher } from './auth';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
 import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar } from './render';
@@ -402,6 +402,7 @@ function wireAuthEvents(): void {
     } else {
       errorEl?.classList.add('hidden');
       hideAuthOverlay();
+      startInactivityWatcher();
       bootApp();
     }
   });
@@ -429,6 +430,7 @@ function wireAuthEvents(): void {
     } else {
       errorEl?.classList.add('hidden');
       hideAuthOverlay();
+      startInactivityWatcher();
       // Boot the app on the first successful login after a fresh page load.
       // If the user locked an already-booted session, bootApp() is a no-op.
       bootApp();

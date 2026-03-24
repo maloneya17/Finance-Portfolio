@@ -142,7 +142,12 @@ export async function manualSync(ui = false): Promise<void> {
     }
 
     if (cloudData.status !== 'new') {
-      const allDeleted = new Set([...db.deletedIds, ...(cloudData.deletedIds ?? [])]);
+      // Filter both arrays to strings-only before merging to prevent type confusion
+      // if an attacker-controlled cloud payload contains non-string entries.
+      const localIds  = db.deletedIds.filter((id): id is string => typeof id === 'string');
+      const cloudIds  = (Array.isArray(cloudData.deletedIds) ? cloudData.deletedIds : [])
+        .filter((id): id is string => typeof id === 'string' && id.length <= 128);
+      const allDeleted = new Set([...localIds, ...cloudIds]);
       // Prune deletedIds to prevent unbounded localStorage growth
       const deletedArr = Array.from(allDeleted);
       db.deletedIds = deletedArr.length > 500 ? deletedArr.slice(deletedArr.length - 500) : deletedArr;

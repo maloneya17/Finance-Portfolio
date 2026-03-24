@@ -100,9 +100,19 @@ export function render(): void {
 
     const rollover = getRollover(key);
     const kpiInc = document.getElementById('kpiInc');
-    // esc(sym()) for defence-in-depth; symFmt for correct "-£X" display on negative rollover
-    const safeSym = esc(sym());
-    if (kpiInc) kpiInc.innerHTML = `${symFmt(inc + rollover)} <span class='text-[10px] text-slate-400 block font-medium uppercase mt-1'>Rollover: ${rollover < 0 ? '-' + safeSym + fmt(Math.abs(rollover)) : safeSym + fmt(rollover)}</span>`;
+    // Build via DOM (not innerHTML) so the currency symbol cannot inject HTML
+    if (kpiInc) {
+      kpiInc.textContent = '';
+      const mainText = document.createTextNode(symFmt(inc + rollover) + ' ');
+      const rollSpan = document.createElement('span');
+      rollSpan.className = 'text-[10px] text-slate-400 block font-medium uppercase mt-1';
+      const rolloverLabel = rollover < 0
+        ? `-${sym()}${fmt(Math.abs(rollover))}`
+        : `${sym()}${fmt(rollover)}`;
+      rollSpan.textContent = `Rollover: ${rolloverLabel}`;
+      kpiInc.appendChild(mainText);
+      kpiInc.appendChild(rollSpan);
+    }
     setText('kpiExp', `${sym()}${fmt(exp)}`);
     setText('kpiSalary', `${sym()}${fmt(db.annualIncome)}`);
 
@@ -115,7 +125,7 @@ export function render(): void {
         db.transactions[k].forEach(t => { if (t.type === 'income') ytd += math(t.amount); });
     });
     setText('kpiYTD', `${sym()}${fmt(ytd)}`);
-    const monthNum = parseInt(key.split('-')[1] ?? '1');
+    const monthNum = parseInt(key.split('-')[1] ?? '1', 10);
     const safeMonth = monthNum >= 1 && monthNum <= 12 ? monthNum : 1;
     setText('kpiAvg', `${sym()}${fmt(ytd / safeMonth)}`);
 
@@ -435,7 +445,7 @@ export function renderReports(): void {
     const years = new Set([new Date().getFullYear()]);
     Object.keys(db.transactions).forEach(k => {
       if (!isValidMonthKey(k)) return;
-      const y = parseInt(k.split('-')[0]);
+      const y = parseInt(k.split('-')[0], 10);
       if (!isNaN(y)) years.add(y);
     });
     const sel = document.getElementById('reportYearSelect') as HTMLSelectElement | null;
@@ -446,7 +456,7 @@ export function renderReports(): void {
     Array.from(years).sort((a, b) => b - a).forEach(y => {
       sel.insertAdjacentHTML('beforeend', `<option value="${y}">${y}</option>`);
     });
-    const dashYear = parseInt(getMonthPicker().value.split('-')[0]);
+    const dashYear = parseInt(getMonthPicker().value.split('-')[0], 10);
     if (prevValue && years.has(Number(prevValue))) sel.value = prevValue;
     else if (years.has(dashYear)) sel.value = String(dashYear);
 
