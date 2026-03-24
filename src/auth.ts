@@ -171,12 +171,16 @@ export async function changePin(currentPin: string, newPin: string, confirmPin: 
   if (newPin !== confirmPin) return 'New PINs do not match.';
   if (!/^\d{4,8}$/.test(newPin)) return 'New PIN must be 4–8 digits (numbers only).';
 
-  // Verify current PIN first (also enforces lockout)
+  // Delegate current-PIN check to verifyPin() so the shared failed-attempt
+  // lockout applies here too.  Without this, a logged-in attacker could
+  // brute-force the Change PIN form without any rate limiting.
+  const verifyErr = await verifyPin(currentPin);
+  if (verifyErr) return verifyErr;
+
+  // verifyPin passed — re-read store and write the new PIN with a fresh salt.
   const raw = localStorage.getItem(AUTH_KEY);
   if (!raw) return 'No account found.';
-  const store       = JSON.parse(raw) as AuthStore;
-  const currentHash = await deriveHash(currentPin, fromB64(store.salt));
-  if (currentHash !== store.pinHash) return 'Current PIN is incorrect.';
+  const store = JSON.parse(raw) as AuthStore;
 
   const newSalt    = crypto.getRandomValues(new Uint8Array(16) as Uint8Array<ArrayBuffer>);
   const newPinHash = await deriveHash(newPin, newSalt);

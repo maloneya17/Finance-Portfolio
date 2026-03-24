@@ -428,6 +428,9 @@ function wireAuthEvents(): void {
     } else {
       errorEl?.classList.add('hidden');
       hideAuthOverlay();
+      // Boot the app on the first successful login after a fresh page load.
+      // If the user locked an already-booted session, bootApp() is a no-op.
+      bootApp();
     }
   };
 
