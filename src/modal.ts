@@ -5,6 +5,7 @@
  * inside iframes, PWA shells, and other environments that block native dialogs.
  * Every function returns a Promise and resolves when the user acts (or ESC).
  */
+import { esc } from './utils';
 
 function buildOverlay(): HTMLDivElement {
   const el = document.createElement('div');
@@ -44,23 +45,23 @@ export function showTextInputModal(opts: TextInputModalOpts): Promise<string | n
       : 'bg-indigo-600 hover:bg-indigo-500 text-white';
 
     card.innerHTML = `
-      <h3 class="font-bold text-slate-800 dark:text-white text-base mb-2">${opts.title}</h3>
-      ${opts.message ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${opts.message}</p>` : ''}
-      ${opts.label ? `<label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">${opts.label}</label>` : ''}
-      <input type="${opts.inputType ?? 'text'}"
+      <h3 class="font-bold text-slate-800 dark:text-white text-base mb-2">${esc(opts.title)}</h3>
+      ${opts.message ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${esc(opts.message)}</p>` : ''}
+      ${opts.label ? `<label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">${esc(opts.label)}</label>` : ''}
+      <input type="${esc(opts.inputType ?? 'text')}"
         id="_modalInput"
-        placeholder="${opts.placeholder ?? ''}"
-        value="${opts.defaultValue ?? ''}"
+        placeholder="${esc(opts.placeholder ?? '')}"
         class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 transition mb-4">
       <div class="flex gap-2 justify-end">
         <button id="_modalCancel" class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Cancel</button>
-        <button id="_modalConfirm" class="px-4 py-2 text-xs font-bold rounded-lg transition ${confirmClass}">${opts.confirmLabel ?? 'OK'}</button>
+        <button id="_modalConfirm" class="px-4 py-2 text-xs font-bold rounded-lg transition ${confirmClass}">${esc(opts.confirmLabel ?? 'OK')}</button>
       </div>`;
 
     overlay.appendChild(card);
     document.body.appendChild(overlay);
 
     const inputEl = card.querySelector<HTMLInputElement>('#_modalInput')!;
+    if (opts.defaultValue !== undefined) inputEl.value = opts.defaultValue;
     inputEl.focus();
     if (opts.inputType !== 'number') inputEl.select();
 
@@ -96,11 +97,11 @@ export function showConfirmModal(opts: ConfirmModalOpts): Promise<boolean> {
       : 'bg-indigo-600 hover:bg-indigo-500 text-white';
 
     card.innerHTML = `
-      <h3 class="font-bold text-slate-800 dark:text-white text-base mb-2">${opts.title}</h3>
-      ${opts.message ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-4">${opts.message}</p>` : '<div class="mb-4"></div>'}
+      <h3 class="font-bold text-slate-800 dark:text-white text-base mb-2">${esc(opts.title)}</h3>
+      ${opts.message ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-4">${esc(opts.message)}</p>` : '<div class="mb-4"></div>'}
       <div class="flex gap-2 justify-end">
         <button id="_modalCancel" class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Cancel</button>
-        <button id="_modalConfirm" class="px-4 py-2 text-xs font-bold rounded-lg transition ${confirmClass}">${opts.confirmLabel ?? 'Confirm'}</button>
+        <button id="_modalConfirm" class="px-4 py-2 text-xs font-bold rounded-lg transition ${confirmClass}">${esc(opts.confirmLabel ?? 'Confirm')}</button>
       </div>`;
 
     overlay.appendChild(card);

@@ -218,14 +218,19 @@ export function updateWealthCharts(
   historyValues: (number | null)[],
 ): void {
   wealthChart = destroyIfExists(wealthChart);
-  const sum = totalAssets + operatingCash + totalDebts;
+  const clampedAssets = Math.max(0, totalAssets);
+  const clampedCash = Math.max(0, operatingCash);
+  const clampedDebts = Math.max(0, totalDebts);
+  // Use clamped values for the sum so the datalabels percentages add up to 100%
+  // even when operatingCash or other values are negative.
+  const sum = clampedAssets + clampedCash + clampedDebts;
   wealthChart = new Chart(getCtx('chartWealth'), {
     type: 'doughnut',
     plugins: [ChartDataLabels],
     data: {
       labels: ['Assets', 'Operating Cash', 'Debt'],
       datasets: [{
-        data: [Math.max(0, totalAssets), Math.max(0, operatingCash), Math.max(0, totalDebts)],
+        data: [clampedAssets, clampedCash, clampedDebts],
         backgroundColor: ['#10b981', '#3b82f6', '#f43f5e'],
         borderWidth: 0,
       }],

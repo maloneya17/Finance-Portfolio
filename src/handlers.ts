@@ -665,12 +665,19 @@ export function applyRecurring(silent = false): number {
   const key = getMonthPicker().value;
   if (!db.transactions[key]) db.transactions[key] = [];
   let count = 0;
+  // Use today's date only when applying to the current month; otherwise use the
+  // first day of the target month so recurring entries aren't dated in the future/past.
+  const today = new Date();
+  const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const defaultDate = key === currentMonthKey
+    ? today.toISOString().slice(0, 10)
+    : `${key}-01`;
   db.recurring.forEach(r => {
     const exists = db.transactions[key].some(t => t.desc === r.desc && t.amount === r.amount && t.type === r.type && t.category === r.category);
     if (!exists) {
       db.transactions[key].push({
         id: genId(), updatedAt: Date.now(),
-        date: new Date().toISOString().slice(0, 10),
+        date: defaultDate,
         desc: r.desc, amount: r.amount, category: r.category, type: r.type,
       });
       count++;

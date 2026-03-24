@@ -104,7 +104,9 @@ export function render(): void {
     const year = key.split('-')[0];
     let ytd = 0;
     Object.keys(db.transactions).forEach(k => {
-      if (isValidMonthKey(k) && k.startsWith(year))
+      // Only count months up to and including the currently viewed month so
+      // viewing a past month doesn't inflate YTD with later months' income.
+      if (isValidMonthKey(k) && k.startsWith(year) && k <= key)
         db.transactions[k].forEach(t => { if (t.type === 'income') ytd += math(t.amount); });
     });
     setText('kpiYTD', `${sym()}${fmt(ytd)}`);
