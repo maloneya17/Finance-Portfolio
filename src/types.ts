@@ -1,16 +1,23 @@
 export type TxType = 'income' | 'expense';
 export type AssetType = 'Savings' | 'Investment' | 'Property' | 'Vehicle' | 'Cash' | 'Other';
 
+export interface SplitEntry {
+  category: string;
+  amount: number;
+  notes?: string;
+}
+
 export interface Transaction {
   id: string;
   updatedAt: number;
   date?: string;      // YYYY-MM-DD — actual date of transaction (user-set)
   desc: string;
   amount: number;
-  category: string;
+  category: string;   // 'Split' when splits[] is populated; otherwise normal category
   type: TxType;
   notes?: string;     // optional memo / extra detail
   tags?: string[];    // user-defined labels e.g. ["tax-deductible", "work", "joint"]
+  splits?: SplitEntry[]; // when present, amount is distributed across these sub-categories
 }
 
 export interface Bill {
@@ -72,6 +79,24 @@ export interface RecurringTemplate {
   amount: number;
   category: string;
   type: TxType;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  desc: string;
+  icon: string;    // FontAwesome class e.g. 'fas fa-star'
+  earned: boolean;
+  earnedAt?: string; // YYYY-MM-DD
+}
+
+export interface SmartTip {
+  id: string;
+  type: 'warning' | 'info' | 'success' | 'opportunity';
+  icon: string;
+  title: string;
+  body: string;
+  priority: number; // higher = shown first
 }
 
 export interface AppDB {

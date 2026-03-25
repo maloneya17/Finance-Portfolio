@@ -8,6 +8,7 @@ import {
   getRollover, getCurrentCats, consolidateWealth, isValidMonthKey,
   getSpendingVelocity, getDailyBurnRate, getMonthEndForecast,
   getCashRunway, getDebtPayoffPlans, getHealthScore, getRecentMonthKeys,
+  detectSubscriptions, getSmartTips, getAchievements,
   type VelocityEntry,
 } from './finance';
 
@@ -940,6 +941,113 @@ export function renderInsights(): void {
             <span class="text-[10px] font-bold w-10 text-right ${rateColor}">${rate.toFixed(0)}%</span>
           </div>`;
       }).join('');
+    }
+    // ─ Smart financial tips ───────────────────────────────────────────────────
+    const tipsEl = document.getElementById('insSmartTips');
+    if (tipsEl) {
+      const tips = getSmartTips(key, netWorth, fireTarget);
+      if (tips.length === 0) {
+        tipsEl.innerHTML = `<p class="text-sm text-slate-400 text-center py-4"><i class="fas fa-check-circle text-emerald-400 mr-2"></i>All looks great — no action items right now.</p>`;
+      } else {
+        const typeStyles: Record<string, string> = {
+          warning:     'border-l-4 border-l-rose-500 bg-rose-50 dark:bg-rose-900/10',
+          info:        'border-l-4 border-l-sky-500 bg-sky-50 dark:bg-sky-900/10',
+          success:     'border-l-4 border-l-emerald-500 bg-emerald-50 dark:bg-emerald-900/10',
+          opportunity: 'border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-900/10',
+        };
+        const iconStyles: Record<string, string> = {
+          warning:     'text-rose-500',
+          info:        'text-sky-500',
+          success:     'text-emerald-500',
+          opportunity: 'text-amber-500',
+        };
+        tipsEl.innerHTML = tips.map(tip => `
+          <div class="rounded-xl p-4 ${typeStyles[tip.type] ?? ''}">
+            <div class="flex gap-3">
+              <div class="shrink-0 mt-0.5"><i class="${esc(tip.icon)} ${iconStyles[tip.type] ?? ''}"></i></div>
+              <div>
+                <p class="text-sm font-bold text-slate-800 dark:text-white mb-0.5">${esc(tip.title)}</p>
+                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">${esc(tip.body)}</p>
+              </div>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    // ─ Achievements ───────────────────────────────────────────────────────────
+    const achievementsEl = document.getElementById('insAchievements');
+    if (achievementsEl) {
+      const achievements = getAchievements(key, netWorth, fireTarget);
+      achievementsEl.innerHTML = achievements.map(a => {
+        const earnedClass = a.earned
+          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 opacity-50';
+        return `
+          <div class="flex flex-col items-center gap-1 p-3 rounded-xl ${earnedClass} transition" title="${esc(a.desc)}">
+            <i class="${esc(a.icon)} text-xl mb-1"></i>
+            <span class="text-[10px] font-bold text-center leading-tight">${esc(a.title)}</span>
+          </div>`;
+      }).join('');
+    }
+
+    // ─ Subscription management ────────────────────────────────────────────────
+    const subsEl    = document.getElementById('insSubscriptions');
+    const subsEmpty = document.getElementById('insSubscriptionsEmpty');
+    const subsTotalEl = document.getElementById('insSubsTotal');
+    if (subsEl && subsEmpty) {
+      const subs = detectSubscriptions();
+      const currentMonthKey = key;
+      const twoMonthsAgo = (() => {
+        const [y, m] = key.split('-').map(Number);
+        const d = new Date(y, m - 3, 1);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      })();
+
+      if (subs.length === 0) {
+        subsEl.classList.add('hidden');
+        subsEmpty.classList.remove('hidden');
+        if (subsTotalEl) subsTotalEl.classList.add('hidden');
+      } else {
+        subsEl.classList.remove('hidden');
+        subsEmpty.classList.add('hidden');
+        const monthlyTotal = subs.reduce((s, sub) => s + math(sub.amount), 0);
+        if (subsTotalEl) {
+          subsTotalEl.classList.remove('hidden');
+          subsTotalEl.innerHTML = `
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <span class="text-xs text-slate-500">Monthly total</span>
+                <span class="ml-2 text-sm font-bold text-slate-800 dark:text-white money-val">${symFmt(monthlyTotal)}</span>
+              </div>
+              <div>
+                <span class="text-xs text-slate-500">Annual projection</span>
+                <span class="ml-2 text-sm font-bold text-rose-600 dark:text-rose-400 money-val">${symFmt(math(monthlyTotal * 12))}</span>
+              </div>
+              <span class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 rounded-full px-2 py-0.5 font-bold">${subs.length} detected</span>
+            </div>`;
+        }
+        subsEl.innerHTML = subs.map(sub => {
+          const isDormant = sub.months[sub.months.length - 1] < twoMonthsAgo;
+          const dormantBadge = isDormant
+            ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">INACTIVE</span>`
+            : '';
+          const monthsLabel = sub.months.slice(-3).map(m => new Date(m + '-01').toLocaleDateString('default', { month: 'short', year: '2-digit' })).join(', ');
+          return `
+            <div class="flex items-center justify-between py-2.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1 flex-wrap">
+                  <span class="text-sm font-semibold text-slate-800 dark:text-white truncate">${esc(sub.desc)}</span>
+                  ${dormantBadge}
+                </div>
+                <div class="text-[10px] text-slate-400 mt-0.5">${esc(sub.category)} · ${sub.monthsCount} months · last seen: ${monthsLabel}</div>
+              </div>
+              <div class="ml-3 text-right shrink-0">
+                <div class="text-sm font-bold text-slate-800 dark:text-white money-val">${symFmt(sub.amount)}/mo</div>
+                <div class="text-[10px] text-slate-400 money-val">${symFmt(math(sub.amount * 12))}/yr</div>
+              </div>
+            </div>`;
+        }).join('');
+      }
     }
   } catch (e) {
     console.error('Insights render error:', e);

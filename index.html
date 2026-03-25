@@ -229,6 +229,28 @@
                             <input type="text" id="txTags" placeholder="e.g. tax-deductible, work, joint" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" aria-describedby="txTagsHint">
                             <p id="txTagsHint" class="text-[10px] text-slate-400 mt-0.5">Comma-separated labels</p>
                         </div>
+                        <!-- Split transaction panel -->
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase">Split Transaction</label>
+                                <button type="button" id="btnToggleSplit" data-action="toggle-split"
+                                    class="text-[10px] font-bold text-indigo-500 hover:text-indigo-400 transition flex items-center gap-1">
+                                    <i class="fas fa-code-branch text-[9px]"></i> <span id="splitToggleLabel">Add Split</span>
+                                </button>
+                            </div>
+                            <!-- Split rows — hidden until activated -->
+                            <div id="splitPanel" class="hidden mt-2 space-y-1.5">
+                                <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                                    <span>Distribute total across multiple categories</span>
+                                    <span id="splitRemaining" class="font-bold text-slate-500">Remaining: —</span>
+                                </div>
+                                <div id="splitRows" class="space-y-1.5"></div>
+                                <button type="button" data-action="add-split-row"
+                                    class="w-full text-[10px] font-bold text-indigo-500 border border-dashed border-indigo-300 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg py-1.5 transition">
+                                    <i class="fas fa-plus mr-1"></i> Add row
+                                </button>
+                            </div>
+                        </div>
                         <div class="flex items-center gap-2 mt-2">
                             <button type="button" data-action="save-tx" id="btnSubmitTx"
                                 class="btn-lift flex-1 py-3 bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition">Add Transaction</button>
@@ -619,11 +641,46 @@
                 </div>
             </div>
 
+            <!-- Smart Financial Advisor -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-8">
+                <div class="flex items-center gap-3 mb-1">
+                    <h3 class="font-bold text-slate-800 dark:text-white">Smart Advisor</h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300">Personalised</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Actionable recommendations based on your actual financial patterns</p>
+                <div id="insSmartTips" class="space-y-3"></div>
+            </div>
+
+            <!-- Achievements -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-8">
+                <div class="flex items-center gap-3 mb-1">
+                    <h3 class="font-bold text-slate-800 dark:text-white">Achievements</h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300">Milestones</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Financial milestones you've unlocked — keep building good habits</p>
+                <div id="insAchievements" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-3"></div>
+            </div>
+
             <!-- Savings Momentum -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-8">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-1">Savings Momentum</h3>
                 <p class="text-xs text-slate-500 mb-4">Monthly savings over the last 6 months</p>
                 <div id="insSavingsMomentum" class="space-y-2"></div>
+            </div>
+
+            <!-- Subscription Management -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
+                <div class="flex items-center gap-3 mb-1">
+                    <h3 class="font-bold text-slate-800 dark:text-white">Subscription Manager</h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300">Auto-detected</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-3">Recurring charges detected across multiple months — including annual cost and dormant services</p>
+                <div id="insSubsTotal" class="hidden rounded-xl bg-slate-50 dark:bg-slate-800/60 border dark:border-slate-700 px-4 py-3 mb-4 text-sm"></div>
+                <div id="insSubscriptions" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
+                <p id="insSubscriptionsEmpty" class="hidden text-sm text-slate-400 text-center py-6">
+                    <i class="fas fa-search text-2xl block mb-2 opacity-30"></i>
+                    No recurring patterns detected yet. Add a few months of transactions to enable this.
+                </p>
             </div>
         </div>
 

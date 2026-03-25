@@ -11,6 +11,9 @@ export const FIRE_DEFAULT_EXP    = 2000;
 export const BUDGET_WARN_PCT     = 75;
 export const CALENDAR_MAX_CHIPS  = 2;
 
+/** Income source categories — used when type='income' to tag the income source. */
+export const INCOME_CATEGORIES = ['Salary', 'Freelance / Consulting', 'Business Income', 'Investment Returns', 'Rental Income', 'Benefits / Pension', 'Other Income'] as const;
+
 export const DEFAULTS: AppDB = {
   schemaVersion: SCHEMA_VERSION,
   categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Savings', 'Debt', 'Bills', 'Imported'],
