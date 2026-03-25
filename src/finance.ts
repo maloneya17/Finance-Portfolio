@@ -438,7 +438,7 @@ export function getSmartTips(currentKey: string, netWorth: number, fireTarget: n
   const subs = detectSubscriptions();
   if (subs.length >= 3) {
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const recentSubs = subs.filter(s => s.months[s.months.length - 1] >= currentMonth.slice(0, 7).replace(/\d$/, '0') || s.monthsCount >= 3);
+    const recentSubs = subs.filter(s => s.months[s.months.length - 1] === currentMonth || s.monthsCount >= 3);
     const monthlySubTotal = recentSubs.reduce((sum, s) => sum + math(s.amount), 0);
     if (monthlySubTotal > 50) {
       tips.push({

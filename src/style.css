@@ -370,8 +370,16 @@ body.privacy-active .bill-amt {
 }
 #monthPressureFill.pressure-warn { animation: pressurePulse 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  #healthAmbientFill.health-low,
-  #monthPressureFill.pressure-warn { animation: none; }
+  /* Disable all animations — covers ambient, pressure, view transitions,
+     toasts, fade-ins, shake, shimmer, and any custom keyframes */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ─── BILL CHIP KEYBOARD FOCUS ────────────────────────────────────────────────── */

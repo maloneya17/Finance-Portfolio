@@ -267,7 +267,14 @@ export async function manualSync(ui = false): Promise<void> {
           const localEntry = localMonth[billId];
           const cloudTs = typeof cloudEntry === 'object' ? (cloudEntry.updated ?? 0) : 0;
           const localTs = typeof localEntry === 'object' ? (localEntry.updated ?? 0) : 0;
-          if (!localEntry || cloudTs > localTs) merged[billId] = cloudEntry;
+          if (!localEntry || cloudTs > localTs) {
+            // Only accept well-formed entries (object with paid field, or legacy boolean)
+            if (typeof cloudEntry === 'object' && cloudEntry !== null && 'paid' in cloudEntry) {
+              merged[billId] = cloudEntry;
+            } else if (typeof cloudEntry === 'boolean') {
+              merged[billId] = cloudEntry;
+            }
+          }
         });
         db.billStatus[date] = merged;
       });

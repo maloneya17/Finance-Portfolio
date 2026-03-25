@@ -133,6 +133,8 @@ function setSession(value: boolean): void {
 /** Ends the current session (but keeps auth credentials). */
 export function logout(): void {
   setSession(false);
+  // Clear any pending inactivity timer so it doesn't fire after re-login
+  if (_inactivityTimer !== null) { clearTimeout(_inactivityTimer); _inactivityTimer = null; }
 }
 
 /**

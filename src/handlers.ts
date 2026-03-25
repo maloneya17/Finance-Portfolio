@@ -152,9 +152,14 @@ export function saveTransaction(): void {
     const overBudget = !isSplit && db.budgets[effectiveCat] > 0 && (cats[effectiveCat] ?? 0) > db.budgets[effectiveCat];
     haptic(overBudget ? 'warn' : 'confirm');
   }
-  // Celebrate newly completed goals
-  if (db.goals.some(g => g.current >= g.target)) haptic('celebrate');
+  // Celebrate only when a goal *becomes* complete (not already-completed goals)
+  const nowCompleteCount = db.goals.filter(g => g.current >= g.target).length;
+  if (nowCompleteCount > _prevCompleteGoalCount) haptic('celebrate');
+  _prevCompleteGoalCount = nowCompleteCount;
 }
+
+/** Tracks how many goals were complete at last save — used to detect newly-completed goals. */
+let _prevCompleteGoalCount = 0;
 
 export function editTx(id: string): void {
   const k = getMonthPicker().value;
@@ -695,8 +700,8 @@ export function delWealthItem(type: 'assets' | 'debts', id: string): void {
 // ─── Net Worth snapshot ───────────────────────────────────────────────────────
 export function logNetWorth(): void {
   const key = getMonthPicker().value;
-  const assets = db.wealth.assets.reduce((a, b) => a + b.value, 0);
-  const debts  = db.wealth.debts.reduce((a, b) => a + b.value, 0);
+  const assets = db.wealth.assets.reduce((a, b) => a + math(b.value), 0);
+  const debts  = db.wealth.debts.reduce((a, b) => a + math(b.value), 0);
   const rollover = getRollover(key);
   const txs = db.transactions[key] ?? [];
   let inc = 0, exp = 0;

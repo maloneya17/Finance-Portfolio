@@ -311,8 +311,15 @@ function wireEvents(): void {
   });
   root.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const nav = (e.target as HTMLElement).closest<HTMLElement>('[data-nav]');
-    if (nav) { e.preventDefault(); switchView(nav.dataset['nav']!); }
+    const target = e.target as HTMLElement;
+    const nav = target.closest<HTMLElement>('[data-nav]');
+    if (nav) { e.preventDefault(); switchView(nav.dataset['nav']!); return; }
+    // Bill chips: activate toggle on Enter/Space (they have role="button" + tabindex)
+    const billChip = target.closest<HTMLElement>('[data-toggle-bill]');
+    if (billChip && !target.closest('[data-del-bill]') && !target.closest('[data-edit-bill]')) {
+      e.preventDefault();
+      toggleBill(billChip.dataset['toggleBill']!);
+    }
   });
 
   // Tx type toggle

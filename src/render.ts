@@ -224,7 +224,9 @@ export function render(): void {
     updateChartSummaries(cats, inc, exp);
 
     if (!document.getElementById('view-dashboard')?.classList.contains('hidden')) {
-      updateDashboardCharts(cats, getMonthEndForecast(key));
+      // Only pass forecast for current month — past months don't need a ghost bar
+      const isCurrentMonth = key === getMonthKey(new Date());
+      updateDashboardCharts(cats, isCurrentMonth ? getMonthEndForecast(key) : undefined);
     }
     if (!document.getElementById('view-budget')?.classList.contains('hidden')) {
       renderBudgets();
@@ -318,6 +320,7 @@ function renderMonthPressureGauge(key: string): void {
   barEl.classList.remove('hidden');
   fillEl.style.width = `${dayPct}%`;
   trackEl.setAttribute('aria-valuenow', String(dayPct));
+  trackEl.setAttribute('aria-valuetext', `${dayPct}% through the month`);
   trackEl.setAttribute('aria-label', `Month progress: day ${today} of ${daysInMonth}`);
   labelEl.textContent = `Day ${today} of ${daysInMonth}`;
 
@@ -599,8 +602,8 @@ export function renderWealth(): void {
     // Consolidate duplicates first
     consolidateWealth();
 
-    const totalAssets = db.wealth.assets.reduce((a, b) => a + b.value, 0);
-    const totalDebts = db.wealth.debts.reduce((a, b) => a + b.value, 0);
+    const totalAssets = db.wealth.assets.reduce((a, b) => a + math(b.value), 0);
+    const totalDebts = db.wealth.debts.reduce((a, b) => a + math(b.value), 0);
 
     const key = getMonthPicker().value;
     const rollover = getRollover(key);

@@ -145,9 +145,11 @@ export function updateDashboardCharts(cats: Record<string, number>, forecastExp?
     },
   };
 
-  // Forecast ghost: sparse array with only the last (current) month populated
+  // Forecast ghost: sparse bar on current month showing projected month-end spend.
+  // Only render when the caller passes a forecast (current month only); value of 0
+  // means "under pace" so we still draw the ghost to show the projection.
   const dForecast: (number | null)[] = Array(6).fill(null);
-  if (forecastExp !== undefined && forecastExp > dExp[5]) dForecast[5] = forecastExp;
+  if (forecastExp !== undefined && forecastExp > 0) dForecast[5] = forecastExp;
 
   trendChart = new Chart(getCtx('chartTrend'), {
     type: 'bar',
