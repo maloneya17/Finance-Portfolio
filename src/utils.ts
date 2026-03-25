@@ -25,6 +25,21 @@ export const esc = (s: string | null | undefined): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;');
 
+// ─── Haptic feedback ──────────────────────────────────────────────────────────
+type HapticPattern = 'confirm' | 'warn' | 'celebrate' | 'income';
+const HAPTIC_PATTERNS: Record<HapticPattern, number[]> = {
+  confirm:   [10],
+  warn:      [10, 50, 10],
+  celebrate: [10, 30, 20, 30, 40],
+  income:    [30],
+};
+let _hapticsEnabled = true;
+export const setHapticsEnabled = (v: boolean): void => { _hapticsEnabled = v; };
+export function haptic(pattern: HapticPattern): void {
+  if (!_hapticsEnabled || !('vibrate' in navigator)) return;
+  navigator.vibrate(HAPTIC_PATTERNS[pattern]);
+}
+
 export function debounce<T extends (...args: unknown[]) => void>(fn: T, ms = 200): T {
   let timer: ReturnType<typeof setTimeout>;
   return ((...args: Parameters<T>) => {

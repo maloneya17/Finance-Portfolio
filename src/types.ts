@@ -118,4 +118,5 @@ export interface AppDB {
   autoRecurring: boolean; // auto-apply recurring templates at month start
   lastAutoAppliedMonth: string; // YYYY-MM key of the last month auto-apply ran
   syncPassphrase: string;  // AES-256-GCM passphrase; empty = no encryption
+  haptics: boolean;        // vibration feedback on save/warn/celebrate (default true)
 }

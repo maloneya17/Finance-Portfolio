@@ -66,7 +66,7 @@ import { db } from './db';
 import { math, fmt, getCatColor } from './utils';
 import { FIRE_ROLLING_MONTHS, FIRE_DEFAULT_EXP, FIRE_MULTIPLIER } from './constants';
 
-export function updateDashboardCharts(cats: Record<string, number>): void {
+export function updateDashboardCharts(cats: Record<string, number>, forecastExp?: number): void {
   // Spending breakdown (horizontal bar)
   spendingChart = destroyIfExists(spendingChart);
   const spendLabels = Object.keys(cats).sort((a, b) => cats[b] - cats[a]);
@@ -145,6 +145,10 @@ export function updateDashboardCharts(cats: Record<string, number>): void {
     },
   };
 
+  // Forecast ghost: sparse array with only the last (current) month populated
+  const dForecast: (number | null)[] = Array(6).fill(null);
+  if (forecastExp !== undefined && forecastExp > dExp[5]) dForecast[5] = forecastExp;
+
   trendChart = new Chart(getCtx('chartTrend'), {
     type: 'bar',
     data: {
@@ -152,6 +156,15 @@ export function updateDashboardCharts(cats: Record<string, number>): void {
       datasets: [
         { label: 'Inc', data: dInc, backgroundColor: '#10b981', borderRadius: 4 },
         { label: 'Exp', data: dExp, backgroundColor: '#f43f5e', borderRadius: 4 },
+        {
+          label: 'Forecast',
+          data: dForecast,
+          backgroundColor: 'rgba(244,63,94,0.2)',
+          borderColor: 'rgba(244,63,94,0.5)',
+          borderWidth: 1,
+          borderRadius: 4,
+          borderDash: [4, 4],
+        },
       ],
     },
     options: {
@@ -161,7 +174,17 @@ export function updateDashboardCharts(cats: Record<string, number>): void {
         x: { grid: { display: false } },
         y: { grid: { display: false } },
       },
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              if (ctx.datasetIndex === 2 && ctx.raw !== null) return `Forecast: ${sym()}${fmt(ctx.raw as number)}`;
+              return `${ctx.dataset.label}: ${sym()}${fmt(ctx.raw as number)}`;
+            },
+          },
+        },
+      },
     },
     plugins: [customTotals],
   } as ChartConfiguration<'bar'>);

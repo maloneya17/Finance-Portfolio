@@ -224,7 +224,7 @@ export function render(): void {
     updateChartSummaries(cats, inc, exp);
 
     if (!document.getElementById('view-dashboard')?.classList.contains('hidden')) {
-      updateDashboardCharts(cats);
+      updateDashboardCharts(cats, getMonthEndForecast(key));
     }
     if (!document.getElementById('view-budget')?.classList.contains('hidden')) {
       renderBudgets();
@@ -898,12 +898,36 @@ export function renderUpcomingBills(): void {
   if (upcoming.length > 0) {
     widget.classList.remove('hidden');
     list.innerHTML = '';
+
+    // ─── Bill Shock Radar ─────────────────────────────────────────────────────
+    // Compute available cash: current month net (inc - exp) + any liquid assets
+    const txs = db.transactions[key] ?? [];
+    let mInc = 0, mExp = 0;
+    txs.forEach(t => { if (t.type === 'income') mInc += math(t.amount); else mExp += math(t.amount); });
+    const liquidAssets = db.wealth.assets.filter(a => a.type === 'Cash' || a.type === 'Savings').reduce((s, a) => s + math(a.value), 0);
+    const availableCash = mInc - mExp + liquidAssets;
+    const totalUpcoming = upcoming.reduce((s, b) => s + b.amount, 0);
+    const cashPressure = availableCash > 0 && totalUpcoming > 0 && availableCash < totalUpcoming * 1.2;
+
+    if (cashPressure) {
+      list.insertAdjacentHTML('beforeend',
+        `<div class="flex items-center gap-2 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 px-3 py-2 rounded-lg text-xs font-bold mb-1" role="alert">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>Bill shock alert — upcoming bills (<span class="money-val">${sym()}${fmt(totalUpcoming)}</span>) are close to your available cash (<span class="money-val">${sym()}${fmt(availableCash)}</span>)</span>
+        </div>`);
+    }
+
     upcoming.sort((a, b) => a.daysUntil - b.daysUntil).forEach(b => {
       const label = b.daysUntil === 0 ? 'Today' : b.daysUntil === 1 ? 'Tomorrow' : `In ${b.daysUntil}d`;
+      const urgent = cashPressure && b.daysUntil <= 2;
+      const chipClass = urgent
+        ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300'
+        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300';
+      const badgeClass = urgent ? 'bg-rose-200 dark:bg-rose-800' : 'bg-amber-200 dark:bg-amber-800';
       list.insertAdjacentHTML('beforeend',
-        `<div class="flex items-center gap-2 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-3 py-1.5 rounded-lg text-xs font-bold">
+        `<div class="flex items-center gap-2 ${chipClass} px-3 py-1.5 rounded-lg text-xs font-bold">
           <i class="fas fa-clock"></i>${esc(b.name)} <span class="font-normal money-val">${sym()}${fmt(b.amount)}</span>
-          <span class="text-[9px] uppercase bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 rounded-full">${esc(label)}</span>
+          <span class="text-[9px] uppercase ${badgeClass} px-1.5 py-0.5 rounded-full">${esc(label)}</span>
         </div>`);
     });
   } else {

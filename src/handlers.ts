@@ -1,5 +1,5 @@
 import { db, save, persistOnly, clearAndReload, STORAGE_KEY } from './db';
-import { math, fmt, genId, esc, setCurrencySymbol, symFmt } from './utils';
+import { math, fmt, genId, esc, setCurrencySymbol, symFmt, haptic } from './utils';
 import { MAX_TX_AMOUNT, MAX_DESC_LENGTH } from './constants';
 import { showToast } from './toast';
 import { showTextInputModal, showConfirmModal } from './modal';
@@ -13,7 +13,7 @@ import {
   selectedTxIds,
 } from './render';
 import { getMonthPicker } from './main';
-import { getRollover, consolidateWealth, getCategoryAvgAmount } from './finance';
+import { getRollover, consolidateWealth, getCategoryAvgAmount, getCurrentCats } from './finance';
 import type { SplitEntry } from './types';
 import type { AssetType } from './types';
 
@@ -142,6 +142,18 @@ export function saveTransaction(): void {
     resetSplitPanel();
   }
   save();
+
+  // ─── Haptic feedback ──────────────────────────────────────────────────────
+  if (currentTxType === 'income') {
+    haptic('income');
+  } else {
+    // Check if any budget category is now over-limit after this expense
+    const cats = getCurrentCats(k);
+    const overBudget = !isSplit && db.budgets[effectiveCat] > 0 && (cats[effectiveCat] ?? 0) > db.budgets[effectiveCat];
+    haptic(overBudget ? 'warn' : 'confirm');
+  }
+  // Celebrate newly completed goals
+  if (db.goals.some(g => g.current >= g.target)) haptic('celebrate');
 }
 
 export function editTx(id: string): void {

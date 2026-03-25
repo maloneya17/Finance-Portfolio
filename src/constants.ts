@@ -33,4 +33,5 @@ export const DEFAULTS: AppDB = {
   autoRecurring: false,
   lastAutoAppliedMonth: '',
   syncPassphrase: '',
+  haptics: true,
 };

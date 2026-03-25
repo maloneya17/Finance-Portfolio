@@ -45,6 +45,7 @@ function repair(db: AppDB): AppDB {
   if (db.autoRecurring === undefined) db.autoRecurring = false;
   if (!db.lastAutoAppliedMonth) db.lastAutoAppliedMonth = '';
   if (db.syncPassphrase === undefined) db.syncPassphrase = '';
+  if (db.haptics === undefined) db.haptics = true;
   return db;
 }
 

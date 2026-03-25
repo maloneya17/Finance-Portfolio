@@ -6,7 +6,7 @@ import { setThemeDefaults } from './charts';
 import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
-import { debounce, math, setCurrencySymbol, csvEsc, sym } from './utils';
+import { debounce, math, setCurrencySymbol, csvEsc, sym, setHapticsEnabled } from './utils';
 import {
   setTxType, saveTransaction, editTx, resetTxForm, delTx, checkNewCategory,
   saveBill, editBill, cancelBillEdit, toggleBill, delBill,
@@ -382,6 +382,17 @@ function wireEvents(): void {
   // Reports year select
   document.getElementById('reportYearSelect')?.addEventListener('change', renderReports);
 
+  // Haptics toggle
+  const hapticsToggle = document.getElementById('hapticsToggle') as HTMLInputElement | null;
+  if (hapticsToggle) {
+    hapticsToggle.checked = db.haptics !== false;
+    hapticsToggle.addEventListener('change', () => {
+      db.haptics = hapticsToggle.checked;
+      setHapticsEnabled(db.haptics);
+      save();
+    });
+  }
+
   // Auto-recurring toggle
   const autoToggle = document.getElementById('autoRecurringToggle') as HTMLInputElement | null;
   if (autoToggle) {
@@ -602,6 +613,7 @@ function bootApp(): void {
   monthPickerEl.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   setCurrencySymbol(db.currency);
+  setHapticsEnabled(db.haptics !== false);
   wireEvents();
   updateCurrencyPrefixes();
   consolidateWealth();
