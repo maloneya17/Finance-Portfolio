@@ -405,6 +405,16 @@ function wireEvents(): void {
     }, 50);
   });
 
+  // Empty-state quick-add buttons — prefill the transaction form and focus desc
+  function quickAdd(type: 'income' | 'expense'): void {
+    setTxType(type);
+    const txDesc = document.getElementById('txDesc') as HTMLInputElement | null;
+    txDesc?.focus();
+    txDesc?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  document.getElementById('emptyStateAddIncome')?.addEventListener('click',  () => quickAdd('income'));
+  document.getElementById('emptyStateAddExpense')?.addEventListener('click', () => quickAdd('expense'));
+
   // ─── Online / offline status indicator ─────────────────────────────────────
   function updateOfflineBanner(): void {
     const banner = document.getElementById('offlineBanner');

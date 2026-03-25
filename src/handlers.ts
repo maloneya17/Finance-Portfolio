@@ -40,6 +40,14 @@ export function setTxType(type: 'income' | 'expense'): void {
   if (btnInc) btnInc.className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'income' ? activeInc : inactive}`;
 }
 
+// ─── Transaction form error helper ────────────────────────────────────────────
+/** Shows a toast AND announces the error to the screen-reader live region. */
+function txError(msg: string): void {
+  showToast(msg);
+  const el = document.getElementById('txFormError');
+  if (el) { el.textContent = msg; setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 5000); }
+}
+
 // ─── Transaction CRUD ─────────────────────────────────────────────────────────
 let editingTxId: string | null = null;
 /** Original month key when an edit was started — prevents saving to the wrong month
@@ -72,21 +80,21 @@ export function saveTransaction(): void {
   const splits = parseSplitRows();
   const isSplit = splits.length > 0;
 
-  if (!desc) return showToast('Please enter a description');
-  if (!amt || amt <= 0) return showToast('Please enter a valid positive amount');
-  if (amt > MAX_TX_AMOUNT) return showToast(`Amount is unreasonably large (max ${db.currency}${MAX_TX_AMOUNT.toLocaleString()})`);
+  if (!desc) return txError('Please enter a description');
+  if (!amt || amt <= 0) return txError('Please enter a valid positive amount');
+  if (amt > MAX_TX_AMOUNT) return txError(`Amount is unreasonably large (max ${db.currency}${MAX_TX_AMOUNT.toLocaleString()})`);
 
   if (isSplit) {
     // Validate: splits must sum to total (within 1 cent)
     const splitTotal = splits.reduce((s, r) => s + r.amount, 0);
     if (Math.abs(splitTotal - amt) > 0.01) {
-      return showToast(`Split amounts total ${db.currency}${fmt(splitTotal)} but transaction is ${db.currency}${fmt(amt)} — they must match.`);
+      return txError(`Split amounts total ${db.currency}${fmt(splitTotal)} but transaction is ${db.currency}${fmt(amt)} — they must match.`);
     }
     if (splits.some(s => !s.category || s.category === 'ADD_NEW')) {
-      return showToast('Each split row must have a valid category.');
+      return txError('Each split row must have a valid category.');
     }
   } else {
-    if (cat === 'ADD_NEW') return showToast('Please select a valid category');
+    if (cat === 'ADD_NEW') return txError('Please select a valid category');
   }
 
   // Effective category for unsplit transactions

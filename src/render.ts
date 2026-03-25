@@ -219,6 +219,9 @@ export function render(): void {
     }
 
     renderUpcomingBills();
+    renderHealthAmbientBar(key, netWorthKpi);
+    renderMonthPressureGauge(key);
+    updateChartSummaries(cats, inc, exp);
 
     if (!document.getElementById('view-dashboard')?.classList.contains('hidden')) {
       updateDashboardCharts(cats);
@@ -252,6 +255,171 @@ export function updateBulkBar(): void {
   bar?.classList.toggle('hidden', count === 0);
   const countEl = document.getElementById('bulkCount');
   if (countEl) countEl.textContent = `${count} selected`;
+}
+
+// ─── Financial Health Ambient Bar ────────────────────────────────────────────
+/**
+ * Updates a slim progress bar at the top of the dashboard that pulses
+ * rose/amber/emerald based on the financial health score — an ambient
+ * "at-a-glance" wellness indicator that changes without the user asking.
+ */
+function renderHealthAmbientBar(key: string, netWorth: number): void {
+  const barEl  = document.getElementById('healthAmbientBar');
+  const fillEl = document.getElementById('healthAmbientFill');
+  if (!barEl || !fillEl) return;
+
+  const { fireTarget } = calcFireStats(netWorth);
+  const health = getHealthScore(key, netWorth, fireTarget);
+  const score  = health.total;
+
+  barEl.classList.remove('hidden');
+  fillEl.style.width = `${score}%`;
+  fillEl.classList.remove('health-low', 'bg-rose-500', 'bg-amber-400', 'bg-emerald-500');
+
+  if (score < 40) {
+    fillEl.classList.add('bg-rose-500', 'health-low');
+    barEl.title = `Financial Health: ${score}/100 — Needs attention`;
+  } else if (score < 70) {
+    fillEl.classList.add('bg-amber-400');
+    barEl.title = `Financial Health: ${score}/100 — Good, room to improve`;
+  } else {
+    fillEl.classList.add('bg-emerald-500');
+    barEl.title = `Financial Health: ${score}/100 — Excellent`;
+  }
+
+  // Apply "Financial Weather" — health-tier-driven sidebar skin
+  const tier = score >= 75 ? 'thriving' : score >= 45 ? 'steady' : 'watchful';
+  document.documentElement.dataset['healthTier'] = tier;
+}
+
+// ─── Month Pressure Gauge ─────────────────────────────────────────────────────
+/**
+ * Day-of-month progress bar. Turns amber/rose + pulses when the user is on pace
+ * to exceed their total monthly budget. Only shown for the current month.
+ */
+function renderMonthPressureGauge(key: string): void {
+  const barEl   = document.getElementById('monthPressureBar');
+  const fillEl  = document.getElementById('monthPressureFill');
+  const labelEl = document.getElementById('monthPressureLabel');
+  const noteEl  = document.getElementById('monthPressureNote');
+  const trackEl = document.getElementById('monthPressureTrack');
+  if (!barEl || !fillEl || !labelEl || !noteEl || !trackEl) return;
+
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  if (key !== todayKey) { barEl.classList.add('hidden'); return; }
+
+  const [y, m] = key.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const today    = now.getDate();
+  const dayPct   = Math.round((today / daysInMonth) * 100);
+  const daysLeft = daysInMonth - today;
+
+  barEl.classList.remove('hidden');
+  fillEl.style.width = `${dayPct}%`;
+  trackEl.setAttribute('aria-valuenow', String(dayPct));
+  trackEl.setAttribute('aria-label', `Month progress: day ${today} of ${daysInMonth}`);
+  labelEl.textContent = `Day ${today} of ${daysInMonth}`;
+
+  const forecast    = getMonthEndForecast(key);
+  const totalBudget = Object.values(db.budgets).reduce((s, v) => s + v, 0);
+  const isOverpace  = totalBudget > 0 && forecast > totalBudget;
+
+  fillEl.classList.remove('pressure-warn', 'bg-rose-500', 'bg-amber-400', 'bg-sky-500');
+  if (daysLeft <= 5 && isOverpace) {
+    fillEl.classList.add('bg-rose-500', 'pressure-warn');
+    noteEl.textContent = `On pace to exceed budget — ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`;
+  } else if (isOverpace) {
+    fillEl.classList.add('bg-amber-400');
+    noteEl.textContent = `Forecast ${sym()}${fmt(forecast)} — over budget pace`;
+  } else {
+    fillEl.classList.add('bg-sky-500');
+    noteEl.textContent = daysLeft === 0 ? 'Last day of the month' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`;
+  }
+}
+
+// ─── Screen-reader chart summaries ────────────────────────────────────────────
+/**
+ * Populates sr-only text summaries next to each chart so screen readers can
+ * convey the key data points without needing to interpret canvas visuals.
+ */
+function updateChartSummaries(cats: Record<string, number>, inc: number, exp: number): void {
+  const spendEl = document.getElementById('chartSpendSummary');
+  if (spendEl) {
+    const topCats = Object.entries(cats)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([c, v]) => `${c}: ${sym()}${fmt(v)}`)
+      .join(', ');
+    spendEl.textContent = topCats
+      ? `Spending breakdown this month: ${topCats}.`
+      : 'No spending data for this month.';
+  }
+
+  const trendEl = document.getElementById('chartTrendSummary');
+  if (trendEl) {
+    const savingsAmt = math(inc - exp);
+    const saved = savingsAmt >= 0
+      ? `saved ${sym()}${fmt(savingsAmt)}`
+      : `deficit of ${sym()}${fmt(Math.abs(savingsAmt))}`;
+    trendEl.textContent = `This month: income ${sym()}${fmt(inc)}, expenses ${sym()}${fmt(exp)}, ${saved}.`;
+  }
+}
+
+// ─── Spending Heatmap ─────────────────────────────────────────────────────────
+/**
+ * Renders a GitHub-style contribution heatmap showing daily spending intensity
+ * for the last 12 weeks. Each cell is one day; colour depth = spend amount.
+ */
+export function renderSpendingHeatmap(): void {
+  const gridEl = document.getElementById('insHeatmapGrid');
+  if (!gridEl) return;
+
+  const today = new Date();
+  // Align to a Sunday so columns are full weeks
+  const endDate = new Date(today);
+  endDate.setDate(endDate.getDate() - endDate.getDay() + 6); // end on Saturday
+
+  const WEEKS = 13;
+  const startDate = new Date(endDate);
+  startDate.setDate(endDate.getDate() - WEEKS * 7 + 1);
+
+  // Build a date→spend map from all transactions
+  const daySpend: Record<string, number> = {};
+  Object.values(db.transactions).flat().forEach(t => {
+    if (t.type !== 'expense' || !t.date) return;
+    daySpend[t.date] = (daySpend[t.date] ?? 0) + math(t.amount);
+  });
+
+  // Find max for normalisation
+  const maxSpend = Math.max(1, ...Object.values(daySpend));
+
+  const cols: string[] = [];
+  for (let w = 0; w < WEEKS; w++) {
+    const cells: string[] = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + w * 7 + d);
+      if (date > today) {
+        cells.push(`<div class="heatmap-cell bg-transparent" aria-hidden="true"></div>`);
+        continue;
+      }
+      const key = date.toISOString().slice(0, 10);
+      const spend = daySpend[key] ?? 0;
+      const ratio = spend / maxSpend;
+      const bg = spend === 0 ? 'bg-slate-100 dark:bg-slate-800'
+        : ratio < 0.25 ? 'bg-rose-100 dark:bg-rose-900/40'
+        : ratio < 0.5  ? 'bg-rose-200 dark:bg-rose-700/60'
+        : ratio < 0.75 ? 'bg-rose-400 dark:bg-rose-600'
+        :                'bg-rose-600 dark:bg-rose-500';
+      const tipDate = date.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+      const tip = spend > 0 ? `${tipDate}: ${sym()}${fmt(spend)}` : tipDate;
+      const label = `${tipDate}${spend > 0 ? `: spent ${sym()}${fmt(spend)}` : ': no spending'}`;
+      cells.push(`<div class="heatmap-cell ${bg}" data-tip="${esc(tip)}" aria-label="${esc(label)}" role="img"></div>`);
+    }
+    cols.push(`<div class="heatmap-col">${cells.join('')}</div>`);
+  }
+  gridEl.innerHTML = cols.join('');
 }
 
 // ─── Budgets ──────────────────────────────────────────────────────────────────
@@ -404,7 +572,8 @@ export function renderCalendar(): void {
         const checkIcon = isPaid ? `<i class="fas fa-check text-emerald-500 mr-1" style="font-size:9px"></i>` : '';
         const shiftTitle = b._shifted ? ` title="Scheduled day ${b.day} — moved to last day of this month"` : '';
         const shiftMark = b._shifted ? ' <span title="Date adjusted" style="font-size:9px">*</span>' : '';
-        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}"${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover:text-indigo-500" data-edit-bill="${b.id}"><i class="fas fa-pencil-alt" style="font-size:9px"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}"><i class="fas fa-times-circle"></i></span></div></div>`;
+        const statusLabel = isPaid ? 'Paid' : 'Unpaid';
+        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}" tabindex="0" role="button" aria-pressed="${isPaid}" aria-label="${esc(b.name)}: ${sym()}${fmt(b.amount)}, ${statusLabel}. Press to toggle."${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover:text-indigo-500" data-edit-bill="${b.id}" tabindex="0" role="button" aria-label="Edit ${esc(b.name)}"><i class="fas fa-pencil-alt" style="font-size:9px" aria-hidden="true"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}" tabindex="0" role="button" aria-label="Delete ${esc(b.name)}"><i class="fas fa-times-circle" aria-hidden="true"></i></span></div></div>`;
       });
       if (overflow > 0) billsHtml += `<div class="text-[9px] text-slate-400 font-bold pl-1">+${overflow} more</div>`;
 
@@ -788,6 +957,8 @@ export function renderDebtPlanner(): void {
 // ─── Insights view ────────────────────────────────────────────────────────────
 export function renderInsights(): void {
   try {
+    renderSpendingHeatmap();
+
     const key = getMonthPicker().value;
 
     // Net worth (needed for runway + health score)

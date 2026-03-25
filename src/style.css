@@ -315,3 +315,67 @@ body.privacy-active .bill-amt {
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .tag-chip:hover { transform: scale(1.05); }
+
+/* ─── SPENDING HEATMAP ────────────────────────────────────────────────────────── */
+.heatmap-col { display: flex; flex-direction: column; gap: 3px; }
+.heatmap-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  cursor: default;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+  position: relative;
+}
+.heatmap-cell:hover { transform: scale(1.4); z-index: 10; }
+/* Tooltip via CSS — shown on hover of heatmap cell */
+.heatmap-cell[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #f1f5f9;
+  font-size: 10px;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ─── FINANCIAL HEALTH AMBIENT ────────────────────────────────────────────────── */
+/* The ambient bar pulses gently when health is low */
+@keyframes ambientPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+#healthAmbientFill.health-low { animation: ambientPulse 2s ease-in-out infinite; }
+
+/* ─── FINANCIAL WEATHER — health-tier-driven sidebar theming ─────────────────── */
+/* Score ≥ 75 = thriving (emerald), 45-74 = steady (amber/indigo), < 45 = watchful (slate) */
+[data-health-tier="thriving"] #sidebar { background: linear-gradient(180deg, #064e3b 0%, #0f172a 60%); }
+[data-health-tier="thriving"] .nav-item.active { background-color: #059669 !important; box-shadow: 0 4px 12px rgba(5,150,105,0.4) !important; }
+[data-health-tier="watchful"] #sidebar { background: linear-gradient(180deg, #1c1917 0%, #0c0a09 60%); }
+[data-health-tier="watchful"] .nav-item.active { background-color: #4b5563 !important; box-shadow: 0 4px 12px rgba(75,85,99,0.3) !important; }
+/* Smooth tier transitions */
+#sidebar { transition: background 1.2s ease; }
+.nav-item.active { transition: background-color 0.8s ease, box-shadow 0.8s ease !important; }
+
+/* ─── MONTH PRESSURE GAUGE ────────────────────────────────────────────────────── */
+@keyframes pressurePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244,63,94,0); }
+  50%       { box-shadow: 0 0 0 4px rgba(244,63,94,0.4); }
+}
+#monthPressureFill.pressure-warn { animation: pressurePulse 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  #healthAmbientFill.health-low,
+  #monthPressureFill.pressure-warn { animation: none; }
+}
+
+/* ─── BILL CHIP KEYBOARD FOCUS ────────────────────────────────────────────────── */
+.bill-chip:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
