@@ -13,7 +13,8 @@ import {
   selectedTxIds,
 } from './render';
 import { getMonthPicker } from './main';
-import { getRollover, consolidateWealth } from './finance';
+import { getRollover, consolidateWealth, getCategoryAvgAmount } from './finance';
+import type { SplitEntry } from './types';
 import type { AssetType } from './types';
 
 export { consolidateWealth };
@@ -60,28 +61,56 @@ export function saveTransaction(): void {
   const cat   = catEl?.value ?? '';
   const date  = dateEl?.value ?? '';
   const notes = notesEl?.value.trim().slice(0, 200) ?? '';
-  // Parse comma-separated tags: trim, lowercase, remove empty, max 10 tags of 30 chars each
+  // Parse comma-separated tags
   const tags  = (tagsEl?.value ?? '')
     .split(',')
     .map(t => t.trim().toLowerCase().slice(0, 30))
     .filter(t => t.length > 0)
     .slice(0, 10);
 
+  // Parse split rows from DOM (if split panel is visible)
+  const splits = parseSplitRows();
+  const isSplit = splits.length > 0;
+
   if (!desc) return showToast('Please enter a description');
   if (!amt || amt <= 0) return showToast('Please enter a valid positive amount');
   if (amt > MAX_TX_AMOUNT) return showToast(`Amount is unreasonably large (max ${db.currency}${MAX_TX_AMOUNT.toLocaleString()})`);
-  if (cat === 'ADD_NEW') return showToast('Please select a valid category');
+
+  if (isSplit) {
+    // Validate: splits must sum to total (within 1 cent)
+    const splitTotal = splits.reduce((s, r) => s + r.amount, 0);
+    if (Math.abs(splitTotal - amt) > 0.01) {
+      return showToast(`Split amounts total ${db.currency}${fmt(splitTotal)} but transaction is ${db.currency}${fmt(amt)} — they must match.`);
+    }
+    if (splits.some(s => !s.category || s.category === 'ADD_NEW')) {
+      return showToast('Each split row must have a valid category.');
+    }
+  } else {
+    if (cat === 'ADD_NEW') return showToast('Please select a valid category');
+  }
+
+  // Effective category for unsplit transactions
+  const effectiveCat = isSplit ? 'Split' : cat;
+
+  // ─── Spending spike check (only for new single-category expenses, not edits) ──
+  if (!editingTxId && currentTxType === 'expense' && !isSplit) {
+    const avgAmt = getCategoryAvgAmount(cat, k);
+    if (avgAmt !== null && amt > avgAmt * 3 && amt > 50) {
+      // Non-blocking warning toast — the save proceeds
+      showToast(`💡 Heads up: ${db.currency}${fmt(amt)} is unusually high for ${cat} (avg ${db.currency}${fmt(avgAmt)} per transaction)`);
+    }
+  }
 
   if (editingTxId) {
-    // Use the month where the tx originally lives, not the currently viewed month.
     const srcKey = editingTxMonth ?? k;
     const txIndex = (db.transactions[srcKey] ?? []).findIndex(t => t.id === editingTxId);
     if (txIndex > -1) {
       db.transactions[srcKey][txIndex] = {
         ...db.transactions[srcKey][txIndex],
-        desc, amount: amt, category: cat, type: currentTxType,
+        desc, amount: amt, category: effectiveCat, type: currentTxType,
         date: date || undefined, notes: notes || undefined,
         tags: tags.length ? tags : undefined,
+        splits: isSplit ? splits : undefined,
         updatedAt: Date.now(),
       };
     } else {
@@ -92,15 +121,17 @@ export function saveTransaction(): void {
     if (!db.transactions[k]) db.transactions[k] = [];
     db.transactions[k].push({
       id: genId(), updatedAt: Date.now(),
-      desc, amount: amt, category: cat, type: currentTxType,
+      desc, amount: amt, category: effectiveCat, type: currentTxType,
       date: date || undefined, notes: notes || undefined,
       tags: tags.length ? tags : undefined,
+      splits: isSplit ? splits : undefined,
     });
     if (descEl) descEl.value = '';
     if (amtEl)  amtEl.value  = '';
     if (notesEl) notesEl.value = '';
     if (tagsEl)  tagsEl.value  = '';
-    // Keep date as today, keep category for fast repeat entry
+    // Keep date/category for fast repeat entry; reset split state
+    resetSplitPanel();
   }
   save();
 }
@@ -136,6 +167,107 @@ export function resetTxForm(): void {
   const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Add Transaction';
   document.getElementById('btnCancelEdit')?.classList.add('hidden');
   setTxType('expense');
+  resetSplitPanel();
+}
+
+// ─── Split-transaction panel ───────────────────────────────────────────────────
+
+/** Reads all split rows from the DOM and returns validated SplitEntry array. */
+function parseSplitRows(): SplitEntry[] {
+  const panel = document.getElementById('splitPanel');
+  if (!panel || panel.classList.contains('hidden')) return [];
+  const rows = panel.querySelectorAll<HTMLElement>('[data-split-row]');
+  const entries: SplitEntry[] = [];
+  rows.forEach(row => {
+    const catEl = row.querySelector<HTMLSelectElement>('[data-split-cat]');
+    const amtEl = row.querySelector<HTMLInputElement>('[data-split-amt]');
+    const cat = catEl?.value ?? '';
+    const amt = math(amtEl?.value ?? '');
+    if (cat && amt > 0) entries.push({ category: cat, amount: amt });
+  });
+  return entries;
+}
+
+/** Hides and clears the split panel, resets the toggle label. */
+export function resetSplitPanel(): void {
+  const panel = document.getElementById('splitPanel');
+  const label = document.getElementById('splitToggleLabel');
+  const rows  = document.getElementById('splitRows');
+  if (panel) panel.classList.add('hidden');
+  if (rows) rows.innerHTML = '';
+  if (label) label.textContent = 'Add Split';
+  updateSplitRemaining();
+}
+
+/** Adds a new split row to the split panel. */
+export function addSplitRow(): void {
+  const panel = document.getElementById('splitPanel');
+  const rows  = document.getElementById('splitRows');
+  if (!rows || !panel) return;
+  panel.classList.remove('hidden');
+  document.getElementById('splitToggleLabel')!.textContent = 'Remove Split';
+
+  const rowDiv = document.createElement('div');
+  rowDiv.setAttribute('data-split-row', '');
+  rowDiv.className = 'flex items-center gap-2';
+
+  // Category select — clone options from the main txCat select
+  const catSel = document.createElement('select');
+  catSel.setAttribute('data-split-cat', '');
+  catSel.className = 'flex-1 p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer';
+  const mainCat = document.getElementById('txCat') as HTMLSelectElement | null;
+  if (mainCat) {
+    Array.from(mainCat.options)
+      .filter(o => o.value && o.value !== 'ADD_NEW')
+      .forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.text;
+        catSel.appendChild(opt);
+      });
+  }
+  catSel.addEventListener('change', updateSplitRemaining);
+
+  const amtInput = document.createElement('input');
+  amtInput.type = 'number';
+  amtInput.step = '0.01';
+  amtInput.min = '0';
+  amtInput.placeholder = '0.00';
+  amtInput.setAttribute('data-split-amt', '');
+  amtInput.className = 'w-24 p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition';
+  amtInput.addEventListener('input', updateSplitRemaining);
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+  removeBtn.className = 'text-slate-400 hover:text-rose-500 transition text-xs px-1';
+  removeBtn.addEventListener('click', () => {
+    rowDiv.remove();
+    if (!document.querySelector('[data-split-row]')) resetSplitPanel();
+    else updateSplitRemaining();
+  });
+
+  rowDiv.appendChild(catSel);
+  rowDiv.appendChild(amtInput);
+  rowDiv.appendChild(removeBtn);
+  rows.appendChild(rowDiv);
+  amtInput.focus();
+  updateSplitRemaining();
+}
+
+/** Updates the "Remaining" label in the split panel. */
+export function updateSplitRemaining(): void {
+  const amtEl = document.getElementById('txAmt') as HTMLInputElement | null;
+  const total = math(amtEl?.value ?? '');
+  const splits = parseSplitRows();
+  const allocated = splits.reduce((s, r) => s + r.amount, 0);
+  const remaining = math(total - allocated);
+  const label = document.getElementById('splitRemaining');
+  if (!label) return;
+  const sym_ = db.currency;
+  if (total === 0) { label.textContent = 'Remaining: —'; label.className = 'font-bold text-slate-500 text-[10px]'; return; }
+  label.textContent = `Remaining: ${sym_}${fmt(Math.abs(remaining))}${remaining < 0 ? ' over' : ''}`;
+  label.className = `font-bold text-[10px] ${remaining < -0.01 ? 'text-rose-500' : remaining < 0.01 ? 'text-emerald-500' : 'text-amber-500'}`;
 }
 
 export function delTx(id: string): void {

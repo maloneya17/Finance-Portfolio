@@ -18,6 +18,7 @@ import {
   editAnnualIncome, resetData, addCatPrompt, delCat,
   handleCsvFile, executeImport, importJsonBackup,
   bulkDeleteTx, bulkRecategorizeTx,
+  addSplitRow, resetSplitPanel, updateSplitRemaining,
 } from './handlers';
 import { consolidateWealth, isValidMonthKey } from './finance';
 
@@ -267,6 +268,17 @@ function wireEvents(): void {
           break;
         }
         case 'bulk-clear': selectedTxIds.clear(); render(); break;
+        case 'toggle-split': {
+          const panel = document.getElementById('splitPanel');
+          if (!panel) break;
+          if (panel.classList.contains('hidden')) {
+            addSplitRow(); // adding first row opens the panel automatically
+          } else {
+            resetSplitPanel();
+          }
+          break;
+        }
+        case 'add-split-row': addSplitRow(); break;
         case 'toggle-filter': {
           const panel = document.getElementById('advFilterPanel');
           const btn   = document.getElementById('btnFilterToggle');
@@ -341,6 +353,8 @@ function wireEvents(): void {
   // Search debounce
   const debouncedRender = debounce(render, 200);
   document.getElementById('txSearch')?.addEventListener('input', debouncedRender);
+  // Keep split "Remaining" label live as user types the total amount
+  document.getElementById('txAmt')?.addEventListener('input', updateSplitRemaining);
 
   // Category filter
   document.getElementById('txCatFilter')?.addEventListener('change', render);
