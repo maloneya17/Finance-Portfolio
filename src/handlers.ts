@@ -784,6 +784,19 @@ export function delGoal(id: string): void {
   });
 }
 
+// ─── Goal quick-contribute ────────────────────────────────────────────────────
+export function contributeGoal(id: string, amount: number): void {
+  const idx = db.goals.findIndex(g => g.id === id);
+  if (idx < 0 || amount <= 0) return;
+  const prev = db.goals[idx].current;
+  db.goals[idx].current = math(prev + amount);
+  const goal = db.goals[idx];
+  save();
+  if (goal.current >= goal.target && prev < goal.target) haptic('celebrate');
+  renderWealth();
+  showToast(`+${symFmt(amount)} added to "${goal.name}"`);
+}
+
 // ─── Currency ─────────────────────────────────────────────────────────────────
 export function saveCurrency(): void {
   const raw = (inp('currencySymbolInput')?.value ?? '').trim().slice(0, 5);

@@ -21,6 +21,13 @@ export function setDebtSimulatorOpts(s: 'avalanche' | 'snowball', extra: number)
   renderDebtPlanner();
 }
 
+// ─── Goal quick-contribute state ──────────────────────────────────────────────
+let _contribGoalId: string | null = null;
+export function setContribGoalId(id: string | null): void {
+  _contribGoalId = id;
+  renderGoals();
+}
+
 export { getRollover, getCurrentCats };
 
 // ─── Bulk selection state (exported for handlers) ─────────────────────────────
@@ -197,7 +204,7 @@ export function render(): void {
     }
     setText('kpiSavingsAmt', isDeficit ? `${sym()}${fmt(Math.abs(savedAmt))} deficit` : `${sym()}${fmt(savedAmt)} saved`);
 
-    // ─ Second-row KPIs: daily burn, month-end projection, cash runway ─────────
+    // ─ Second-row KPIs: daily burn, month-end projection, cash runway, budget pace ─
     const totalAssets = db.wealth.assets.reduce((a, b) => a + math(b.value), 0);
     const totalDebts  = db.wealth.debts.reduce((a, b) => a + math(b.value), 0);
     const netWorthKpi = totalAssets + (inc + rollover - exp) - totalDebts;
@@ -213,6 +220,31 @@ export function render(): void {
         runwayVal >= 3 ? 'text-amber-600 dark:text-amber-400' :
                          'text-rose-600 dark:text-rose-400'
       }`;
+    }
+
+    // ─ Budget pacing KPI: how much can be spent per day to stay on budget ────
+    const budgetPaceEl = document.getElementById('kpiBudgetPace');
+    if (budgetPaceEl) {
+      const todayNow = new Date();
+      const isCurrentMonth = key === getMonthKey(todayNow);
+      const totalBudget = Object.values(db.budgets).reduce((s, v) => s + (v > 0 ? v : 0), 0);
+      if (totalBudget > 0 && isCurrentMonth) {
+        const [bpY, bpM] = key.split('-').map(Number);
+        const daysInMonth = new Date(bpY, bpM, 0).getDate();
+        const daysRemaining = daysInMonth - todayNow.getDate() + 1; // include today
+        const budgetRemaining = totalBudget - exp;
+        const pace = daysRemaining > 0 ? budgetRemaining / daysRemaining : 0;
+        const isOver = budgetRemaining < 0;
+        budgetPaceEl.textContent = isOver ? 'Over budget' : `${sym()}${fmt(pace)}/day`;
+        budgetPaceEl.className = `text-2xl font-bold mt-1 money-val ${
+          isOver    ? 'text-rose-600 dark:text-rose-400' :
+          pace < 5  ? 'text-amber-600 dark:text-amber-400' :
+                      'text-emerald-600 dark:text-emerald-400'
+        }`;
+      } else {
+        budgetPaceEl.textContent = '—';
+        budgetPaceEl.className = 'text-2xl font-bold mt-1 text-slate-400';
+      }
     }
 
     const todayKey = getMonthKey(new Date());
@@ -460,26 +492,55 @@ export function renderBudgets(): void {
     });
   }
 
-  const cats = getCurrentCats(getMonthPicker().value);
+  const key = getMonthPicker().value;
+  const cats = getCurrentCats(key);
+
+  // Last-month key for MoM delta badges
+  const [bmy0, bmm0] = key.split('-').map(Number);
+  const prevDate = new Date(bmy0, bmm0 - 2); // month is 0-indexed, so -2 = previous month
+  const prevKey  = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+  const prevCats: Record<string, number> = {};
+  (db.transactions[prevKey] ?? []).forEach(t => {
+    if (t.type === 'expense') prevCats[t.category] = (prevCats[t.category] ?? 0) + math(t.amount);
+  });
+
   const barsDiv = document.getElementById('budgetBars');
   if (barsDiv) {
     barsDiv.innerHTML = '';
     let hasBudget = false;
-    const [bmy, bmm] = getMonthPicker().value.split('-').map(Number);
+    const [bmy, bmm] = key.split('-').map(Number);
     setText('budgetMonthLabel', new Date(bmy, bmm - 1).toLocaleString('default', { month: 'long', year: 'numeric' }));
     Object.keys(db.budgets).forEach(c => {
       const budget = db.budgets[c];
       if (budget > 0) {
         hasBudget = true;
-        const spent = cats[c] ?? 0;
+        const spent    = cats[c] ?? 0;
+        const prevSpent = prevCats[c] ?? 0;
         const pct = Math.min((spent / budget) * 100, 100);
         let color = 'bg-emerald-500', statusLabel = 'On budget', statusClass = 'text-emerald-600 dark:text-emerald-400';
         if (pct > BUDGET_WARN_PCT) { color = 'bg-amber-500'; statusLabel = 'Approaching limit'; statusClass = 'text-amber-600 dark:text-amber-400'; }
         if (pct >= 100) { color = 'bg-rose-500'; statusLabel = 'Over budget'; statusClass = 'text-rose-600 dark:text-rose-400'; }
+
+        // Month-over-month delta badge
+        let momBadge = '';
+        if (prevSpent > 0) {
+          const delta   = spent - prevSpent;
+          const deltaPct = Math.round(Math.abs(delta / prevSpent) * 100);
+          if (Math.abs(delta) >= 0.01) {
+            const up  = delta > 0;
+            momBadge = `<span class="text-[10px] font-bold ${up ? 'text-rose-500' : 'text-emerald-500'} ml-1.5" title="vs last month">
+              ${up ? '▲' : '▼'}${deltaPct}%
+            </span>`;
+          }
+        }
+
         barsDiv.insertAdjacentHTML('beforeend',
           `<div>
             <div class="flex justify-between items-end mb-1">
-              <span class="font-bold text-sm text-slate-700 dark:text-slate-200">${esc(c)}</span>
+              <div class="flex items-center">
+                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">${esc(c)}</span>
+                ${momBadge}
+              </div>
               <div class="text-right">
                 <span class="text-xs font-bold text-slate-500"><span class="money-val">${sym()}${fmt(spent)}</span> / <span class="money-val">${sym()}${fmt(budget)}</span></span>
                 <span class="block text-[10px] font-bold ${statusClass}">${statusLabel}</span>
@@ -781,33 +842,59 @@ export function renderGoals(): void {
     return;
   }
   db.goals.forEach(g => {
-    const pct = g.target > 0 ? Math.min(Math.max((g.current / g.target) * 100, 0), 100) : 0;
+    const pct   = g.target > 0 ? Math.min(Math.max((g.current / g.target) * 100, 0), 100) : 0;
+    const remaining = Math.max(0, g.target - g.current);
     const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-indigo-500' : 'bg-amber-500';
     let deadlineHtml = '';
     if (g.deadline) {
-      const dlDate  = new Date(g.deadline + 'T00:00:00'); // force local TZ parse
+      const dlDate  = new Date(g.deadline + 'T00:00:00');
       const daysLeft = Math.ceil((dlDate.getTime() - Date.now()) / 86_400_000);
       const dlColor  = pct >= 100 ? 'text-emerald-500' : daysLeft < 0 ? 'text-rose-500' : daysLeft <= 30 ? 'text-amber-500' : 'text-slate-400';
       const dlLabel  = pct >= 100 ? 'Goal reached!' : daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`;
       deadlineHtml = `<span class="text-[10px] font-medium ${dlColor} ml-1"><i class="far fa-calendar-alt mr-0.5"></i>${esc(dlLabel)}</span>`;
     }
+
+    // Quick-contribute inline form (shown when this goal is active)
+    const showContrib = _contribGoalId === g.id && pct < 100;
+    const contribHtml = showContrib
+      ? `<div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+           <span class="curr-prefix text-xs text-slate-400 font-semibold">${sym()}</span>
+           <input id="contribInput-${g.id}" type="number" min="0.01" step="0.01" max="${remaining}"
+             placeholder="Amount to add" autofocus
+             class="flex-1 p-1.5 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-300">
+           <button type="button" data-do-contrib="${g.id}"
+             class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition">Add</button>
+           <button type="button" data-cancel-contrib="${g.id}"
+             class="text-xs text-slate-400 hover:text-rose-500 font-bold">✕</button>
+         </div>`
+      : '';
+
     list.insertAdjacentHTML('beforeend',
       `<div class="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg mb-2">
         <div class="flex justify-between items-start mb-1">
-          <div>
+          <div class="flex-1 min-w-0">
             <span class="font-bold text-slate-700 dark:text-slate-200 text-xs">${esc(g.name)}</span>
             ${g.notes ? `<span class="text-[10px] text-slate-400 ml-2">${esc(g.notes)}</span>` : ''}
             ${deadlineHtml}
           </div>
-          <div class="flex gap-2 items-center">
-            <span class="text-xs text-slate-500">${sym()}${fmt(g.current)} / ${sym()}${fmt(g.target)}</span>
+          <div class="flex gap-1.5 items-center shrink-0 ml-2">
+            <span class="text-xs text-slate-500 money-val">${sym()}${fmt(g.current)} / ${sym()}${fmt(g.target)}</span>
+            ${pct < 100
+              ? `<button type="button" data-contrib-goal="${g.id}"
+                   title="Add contribution"
+                   class="text-emerald-500 hover:text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-[10px] transition">+</button>`
+              : ''}
             <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-indigo-500"><i class="fas fa-pencil-alt" style="font-size:10px"></i></button>
             <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times" style="font-size:10px"></i></button>
           </div>
         </div>
-        <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-          <div class="h-full ${color} rounded-full transition-all" style="width:${pct}%"></div>
+        <div class="flex items-center gap-2">
+          <div class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div class="h-full ${color} rounded-full transition-all" style="width:${pct}%"></div>
+          </div>
+          <span class="text-[10px] font-bold text-slate-400 shrink-0">${Math.round(pct)}%</span>
         </div>
+        ${contribHtml}
       </div>`);
   });
 }

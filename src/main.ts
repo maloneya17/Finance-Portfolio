@@ -3,7 +3,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin, startInactivityWatcher } from './auth';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
-import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar, setDebtSimulatorOpts, _debtStrategy, _debtExtra } from './render';
+import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar, setDebtSimulatorOpts, _debtStrategy, _debtExtra, setContribGoalId } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
 import { debounce, math, setCurrencySymbol, csvEsc, sym, setHapticsEnabled } from './utils';
@@ -12,7 +12,7 @@ import {
   saveBill, editBill, cancelBillEdit, toggleBill, delBill,
   saveAsset, editAsset, saveDebt, editDebt, cancelWealthEdit, delWealthItem,
   logNetWorth,
-  saveGoal, editGoal, delGoal, cancelGoalEdit,
+  saveGoal, editGoal, delGoal, cancelGoalEdit, contributeGoal,
   saveCurrency,
   setRecType, saveRecurring, delRecurring, applyRecurring,
   editAnnualIncome, resetData, addCatPrompt, delCat,
@@ -285,6 +285,21 @@ function wireEvents(): void {
     if (editGoalEl) { editGoal(editGoalEl.dataset['editGoal']!); return; }
     const delGoalEl = target.closest<HTMLElement>('[data-del-goal]');
     if (delGoalEl) { delGoal(delGoalEl.dataset['delGoal']!); return; }
+
+    // Goal quick-contribute
+    const contribStartEl = target.closest<HTMLElement>('[data-contrib-goal]');
+    if (contribStartEl) { setContribGoalId(contribStartEl.dataset['contribGoal']!); return; }
+    const contribDoEl = target.closest<HTMLElement>('[data-do-contrib]');
+    if (contribDoEl) {
+      const gid    = contribDoEl.dataset['doContrib']!;
+      const input  = document.getElementById(`contribInput-${gid}`) as HTMLInputElement | null;
+      const amount = parseFloat(input?.value ?? '') || 0;
+      if (amount > 0) { contributeGoal(gid, amount); }
+      setContribGoalId(null);
+      return;
+    }
+    const contribCancelEl = target.closest<HTMLElement>('[data-cancel-contrib]');
+    if (contribCancelEl) { setContribGoalId(null); return; }
 
     // Recurring
     const delRecEl = target.closest<HTMLElement>('[data-del-recurring]');
@@ -716,9 +731,19 @@ function bootApp(): void {
   refreshAuthSettingsCard();
   const currInput = document.getElementById('currencySymbolInput') as HTMLInputElement | null;
   if (currInput) currInput.value = db.currency;
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   if (db.autoRecurring) {
-    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     if (db.lastAutoAppliedMonth !== currentMonthKey) applyRecurring(true);
+  } else if (
+    db.recurring.length > 0 &&
+    db.lastAutoAppliedMonth !== currentMonthKey &&
+    !sessionStorage.getItem('_recurringNudged')
+  ) {
+    // First-visit nudge: user has recurring templates but hasn't enabled auto-apply
+    sessionStorage.setItem('_recurringNudged', '1');
+    setTimeout(() => showToast(
+      `${db.recurring.length} recurring template${db.recurring.length > 1 ? 's' : ''} ready — enable Auto-Apply in Settings to add them automatically each month.`,
+    ), 2500);
   }
 }
 
