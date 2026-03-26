@@ -79,6 +79,7 @@
             <button type="button" data-action="toggle-theme"
                 class="w-full py-2 mb-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
                 <i class="fas fa-moon"></i> <span id="themeLabel">Dark Mode</span>
+                <span id="themeSystemIcon" class="hidden text-[9px] bg-slate-700 px-1.5 py-0.5 rounded text-slate-400">auto</span>
             </button>
 
             <div class="flex justify-between items-center mb-2 px-1">
@@ -572,10 +573,10 @@
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-slate-800 dark:text-white">History Trend</h3>
-                        <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">Past 12 Months</span>
+                        <span class="text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">24 Months + Trend</span>
                     </div>
-                    <div class="h-[200px] w-full relative">
-                        <canvas id="chartWealthTrend" role="img" aria-label="Net Worth Trend chart: historical net worth by month"></canvas>
+                    <div class="h-[240px] w-full relative">
+                        <canvas id="chartWealthTrend" role="img" aria-label="Net Worth Trend chart: 24-month history with FIRE target and trend projection"></canvas>
                         <div id="chartWealthTrendSummary" class="sr-only" aria-live="polite"></div>
                     </div>
                 </div>
@@ -601,7 +602,7 @@
                 <div id="listGoals" class="space-y-2"></div>
             </div>
 
-            <!-- Debt Payoff Planner -->
+            <!-- Debt Payoff Simulator -->
             <div id="debtPlanner" class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mt-6"></div>
         </div>
 
@@ -858,6 +859,15 @@
                     <input type="text" id="currencySymbolInput" maxlength="3" placeholder="£" class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
                     <button type="button" data-action="save-currency" class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button>
                 </div>
+            </div>
+
+            <div id="pwaInstallRow" class="hidden card bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-indigo-700 dark:text-indigo-300 mb-2"><i class="fas fa-mobile-alt mr-2"></i>Install App</h3>
+                <p class="text-xs text-slate-500 mb-3">Add Finance Portfolio to your home screen for offline access and a native-app experience.</p>
+                <button type="button" data-action="pwa-install"
+                    class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition">
+                    <i class="fas fa-download mr-2"></i>Install on this device
+                </button>
             </div>
 
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">

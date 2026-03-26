@@ -47,6 +47,7 @@ let spendingChart: Chart | null = null;
 let yearlyChart: Chart | null = null;
 let wealthChart: Chart | null = null;
 let wealthTrendChart: Chart | null = null;
+let debtTimelineChart: Chart | null = null;
 
 function destroyIfExists(c: Chart | null): null {
   c?.destroy();
@@ -241,6 +242,7 @@ export function updateWealthCharts(
   totalDebts: number,
   historyLabels: string[],
   historyValues: (number | null)[],
+  fireTarget?: number,
 ): void {
   wealthChart = destroyIfExists(wealthChart);
   const clampedAssets = Math.max(0, totalAssets);
@@ -276,27 +278,200 @@ export function updateWealthCharts(
   } as ChartConfiguration<'doughnut'>);
 
   wealthTrendChart = destroyIfExists(wealthTrendChart);
+
+  // Extend chart 3 months into the future for the trend projection line
+  const projMonths = 3;
+  const allLabels = [...historyLabels];
+  for (let i = 1; i <= projMonths; i++) {
+    const d = new Date();
+    d.setMonth(d.getMonth() + i);
+    allLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+  }
+
+  // Actual net worth data — pad future slots with null
+  const netWorthData: (number | null)[] = [...historyValues, ...Array(projMonths).fill(null)];
+
+  // FIRE target — horizontal dashed line across all labels (only if set)
+  const fireData: (number | null)[] | null = (fireTarget && fireTarget > 0)
+    ? allLabels.map(() => fireTarget)
+    : null;
+
+  // Linear trend projection: fit a line through the last ≤6 non-null history points,
+  // then extrapolate from the last known value through the 3 future slots.
+  const nonNull = historyValues.reduce<{ i: number; v: number }[]>((acc, v, i) => {
+    if (v !== null) acc.push({ i, v });
+    return acc;
+  }, []);
+  const trendData: (number | null)[] = Array(allLabels.length).fill(null);
+  if (nonNull.length >= 2) {
+    const pts = nonNull.slice(-6);
+    const x0 = pts[0].i;
+    const x1 = pts[pts.length - 1].i;
+    const slope = x1 > x0 ? (pts[pts.length - 1].v - pts[0].v) / (x1 - x0) : 0;
+    const last  = nonNull[nonNull.length - 1];
+    // Plot from last known point through 3 future months
+    for (let step = 0; step <= projMonths; step++) {
+      const chartIdx = last.i + step;
+      if (chartIdx < allLabels.length) {
+        trendData[chartIdx] = math(last.v + slope * step);
+      }
+    }
+  }
+
+  const isDark = db.theme === 'dark';
+  const datasets: ChartConfiguration<'line'>['data']['datasets'] = [
+    {
+      label: 'Net Worth',
+      data: netWorthData,
+      borderColor: '#6366f1',
+      backgroundColor: 'rgba(99,102,241,0.08)',
+      fill: true,
+      tension: 0.4,
+      spanGaps: false,
+      pointRadius: netWorthData.map((v, i) => {
+        // Show point only on the most recent non-null value
+        const isLast = nonNull.length > 0 && i === nonNull[nonNull.length - 1].i;
+        return isLast ? 4 : 0;
+      }),
+      pointBackgroundColor: '#6366f1',
+    },
+  ];
+
+  if (nonNull.length >= 2) {
+    datasets.push({
+      label: 'Trend',
+      data: trendData,
+      borderColor: 'rgba(99,102,241,0.4)',
+      backgroundColor: 'transparent',
+      borderDash: [4, 4],
+      fill: false,
+      tension: 0,
+      pointRadius: 0,
+      spanGaps: false,
+    });
+  }
+
+  if (fireData) {
+    datasets.push({
+      label: 'FIRE Target',
+      data: fireData,
+      borderColor: 'rgba(245,158,11,0.6)',
+      backgroundColor: 'transparent',
+      borderDash: [6, 3],
+      borderWidth: 1.5,
+      fill: false,
+      tension: 0,
+      pointRadius: 0,
+    });
+  }
+
   wealthTrendChart = new Chart(getCtx('chartWealthTrend'), {
     type: 'line',
-    data: {
-      labels: historyLabels,
-      datasets: [{
-        label: 'Net Worth',
-        data: historyValues,
-        borderColor: '#6366f1',
-        backgroundColor: 'rgba(99,102,241,0.1)',
-        fill: true,
-        tension: 0.4,
-        spanGaps: false,
-      }],
-    },
+    data: { labels: allLabels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false }, datalabels: { display: false } },
-      scales: { x: { display: false }, y: { display: false } },
+      plugins: {
+        legend: {
+          display: Boolean(fireData),
+          labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 }, color: isDark ? '#94a3b8' : '#64748b' },
+        },
+        datalabels: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.raw as number | null;
+              if (v === null) return '';
+              if (ctx.dataset.label === 'Trend') return `Trend: ${sym()}${fmt(v)}`;
+              if (ctx.dataset.label === 'FIRE Target') return `FIRE: ${sym()}${fmt(v)}`;
+              return `Net Worth: ${sym()}${fmt(v)}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { display: true, grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 0, maxTicksLimit: 6 } },
+        y: { display: true, grid: { color: isDark ? '#1e293b' : '#f1f5f9' }, ticks: { font: { size: 9 }, callback: (v) => `${sym()}${fmt(v as number)}` } },
+      },
     },
   } as ChartConfiguration<'line'>);
+}
+
+// ─── Debt Payoff Timeline chart ───────────────────────────────────────────────
+import type { DebtPayoff } from './finance';
+
+export function updateDebtTimelineChart(plans: DebtPayoff[]): void {
+  debtTimelineChart = destroyIfExists(debtTimelineChart);
+  const canvas = document.getElementById('chartDebtTimeline') as HTMLCanvasElement | null;
+  if (!canvas) return;
+
+  const payable = plans.filter(p => p.monthsToPayoff > 0);
+  const wrap = canvas.closest<HTMLElement>('.debt-timeline-wrap');
+  if (payable.length === 0) {
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  if (wrap) wrap.style.display = '';
+
+  const isDark = db.theme === 'dark';
+  const maxM   = Math.max(...payable.map(p => p.monthsToPayoff));
+
+  debtTimelineChart = new Chart(canvas.getContext('2d')!, {
+    type: 'bar',
+    plugins: [ChartDataLabels],
+    data: {
+      labels: payable.map(p => p.name),
+      datasets: [{
+        data: payable.map(p => p.monthsToPayoff),
+        backgroundColor: payable.map(p => {
+          const ratio = p.monthsToPayoff / maxM;
+          if (ratio < 0.33) return '#10b981';
+          if (ratio < 0.67) return '#f59e0b';
+          return '#f43f5e';
+        }),
+        borderRadius: 4,
+        borderSkipped: false,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end',
+          align: 'end',
+          color: isDark ? '#94a3b8' : '#64748b',
+          font: { size: 10, weight: 'bold' },
+          formatter: (v: number) => {
+            const yr = Math.floor(v / 12);
+            const mo = v % 12;
+            return yr > 0 ? `${yr}y ${mo}m` : `${mo}m`;
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const p = payable[ctx.dataIndex];
+              const parts = [`${ctx.raw as number} months to payoff`];
+              if (p.totalInterest > 0) parts.push(`Interest: ${sym()}${fmt(p.totalInterest)}`);
+              parts.push(`Done: ${p.payoffDateStr}`);
+              return parts;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 9 } },
+          title: { display: true, text: 'Months to payoff', font: { size: 9 } },
+        },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      },
+    },
+  } as ChartConfiguration<'bar'>);
 }
 
 // ─── FIRE calculation helper ──────────────────────────────────────────────────

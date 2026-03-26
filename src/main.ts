@@ -3,7 +3,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin, startInactivityWatcher } from './auth';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
-import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar } from './render';
+import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar, setDebtSimulatorOpts, _debtStrategy, _debtExtra } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
 import { debounce, math, setCurrencySymbol, csvEsc, sym, setHapticsEnabled } from './utils';
@@ -33,8 +33,33 @@ export function getMonthPicker(): HTMLInputElement {
 (window as Window & { _fpRender?: () => void })._fpRender = render;
 (window as Window & { _fpUpdateCloudStatus?: () => void })._fpUpdateCloudStatus = updateCloudStatus;
 
+// ─── PWA install prompt ───────────────────────────────────────────────────────
+let _deferredInstallPrompt: Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> } | null = null;
+
+window.addEventListener('beforeinstallprompt', (e: Event) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e as typeof _deferredInstallPrompt;
+  // Show install button in settings once we have a prompt available
+  document.getElementById('pwaInstallRow')?.classList.remove('hidden');
+});
+
+window.addEventListener('appinstalled', () => {
+  _deferredInstallPrompt = null;
+  document.getElementById('pwaInstallRow')?.classList.add('hidden');
+});
+
+async function triggerPwaInstall(): Promise<void> {
+  if (!_deferredInstallPrompt) return;
+  await _deferredInstallPrompt.prompt();
+  const choice = await _deferredInstallPrompt.userChoice;
+  if (choice.outcome === 'accepted') {
+    _deferredInstallPrompt = null;
+    document.getElementById('pwaInstallRow')?.classList.add('hidden');
+  }
+}
+
 // ─── Theme ────────────────────────────────────────────────────────────────────
-function applyTheme(): void {
+function applyTheme(source: 'manual' | 'system' = 'manual'): void {
   const html = document.documentElement;
   const label = document.getElementById('themeLabel');
   const isDark = db.theme === 'dark';
@@ -50,9 +75,43 @@ function applyTheme(): void {
   if (!document.getElementById('view-dashboard')?.classList.contains('hidden')) render();
   if (!document.getElementById('view-reports')?.classList.contains('hidden')) { try { renderReports(); } catch { /* */ } }
   if (!document.getElementById('view-wealth')?.classList.contains('hidden')) { try { renderWealth(); } catch { /* */ } }
+  if (source === 'system') {
+    const icon = document.getElementById('themeSystemIcon');
+    if (icon) { icon.classList.remove('hidden'); setTimeout(() => icon.classList.add('hidden'), 2000); }
+  }
 }
 
-function toggleTheme(): void { db.theme = db.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); }
+function toggleTheme(): void {
+  sessionStorage.setItem('themeManual', '1');
+  db.theme = db.theme === 'dark' ? 'light' : 'dark';
+  save();
+  applyTheme();
+}
+
+// ─── System theme sync ────────────────────────────────────────────────────────
+// Follow OS dark-mode preference unless the user has explicitly set a theme.
+// We detect "never manually set" by checking if it's still the install default
+// (schemaVersion was just created — no manual saves yet for the theme field).
+// Simpler heuristic: sync on first boot, then wire a listener for live changes.
+(function initSystemTheme() {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  // Only auto-apply if the user is still on the default 'light' theme
+  // AND the system actually prefers dark. Respects any explicit toggle.
+  if (db.theme === 'light' && mq.matches) {
+    db.theme = 'dark';
+    save(true); // skipRender — applyTheme() below will handle it
+  }
+  // Live listener — track system changes while the app is open
+  mq.addEventListener('change', (ev) => {
+    // Only follow system if user hasn't pinned a preference via the toggle
+    // (we use a lightweight sessionStorage flag set on manual toggle)
+    if (!sessionStorage.getItem('themeManual')) {
+      db.theme = ev.matches ? 'dark' : 'light';
+      save(true);
+      applyTheme('system');
+    }
+  });
+})();
 
 // ─── Privacy ──────────────────────────────────────────────────────────────────
 let isPrivacyMode = false;
@@ -190,6 +249,20 @@ function wireEvents(): void {
     if (toggleBillEl && !target.closest('[data-del-bill]') && !target.closest('[data-edit-bill]')) { toggleBill(toggleBillEl.dataset['toggleBill']!); return; }
     const delBillEl = target.closest<HTMLElement>('[data-del-bill]');
     if (delBillEl) { e.stopPropagation(); delBill(delBillEl.dataset['delBill']!); return; }
+
+    // Debt Payoff Simulator — strategy toggle
+    const debtStratBtn = target.closest<HTMLElement>('[data-debt-strategy]');
+    if (debtStratBtn) {
+      const strat = debtStratBtn.dataset['debtStrategy'] as 'avalanche' | 'snowball';
+      setDebtSimulatorOpts(strat, _debtExtra);
+      return;
+    }
+
+    // PWA install
+    if (target.closest<HTMLElement>('[data-action="pwa-install"]')) {
+      void triggerPwaInstall();
+      return;
+    }
 
     // Wealth
     const editAssetEl = target.closest<HTMLElement>('[data-edit-asset]');
@@ -409,6 +482,15 @@ function wireEvents(): void {
       save();
     });
   }
+
+  // Debt Payoff Simulator extra payment input (delegated to body — re-rendered on each call)
+  root.addEventListener('input', (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    if (target.id === 'debtExtraInput') {
+      const val = parseFloat(target.value) || 0;
+      setDebtSimulatorOpts(_debtStrategy, val);
+    }
+  });
 
   // Sidebar overlay click
   document.getElementById('sidebarOverlay')?.addEventListener('click', toggleSidebar);

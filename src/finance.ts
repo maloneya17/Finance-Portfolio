@@ -164,10 +164,17 @@ export interface DebtPayoff {
 
 /**
  * Amortisation-based payoff projection for every debt with a positive balance.
- * Sorted avalanche-style: highest APR first.
+ * Strategy: 'avalanche' (highest APR first, default) or 'snowball' (lowest balance first).
+ * extraPayment: additional monthly payment applied to the top-priority debt.
  */
-export function getDebtPayoffPlans(): DebtPayoff[] {
-  return db.wealth.debts
+export function getDebtPayoffPlans(opts?: {
+  strategy?: 'avalanche' | 'snowball';
+  extraPayment?: number;
+}): DebtPayoff[] {
+  const strategy = opts?.strategy ?? 'avalanche';
+  const extra    = math(opts?.extraPayment ?? 0);
+
+  const plans = db.wealth.debts
     .filter(d => math(d.value) > 0)
     .map(debt => {
       const balance     = math(debt.value);
@@ -209,17 +216,62 @@ export function getDebtPayoffPlans(): DebtPayoff[] {
       }
 
       return {
-        id: debt.id,
-        name: debt.name,
-        balance,
-        annualRate,
-        monthlyPayment,
-        monthsToPayoff,
-        totalInterest,
-        payoffDateStr,
+        id: debt.id, name: debt.name, balance, annualRate,
+        monthlyPayment, monthsToPayoff, totalInterest, payoffDateStr,
       };
-    })
-    .sort((a, b) => b.annualRate - a.annualRate); // highest APR first (avalanche)
+    });
+
+  // Sort by strategy
+  if (strategy === 'snowball') {
+    plans.sort((a, b) => a.balance - b.balance);   // lowest balance first
+  } else {
+    plans.sort((a, b) => b.annualRate - a.annualRate); // highest APR first (avalanche)
+  }
+
+  // Apply extra payment to the top-priority payable debt only
+  if (extra > 0) {
+    const target = plans.find(p => p.monthsToPayoff > 0);
+    if (target) {
+      const monthlyRate = target.annualRate / 100 / 12;
+      const totalPmt    = target.monthlyPayment + extra;
+      let newMonths: number;
+      let newInterest: number;
+      if (monthlyRate <= 0) {
+        newMonths   = Math.ceil(target.balance / totalPmt);
+        newInterest = 0;
+      } else {
+        newMonths   = Math.ceil(
+          -Math.log(1 - (target.balance * monthlyRate) / totalPmt) /
+           Math.log(1 + monthlyRate),
+        );
+        newInterest = math(totalPmt * newMonths - target.balance);
+      }
+      const payDate = new Date();
+      payDate.setMonth(payDate.getMonth() + newMonths);
+      target.monthlyPayment = totalPmt;
+      target.monthsToPayoff = newMonths;
+      target.totalInterest  = newInterest;
+      target.payoffDateStr  = payDate.toLocaleDateString('default', { month: 'short', year: 'numeric' });
+    }
+  }
+
+  return plans;
+}
+
+/** Quick total-interest comparison for both strategies at a given extra payment level. */
+export function compareDebtStrategies(extraPayment = 0): {
+  avalanche: { totalInterest: number; totalMonths: number };
+  snowball:  { totalInterest: number; totalMonths: number };
+} {
+  const summarise = (strategy: 'avalanche' | 'snowball') => {
+    const plans = getDebtPayoffPlans({ strategy, extraPayment });
+    const payable = plans.filter(p => p.monthsToPayoff > 0);
+    return {
+      totalInterest: math(payable.reduce((s, p) => s + p.totalInterest, 0)),
+      totalMonths:   Math.max(0, ...payable.map(p => p.monthsToPayoff)),
+    };
+  };
+  return { avalanche: summarise('avalanche'), snowball: summarise('snowball') };
 }
 
 export interface HealthScore {

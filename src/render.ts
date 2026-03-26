@@ -1,16 +1,25 @@
-import { db, save } from './db';
+import { db, save, persistOnly } from './db';
 import { showToast } from './toast';
 import { math, fmt, esc, sym, symFmt, getMonthKey } from './utils';
 import { BUDGET_WARN_PCT, CALENDAR_MAX_CHIPS } from './constants';
-import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats } from './charts';
+import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats, updateDebtTimelineChart } from './charts';
 import { getMonthPicker } from './main';
 import {
   getRollover, getCurrentCats, consolidateWealth, isValidMonthKey,
   getSpendingVelocity, getDailyBurnRate, getMonthEndForecast,
-  getCashRunway, getDebtPayoffPlans, getHealthScore, getRecentMonthKeys,
+  getCashRunway, getDebtPayoffPlans, compareDebtStrategies, getHealthScore, getRecentMonthKeys,
   detectSubscriptions, getSmartTips, getAchievements,
   type VelocityEntry,
 } from './finance';
+
+// ─── Debt simulator state ─────────────────────────────────────────────────────
+export let _debtStrategy: 'avalanche' | 'snowball' = 'avalanche';
+export let _debtExtra = 0;
+export function setDebtSimulatorOpts(s: 'avalanche' | 'snowball', extra: number): void {
+  _debtStrategy = s;
+  _debtExtra    = extra;
+  renderDebtPlanner();
+}
 
 export { getRollover, getCurrentCats };
 
@@ -622,23 +631,32 @@ export function renderWealth(): void {
     setText('wealthTotalDebts', `${sym()}${fmt(totalDebts)}`);
     setText('wealthLiquid', symFmt(liquidAssets));
 
-    // History window
-    const histData = db.wealth.history ?? {};
+    // Auto-silently snapshot the current month's net worth so history fills in
+    // without requiring manual "Log Snapshot" clicks.  Use persistOnly() so it
+    // doesn't trigger a recursive render loop.
+    const currentNet = displayTotalAssets - totalDebts;
+    if (!db.wealth.history) db.wealth.history = {};
+    const todayKey = getMonthKey(new Date());
+    if (db.wealth.history[todayKey] !== currentNet) {
+      db.wealth.history[todayKey] = currentNet;
+      persistOnly();
+    }
+
+    // History window — 24 months for a richer trajectory view
+    const histData = db.wealth.history;
     const chartLabels: string[] = [];
     const chartValues: (number | null)[] = [];
     const histStart = new Date();
-    histStart.setMonth(histStart.getMonth() - 11);
-    for (let i = 0; i < 12; i++) {
+    histStart.setMonth(histStart.getMonth() - 23);
+    for (let i = 0; i < 24; i++) {
       const lk = `${histStart.getFullYear()}-${String(histStart.getMonth() + 1).padStart(2, '0')}`;
       chartLabels.push(histStart.toLocaleString('default', { month: 'short', year: '2-digit' }));
       chartValues.push(histData[lk] !== undefined ? histData[lk] : null);
       histStart.setMonth(histStart.getMonth() + 1);
     }
 
-    updateWealthCharts(totalAssets, operatingCash, totalDebts, chartLabels, chartValues);
-
-    const currentNet = displayTotalAssets - totalDebts;
     const { avgMonthlyExp, fireTarget, progress, hasData } = calcFireStats(currentNet);
+    updateWealthCharts(totalAssets, operatingCash, totalDebts, chartLabels, chartValues, fireTarget);
 
     setText('wealthFireNumber', `${sym()}${fmt(fireTarget)}`);
     setText('wealthFirePct', `${progress.toFixed(1)}%`);
@@ -943,19 +961,27 @@ export function renderDebtPlanner(): void {
   const container = document.getElementById('debtPlanner');
   if (!container) return;
 
-  const plans = getDebtPayoffPlans();
-  if (plans.length === 0) {
-    container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Add liabilities with an interest rate or minimum payment to see payoff projections.</p>';
+  if (db.wealth.debts.filter(d => math(d.value) > 0).length === 0) {
+    container.innerHTML = `
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-slate-800 dark:text-white">Debt Payoff Simulator</h3>
+      </div>
+      <p class="text-xs text-slate-400 text-center py-4">Add liabilities with a balance to see payoff projections.</p>`;
     return;
   }
 
-  container.innerHTML = plans.map(p => {
-    const never  = p.monthsToPayoff <= 0;
-    const yr     = Math.floor(p.monthsToPayoff / 12);
-    const mo     = p.monthsToPayoff % 12;
-    const timeStr = never ? '∞'
-      : yr > 0 ? `${yr}y ${mo}m` : `${mo}m`;
+  const plans = getDebtPayoffPlans({ strategy: _debtStrategy, extraPayment: _debtExtra });
+  const cmp   = compareDebtStrategies(_debtExtra);
+  const interestSaved = math(cmp.snowball.totalInterest - cmp.avalanche.totalInterest);
+  const monthsSaved   = cmp.snowball.totalMonths - cmp.avalanche.totalMonths;
 
+  const isAvalanche = _debtStrategy === 'avalanche';
+
+  const rows = plans.map(p => {
+    const never   = p.monthsToPayoff <= 0;
+    const yr      = Math.floor(p.monthsToPayoff / 12);
+    const mo      = p.monthsToPayoff % 12;
+    const timeStr = never ? '∞' : yr > 0 ? `${yr}y ${mo}m` : `${mo}m`;
     return `
       <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 gap-3">
         <div class="flex-1 min-w-0">
@@ -979,6 +1005,47 @@ export function renderDebtPlanner(): void {
         </div>
       </div>`;
   }).join('');
+
+  // Avalanche advantage badge
+  const advBadge = interestSaved > 0
+    ? `<span class="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+        Avalanche saves ${sym()}${fmt(interestSaved)} interest${monthsSaved > 0 ? ` &amp; ${monthsSaved}mo` : ''}
+       </span>`
+    : '';
+
+  container.innerHTML = `
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+      <h3 class="font-bold text-slate-800 dark:text-white">Debt Payoff Simulator</h3>
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+          <button type="button" data-debt-strategy="avalanche"
+            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${isAvalanche ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+            ⛰ Avalanche
+          </button>
+          <button type="button" data-debt-strategy="snowball"
+            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${!isAvalanche ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+            ❄ Snowball
+          </button>
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="curr-prefix text-xs text-slate-400 font-semibold">${sym()}</span>
+          <input id="debtExtraInput" type="number" min="0" step="10" placeholder="Extra/mo"
+            value="${_debtExtra > 0 ? _debtExtra : ''}"
+            class="w-24 p-1.5 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-300 outline-none">
+        </div>
+      </div>
+    </div>
+    ${advBadge ? `<div class="mb-3">${advBadge}</div>` : ''}
+    <div class="space-y-2 mb-4">${rows}</div>
+    <div class="debt-timeline-wrap mt-4" style="${plans.filter(p => p.monthsToPayoff > 0).length === 0 ? 'display:none' : ''}">
+      <p class="text-[10px] font-bold uppercase text-slate-400 mb-2">Time to Payoff</p>
+      <div style="height:${Math.max(60, plans.filter(p => p.monthsToPayoff > 0).length * 36)}px">
+        <canvas id="chartDebtTimeline"></canvas>
+      </div>
+    </div>`;
+
+  // Draw the timeline chart after the canvas is in the DOM
+  updateDebtTimelineChart(plans);
 }
 
 // ─── Insights view ────────────────────────────────────────────────────────────
