@@ -152,10 +152,15 @@ export async function manualSync(ui = false): Promise<void> {
       const deletedArr = Array.from(allDeleted);
       db.deletedIds = deletedArr.length > 500 ? deletedArr.slice(deletedArr.length - 500) : deletedArr;
 
+      // Reject entries with future timestamps (allows 5-min clock skew) to prevent
+      // a malicious cloud payload from using far-future updatedAt to overwrite local data.
+      const MAX_TS = Date.now() + 5 * 60 * 1000;
+      const validTs = (ts: number | undefined) => (ts ?? 0) <= MAX_TS;
+
       // Bills — last-write-wins per id
       const billMap = new Map<string, typeof db.bills[0]>();
       [...db.bills, ...safeArr<typeof db.bills[0]>(cloudData.bills)].forEach(b => {
-        if (!allDeleted.has(b.id)) {
+        if (!allDeleted.has(b.id) && validTs(b.updatedAt)) {
           const ex = billMap.get(b.id);
           if (!ex || (b.updatedAt ?? 0) > (ex.updatedAt ?? 0)) billMap.set(b.id, b);
         }
@@ -166,7 +171,7 @@ export async function manualSync(ui = false): Promise<void> {
       // Legacy assets without updatedAt use 0 so newer entries always win.
       const assetMap = new Map<string, typeof db.wealth.assets[0]>();
       [...safeArr<typeof db.wealth.assets[0]>(cloudData.wealth?.assets), ...db.wealth.assets].forEach(a => {
-        if (allDeleted.has(a.id)) return;
+        if (allDeleted.has(a.id) || !validTs(a.updatedAt)) return;
         const ex = assetMap.get(a.id);
         if (!ex || (a.updatedAt ?? 0) >= (ex.updatedAt ?? 0)) assetMap.set(a.id, a);
       });
@@ -175,7 +180,7 @@ export async function manualSync(ui = false): Promise<void> {
       // Debts — last-write-wins per id using updatedAt
       const debtMap = new Map<string, typeof db.wealth.debts[0]>();
       [...safeArr<typeof db.wealth.debts[0]>(cloudData.wealth?.debts), ...db.wealth.debts].forEach(d => {
-        if (allDeleted.has(d.id)) return;
+        if (allDeleted.has(d.id) || !validTs(d.updatedAt)) return;
         const ex = debtMap.get(d.id);
         if (!ex || (d.updatedAt ?? 0) >= (ex.updatedAt ?? 0)) debtMap.set(d.id, d);
       });

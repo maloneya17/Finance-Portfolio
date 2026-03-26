@@ -1,7 +1,18 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+/// <reference types="vitest" />
 
 export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json-summary'],
+      include: ['src/**/*.ts'],
+      exclude: ['src/main.ts', 'src/render.ts', 'src/charts.ts', 'src/handlers.ts'],
+    },
+  },
   build: {
     outDir: 'dist',
     sourcemap: true,

@@ -24,24 +24,39 @@ function migrate(db: AppDB): AppDB {
 function repair(db: AppDB): AppDB {
   if (!db.transactions || Array.isArray(db.transactions)) db.transactions = {};
   if (!db.theme) db.theme = 'light';
-  if (!db.bills) db.bills = [];
-  if (!db.billStatus) db.billStatus = {};
-  if (!db.wealth) db.wealth = { assets: [], debts: [], history: {} };
-  if (!db.wealth.assets) db.wealth.assets = [];
-  if (!db.wealth.debts) db.wealth.debts = [];
-  if (!db.wealth.history) db.wealth.history = {};
-  if (!db.budgets) db.budgets = {};
-  if (!db.categories) db.categories = [...DEFAULTS.categories];
+  // Strict array guards — malicious backups can supply objects/null for arrays
+  if (!Array.isArray(db.bills)) db.bills = [];
+  if (!Array.isArray(db.recurring)) db.recurring = [];
+  if (!Array.isArray(db.deletedIds)) db.deletedIds = [];
+  if (!Array.isArray(db.goals)) db.goals = [];
+  if (!db.billStatus || typeof db.billStatus !== 'object' || Array.isArray(db.billStatus)) db.billStatus = {};
+  if (!db.wealth || typeof db.wealth !== 'object') db.wealth = { assets: [], debts: [], history: {} };
+  if (!Array.isArray(db.wealth.assets)) db.wealth.assets = [];
+  if (!Array.isArray(db.wealth.debts)) db.wealth.debts = [];
+  if (!db.wealth.history || typeof db.wealth.history !== 'object') db.wealth.history = {};
+  // Clamp wealth values to finite, non-negative numbers so arithmetic never produces ±Infinity
+  db.wealth.assets = db.wealth.assets.map(a => ({
+    ...a,
+    value: (typeof a.value === 'number' && isFinite(a.value) && a.value >= 0) ? a.value : 0,
+  }));
+  db.wealth.debts = db.wealth.debts.map(d => ({
+    ...d,
+    value: (typeof d.value === 'number' && isFinite(d.value) && d.value >= 0) ? d.value : 0,
+  }));
+  // Clamp bill day to valid 1-31 range
+  db.bills = db.bills.map(b => ({
+    ...b,
+    day: (typeof b.day === 'number' && b.day >= 1 && b.day <= 31) ? b.day : 1,
+  }));
+  if (!db.budgets || typeof db.budgets !== 'object' || Array.isArray(db.budgets)) db.budgets = {};
+  if (!Array.isArray(db.categories)) db.categories = [...DEFAULTS.categories];
   // 'Bills' and 'Imported' are relied on by core features (bill toggles, CSV import).
   // Ensure they always exist even after a category was deleted from an old backup.
   if (!db.categories.includes('Bills')) db.categories.push('Bills');
   if (!db.categories.includes('Imported')) db.categories.push('Imported');
-  if (!db.recurring) db.recurring = [];
-  if (!db.deletedIds) db.deletedIds = [];
   if (typeof db.annualIncome !== 'number') db.annualIncome = 0;
   if (typeof db.annualIncomeUpdatedAt !== 'number') db.annualIncomeUpdatedAt = 0;
   if (!db.currency) db.currency = '£';
-  if (!db.goals) db.goals = [];
   if (db.autoRecurring === undefined) db.autoRecurring = false;
   if (!db.lastAutoAppliedMonth) db.lastAutoAppliedMonth = '';
   if (db.syncPassphrase === undefined) db.syncPassphrase = '';

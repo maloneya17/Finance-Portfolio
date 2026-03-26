@@ -1117,7 +1117,12 @@ export function importJsonBackup(): void {
     try { text = await file.text(); } catch { showToast('Could not read file'); return; }
     let parsed: Record<string, unknown>;
     try { parsed = JSON.parse(text); } catch { showToast('Invalid JSON — could not parse file'); return; }
-    if (typeof parsed['schemaVersion'] !== 'number' || !parsed['transactions']) {
+    const txField = parsed['transactions'];
+    if (
+      typeof parsed['schemaVersion'] !== 'number' ||
+      txField === null || txField === undefined ||
+      typeof txField !== 'object' || Array.isArray(txField)
+    ) {
       showToast('Invalid backup — expected a Finance Tracker JSON export');
       return;
     }

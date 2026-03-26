@@ -146,6 +146,7 @@ export function getAvgMonthlyExpense(currentKey: string, months = 3): number {
  * Returns Infinity when average expense is zero.
  */
 export function getCashRunway(netWorth: number, currentKey: string): number {
+  if (netWorth <= 0) return 0;
   const avg = getAvgMonthlyExpense(currentKey, 6);
   return avg > 0 ? math(netWorth / avg) : Infinity;
 }
@@ -235,7 +236,7 @@ export interface HealthScore {
 export function getHealthScore(
   monthKey: string,
   netWorth: number,
-  fireTarget: number,
+  fireTarget = 0,
 ): HealthScore {
   // ─ Savings component
   const txs = db.transactions[monthKey] ?? [];
