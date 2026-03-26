@@ -2,7 +2,7 @@
  * Tests for the natural language parser (src/nlp.ts).
  * Pure unit tests — no DOM, no network, no db.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { parseNL } from '../nlp';
 
 // Fix "today" to a known date for deterministic date tests

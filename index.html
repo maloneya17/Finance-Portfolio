@@ -970,12 +970,14 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Live Asset Prices</h3>
                 <p class="text-xs text-slate-500 mb-3">Enter an Alpha Vantage API key to enable live stock prices (crypto is free via CoinGecko).</p>
                 <div class="flex gap-2 mb-2">
-                    <input type="text" id="alphaVantageInput" placeholder="Alpha Vantage API key"
+                    <input type="password" id="alphaVantageInput" placeholder="Paste API key here"
+                        autocomplete="off"
                         class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
                     <button type="button" data-action="save-alpha-key"
                         class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap transition">Save</button>
                 </div>
-                <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="text-indigo-500 hover:underline">alphavantage.co</a>. Key stored locally only.</p>
+                <p id="alphaKeyStatus" class="hidden text-[10px] text-emerald-600 dark:text-emerald-400 mb-1"><i class="fas fa-check mr-1"></i>Key saved — paste a new key to replace it.</p>
+                <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="text-indigo-500 hover:underline">alphavantage.co</a>. Key stored locally and never transmitted except to Alpha Vantage.</p>
             </div>
 
             <!-- Phase 5C: Weekly Digest -->

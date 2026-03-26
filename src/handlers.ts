@@ -1447,9 +1447,16 @@ export function saveWeeklyDigestPref(enabled: boolean): void {
 }
 
 export function saveAlphaVantageKey(key: string): void {
-  db.alphaVantageKey = key.trim().slice(0, 64);
+  const trimmed = key.trim();
+  if (!trimmed) { showToast('Enter a valid API key'); return; }
+  db.alphaVantageKey = trimmed.slice(0, 64);
   clearPriceCache(); // stale prices no longer valid with new key
   save();
+  // Clear the input field so the key is not visible in the DOM after saving
+  const inputEl = document.getElementById('alphaVantageInput') as HTMLInputElement | null;
+  if (inputEl) inputEl.value = '';
+  // Show the "key saved" indicator
+  document.getElementById('alphaKeyStatus')?.classList.remove('hidden');
   showToast('Alpha Vantage key saved');
 }
 

@@ -192,42 +192,56 @@ function updateReportingPeriodUI(): void {
 }
 
 // ─── Phase 5G: NLP quick-add ──────────────────────────────────────────────────
+// Guard against concurrent invocations (double-enter, rapid clicks)
+let _nlpBusy = false;
+
 function applyNlpResult(text: string): void {
+  // Input length cap: prevent O(n) regex processing on huge inputs
+  const safeText = text.trim().slice(0, 500);
+  if (!safeText || _nlpBusy) return;
+  _nlpBusy = true;
+
+  // nlp.ts is statically bundled (dynamic import only for code-splitting, resolves sync on second call)
   import('./nlp').then(({ parseNL }) => {
-    const result = parseNL(text);
+    const result = parseNL(safeText);
     const hint   = document.getElementById('nlpHint');
     if (!result.desc && result.amount === null) {
       if (hint) { hint.textContent = 'Could not parse — try "Coffee £3.50 yesterday"'; hint.classList.remove('hidden'); }
+      _nlpBusy = false;
       return;
     }
-    // Fill the form
-    const descEl  = document.getElementById('txDesc')  as HTMLInputElement | null;
-    const amtEl   = document.getElementById('txAmt')   as HTMLInputElement | null;
-    const dateEl  = document.getElementById('txDate')  as HTMLInputElement | null;
-    const catEl   = document.getElementById('txCat')   as HTMLSelectElement | null;
-    if (descEl && result.desc)   descEl.value = result.desc;
-    if (amtEl  && result.amount !== null) amtEl.value = String(result.amount);
-    if (dateEl && result.date)   dateEl.value = result.date;
+    // Fill form fields synchronously — setTxType is already statically imported
+    const descEl = document.getElementById('txDesc') as HTMLInputElement | null;
+    const amtEl  = document.getElementById('txAmt')  as HTMLInputElement | null;
+    const dateEl = document.getElementById('txDate') as HTMLInputElement | null;
+    const catEl  = document.getElementById('txCat')  as HTMLSelectElement | null;
+    if (descEl && result.desc)          descEl.value = result.desc;
+    if (amtEl  && result.amount !== null) amtEl.value  = String(result.amount);
+    if (dateEl && result.date)          dateEl.value = result.date;
     if (catEl  && result.category && db.categories.includes(result.category)) catEl.value = result.category;
-    if (result.type) {
-      import('./handlers').then(({ setTxType }) => setTxType(result.type!));
-    }
+    if (result.type) setTxType(result.type);   // statically imported — no race
     // Clear NLP input and hint
     const nlpEl = document.getElementById('nlpInput') as HTMLInputElement | null;
     if (nlpEl) nlpEl.value = '';
     if (hint) hint.classList.add('hidden');
-    // Focus amount if empty, otherwise desc
     if (!result.amount) descEl?.focus();
     else amtEl?.focus();
-  });
+    _nlpBusy = false;
+  }).catch(() => { _nlpBusy = false; });
 }
 
 // ─── Phase 5C: Weekly digest check ────────────────────────────────────────────
+// Expected format: "YYYY-WN" (e.g. "2026-W3")
+const DIGEST_KEY_RE = /^\d{4}-W[1-5]$/;
+
 function initWeeklyDigest(): void {
   if (!db.weeklyDigest) return;
   const now        = new Date();
   const weekKey    = `${now.getFullYear()}-W${Math.ceil(now.getDate() / 7)}`;
-  if (db.lastDigestDate === weekKey) return;
+  // Validate stored key format before comparing — prevents poisoned localStorage bypass
+  const storedKey  = typeof db.lastDigestDate === 'string' && DIGEST_KEY_RE.test(db.lastDigestDate)
+    ? db.lastDigestDate : '';
+  if (storedKey === weekKey) return;
 
   // Compute last week's spending
   const prevWeekEnd   = new Date(now);
@@ -254,7 +268,8 @@ function initWeeklyDigest(): void {
   }
 
   db.lastDigestDate = weekKey;
-  import('./db').then(({ persistOnly }) => persistOnly());
+  // persistOnly is statically imported via db module — call synchronously
+  import('./db').then(m => m.persistOnly());
 }
 
 // ─── Currency prefix updater ──────────────────────────────────────────────────
@@ -641,9 +656,9 @@ function wireEvents(): void {
     taxYearSel.addEventListener('change', () => saveTaxYearMonth(parseInt(taxYearSel.value, 10)));
   }
 
-  // Phase 5E: Alpha Vantage pre-fill
-  const alphaInput = document.getElementById('alphaVantageInput') as HTMLInputElement | null;
-  if (alphaInput && db.alphaVantageKey) alphaInput.value = db.alphaVantageKey;
+  // Phase 5E: Alpha Vantage — show "key saved" indicator without writing key to DOM
+  const alphaKeyStatus = document.getElementById('alphaKeyStatus');
+  if (alphaKeyStatus && db.alphaVantageKey) alphaKeyStatus.classList.remove('hidden');
 
   // Phase 5G: NLP Enter key
   document.getElementById('nlpInput')?.addEventListener('keydown', (e: KeyboardEvent) => {

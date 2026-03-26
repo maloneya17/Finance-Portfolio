@@ -13,20 +13,34 @@ export interface NLPResult {
 }
 
 // ─── Category keyword inference ───────────────────────────────────────────────
-const CAT_KEYWORDS: Array<{ words: string[]; category: string | null }> = [
-  { words: ['rent', 'mortgage', 'landlord', 'housing', 'lease'], category: 'Housing' },
-  { words: ['coffee', 'cafe', 'lunch', 'dinner', 'food', 'grocery', 'groceries', 'supermarket', 'takeaway', 'restaurant', 'breakfast', 'tesco', 'sainsbury', 'waitrose', 'aldi', 'lidl', 'asda', 'morrisons', 'costco', 'meal', 'snack', 'pizza', 'burger', 'sushi'], category: 'Food' },
-  { words: ['uber', 'taxi', 'bus', 'train', 'tube', 'metro', 'petrol', 'fuel', 'car', 'parking', 'tfl', 'oyster', 'transport', 'flight', 'airline', 'rail', 'ferry', 'toll'], category: 'Transport' },
-  { words: ['electricity', 'gas', 'water', 'internet', 'broadband', 'phone', 'mobile', 'utility', 'utilities', 'bt', 'virgin', 'sky', 'council tax', 'boiler', 'heating'], category: 'Utilities' },
-  { words: ['netflix', 'spotify', 'amazon prime', 'disney', 'cinema', 'theatre', 'concert', 'gym', 'games', 'steam', 'playstation', 'xbox', 'entertainment', 'hobby', 'subscription', 'apple music', 'youtube'], category: 'Entertainment' },
-  { words: ['doctor', 'pharmacy', 'dentist', 'optician', 'hospital', 'medicine', 'health', 'nhs', 'gp', 'prescription', 'therapy', 'physio', 'chemist'], category: 'Health' },
-  { words: ['saving', 'savings', 'isa', 'pension', 'investment', 'invest', 'transfer to savings', 'pot'], category: 'Savings' },
-  { words: ['credit card', 'loan', 'debt', 'repayment', 'overdraft', 'finance payment'], category: 'Debt' },
-  { words: ['salary', 'wage', 'payroll', 'pay', 'income', 'freelance', 'consulting', 'invoice', 'dividend', 'pension income', 'benefit', 'tax credit', 'hmrc', 'refund'], category: null }, // handled by type detection
+// Pre-compiled at module load — one RegExp per category using word-boundary alternation.
+// Prevents ReDoS (no per-call regex construction) and false-positive substring matches
+// like "netflix" ⊇ "tfl".
+//
+// Word boundary: (?<![a-z]) / (?![a-z]) — works for multi-byte chars and avoids
+// catastrophic backtracking caused by \b in Unicode-heavy inputs.
+
+function _buildCatRe(words: string[]): RegExp {
+  const alts = words
+    .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  return new RegExp(`(?<![a-z])(${alts})(?![a-z])`, 'i');
+}
+
+const CAT_RULES: Array<{ re: RegExp; category: string }> = [
+  { re: _buildCatRe(['rent', 'mortgage', 'landlord', 'housing', 'lease']), category: 'Housing' },
+  { re: _buildCatRe(['coffee', 'cafe', 'lunch', 'dinner', 'food', 'grocery', 'groceries', 'supermarket', 'takeaway', 'restaurant', 'breakfast', 'tesco', 'sainsbury', 'waitrose', 'aldi', 'lidl', 'asda', 'morrisons', 'costco', 'meal', 'snack', 'pizza', 'burger', 'sushi']), category: 'Food' },
+  { re: _buildCatRe(['uber', 'taxi', 'bus', 'train', 'tube', 'metro', 'petrol', 'fuel', 'car', 'parking', 'tfl', 'oyster', 'transport', 'flight', 'airline', 'rail', 'ferry', 'toll']), category: 'Transport' },
+  { re: _buildCatRe(['electricity', 'gas', 'water', 'internet', 'broadband', 'phone', 'mobile', 'utility', 'utilities', 'bt', 'virgin', 'sky', 'boiler', 'heating']), category: 'Utilities' },
+  { re: _buildCatRe(['netflix', 'spotify', 'disney', 'cinema', 'theatre', 'concert', 'gym', 'games', 'steam', 'playstation', 'xbox', 'entertainment', 'hobby', 'subscription', 'youtube']), category: 'Entertainment' },
+  { re: _buildCatRe(['doctor', 'pharmacy', 'dentist', 'optician', 'hospital', 'medicine', 'health', 'nhs', 'gp', 'prescription', 'therapy', 'physio', 'chemist']), category: 'Health' },
+  { re: _buildCatRe(['saving', 'savings', 'isa', 'pension', 'investment', 'invest', 'pot']), category: 'Savings' },
+  { re: _buildCatRe(['credit card', 'loan', 'debt', 'repayment', 'overdraft']), category: 'Debt' },
 ];
 
-const INCOME_WORDS = ['salary', 'wage', 'payroll', 'income', 'earned', 'freelance', 'consulting', 'invoice', 'dividend', 'refund', 'cashback', 'reimbursement', 'hmrc', 'benefit', 'bonus', 'commission'];
-const EXPENSE_WORDS = ['paid', 'bought', 'spent', 'purchased', 'charged', 'cost', 'bill', 'fee'];
+// Income/expense type detection — word boundary regexes pre-compiled at load time
+const INCOME_RE  = _buildCatRe(['salary', 'wage', 'payroll', 'income', 'earned', 'freelance', 'consulting', 'invoice', 'dividend', 'refund', 'cashback', 'reimbursement', 'hmrc', 'benefit', 'bonus', 'commission']);
+const EXPENSE_RE = _buildCatRe(['paid', 'bought', 'spent', 'purchased', 'charged', 'bill', 'fee']);
 
 // ─── Date word parsing ────────────────────────────────────────────────────────
 function parseDateWord(word: string): string | null {
@@ -121,12 +135,18 @@ function toISO(d: Date): string {
  *   "Salary 2500 income"       → { desc: "Salary", amount: 2500, type: income }
  *   "Netflix 9.99 15th"        → { desc: "Netflix", amount: 9.99, date: 15th of current month }
  */
+// Max input length — caps O(n) regex work to a safe bound
+const MAX_NLP_INPUT = 500;
+
 export function parseNL(text: string): NLPResult {
   const result: NLPResult = { desc: '', amount: null, date: null, type: null, category: null };
-  if (!text.trim()) return result;
+  const safe = text.trim().slice(0, MAX_NLP_INPUT);
+  if (!safe) return result;
+  // Shadow `text` with the capped version for all subsequent processing
+  const _text = safe;
 
   // Tokenise: split on whitespace, keep punctuation attached to numbers
-  const tokens = text.trim().split(/\s+/);
+  const tokens = _text.split(/\s+/);
   const consumed = new Set<number>();
 
   // ── Amount detection ───────────────────────────────────────────────────────
@@ -159,10 +179,10 @@ export function parseNL(text: string): NLPResult {
     }
   }
 
-  // ── Type detection ─────────────────────────────────────────────────────────
-  const lower = text.toLowerCase();
-  if (INCOME_WORDS.some(w => lower.includes(w))) result.type = 'income';
-  else if (EXPENSE_WORDS.some(w => lower.includes(w))) result.type = 'expense';
+  // ── Type detection (pre-compiled regexes — no per-call construction) ────────
+  const lower = _text.toLowerCase();
+  if (INCOME_RE.test(lower))       result.type = 'income';
+  else if (EXPENSE_RE.test(lower)) result.type = 'expense';
 
   // Mark explicit type keywords as consumed
   for (let i = 0; i < tokens.length; i++) {
@@ -175,15 +195,10 @@ export function parseNL(text: string): NLPResult {
     }
   }
 
-  // ── Category inference ─────────────────────────────────────────────────────
-  // Use word-boundary matching to avoid false positives like "netflix" ⊇ "tfl"
-  for (const { words, category } of CAT_KEYWORDS) {
-    if (category && words.some(w => new RegExp(`(?<![a-z])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z])`, 'i').test(lower))) {
-      result.category = category;
-      break;
-    }
+  // ── Category inference (pre-compiled regexes) ───────────────────────────────
+  for (const { re, category } of CAT_RULES) {
+    if (re.test(lower)) { result.category = category; break; }
   }
-  // Income type doesn't have a category rule; leave null for caller to handle
 
   // ── Description: remaining non-consumed tokens ────────────────────────────
   const descTokens = tokens.filter((_, i) => !consumed.has(i));
@@ -191,7 +206,7 @@ export function parseNL(text: string): NLPResult {
 
   // If no desc after stripping (e.g. user just typed "3.50"), use full text minus amount
   if (!result.desc && result.amount !== null) {
-    result.desc = text.replace(/[£$€]?\d[\d,.]*/, '').trim().slice(0, 200);
+    result.desc = _text.replace(/[£$€]?\d[\d,.]*/, '').trim().slice(0, 200);
   }
 
   return result;

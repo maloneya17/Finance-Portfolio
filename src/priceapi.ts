@@ -11,6 +11,15 @@ const ALPHA_BASE     = 'https://www.alphavantage.co/query';
 const _cache = new Map<string, { price: number; ts: number }>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Sanity bounds: reject prices outside these ranges to guard against API poisoning
+// (spoofed responses, malformed JSON, or corrupted network data)
+const MIN_VALID_PRICE = 1e-8;   // sub-cent crypto floor
+const MAX_VALID_PRICE = 1e9;    // $1 billion per unit upper bound
+
+function isSanePrice(price: number): boolean {
+  return isFinite(price) && price >= MIN_VALID_PRICE && price <= MAX_VALID_PRICE;
+}
+
 // Known CoinGecko IDs for common crypto tickers
 const COINGECKO_IDS: Record<string, string> = {
   BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', BNB: 'binancecoin',
@@ -39,7 +48,7 @@ async function fetchCryptoPrice(ticker: string, currency: string): Promise<numbe
     if (!resp.ok) return null;
     const data = await resp.json() as Record<string, Record<string, number>>;
     const price = data[id]?.[curCode];
-    return typeof price === 'number' && isFinite(price) ? price : null;
+    return typeof price === 'number' && isSanePrice(price) ? price : null;
   } catch {
     return null;
   }
@@ -55,7 +64,7 @@ async function fetchStockPrice(ticker: string, apiKey: string): Promise<number |
     const data = await resp.json() as { 'Global Quote'?: { '05. price'?: string } };
     const priceStr = data['Global Quote']?.['05. price'];
     const price = parseFloat(priceStr ?? '');
-    return isFinite(price) && price > 0 ? price : null;
+    return isSanePrice(price) ? price : null;
   } catch {
     return null;
   }
@@ -80,7 +89,8 @@ export async function fetchAssetPrice(
     ? await fetchCryptoPrice(ticker, currency)
     : await fetchStockPrice(ticker, alphaVantageKey);
 
-  if (price !== null) _cache.set(key, { price, ts: Date.now() });
+  // Only cache prices that pass sanity checks — prevents stale bad data poisoning the cache
+  if (price !== null && isSanePrice(price)) _cache.set(key, { price, ts: Date.now() });
   return price;
 }
 
