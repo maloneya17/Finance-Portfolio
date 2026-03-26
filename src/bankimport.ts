@@ -6,15 +6,23 @@
 export interface BankRow {
   date: string;   // YYYY-MM-DD
   desc: string;   // payee / memo
-  amount: number; // positive = credit/income, negative = debit/expense
+  amount: number; // positive = credit/income, negative = debit/expense (never 0)
 }
+
+// ─── Shared limits ────────────────────────────────────────────────────────────
+const MAX_BANK_FILE_BYTES = 5 * 1024 * 1024;  // 5 MB
+const MAX_IMPORT_ROWS     = 10_000;             // DoS guard — no browser DoS
+// Fix #2: cap amount to prevent 1e308/MAX_VALUE from entering the database
+const MAX_IMPORT_AMOUNT   = 1_000_000_000;      // 1 billion — unreachably large for personal finance
 
 // ─── OFX / Open Financial Exchange ───────────────────────────────────────────
 // Supports both legacy SGML OFX (no closing tags) and XML OFX (v2).
 
-const MAX_OFX_BYTES = 5 * 1024 * 1024; // 5 MB
-
-/** Convert DTPOSTED "YYYYMMDDHHMMSS[.mmm][TZ]" → "YYYY-MM-DD" */
+/** Convert DTPOSTED "YYYYMMDDHHMMSS[.mmm][TZ]" → "YYYY-MM-DD"
+ *  We deliberately extract the local date digits from the bank's timestamp and
+ *  ignore any timezone offset, since OFX DTPOSTED represents the bank-posted date
+ *  in the account's local context (not UTC).
+ */
 function parseDtPosted(raw: string): string | null {
   const m = raw.trim().match(/^(\d{4})(\d{2})(\d{2})/);
   if (!m) return null;
@@ -27,8 +35,11 @@ function parseDtPosted(raw: string): string | null {
   return `${y}-${mo}-${d}`;
 }
 
-/** Extract text content of the first occurrence of a tag in an SGML/XML fragment. */
+/** Extract text content of the first occurrence of a tag in an SGML/XML fragment.
+ *  Tag names are validated to be safe alphanumeric strings before building regexes. */
 function getTagValue(block: string, tag: string): string {
+  // Safety: only allow known safe tag names (all-caps alphanumeric)
+  if (!/^[A-Z0-9]+$/.test(tag)) return '';
   // XML: <TAG>value</TAG>
   const xmlRe = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, 'i');
   const xmlM = block.match(xmlRe);
@@ -45,7 +56,7 @@ function getTagValue(block: string, tag: string): string {
  * Throws a descriptive error if the input doesn't look like OFX.
  */
 export function parseOFX(text: string): BankRow[] {
-  if (text.length > MAX_OFX_BYTES) throw new Error('OFX file exceeds 5 MB size limit');
+  if (text.length > MAX_BANK_FILE_BYTES) throw new Error('OFX file exceeds 5 MB size limit');
 
   // Must contain at least one STMTTRN block
   if (!/<STMTTRN[\s>]/i.test(text)) {
@@ -54,25 +65,22 @@ export function parseOFX(text: string): BankRow[] {
 
   const rows: BankRow[] = [];
 
-  // Split on STMTTRN blocks (handles both SGML and XML variants)
-  const blockRe = /<STMTTRN[\s>]([\s\S]*?)<\/STMTTRN>/gi;
-  let match: RegExpExecArray | null;
-
-  // For SGML OFX (no closing tags), each block is delimited by the next <STMTTRN or end
-  // Try XML-style first; fall back to SGML splitting
+  // Fix #6: Limit total records to prevent client-side DoS
   const hasClosingTags = /<\/STMTTRN>/i.test(text);
 
   if (hasClosingTags) {
-    // XML OFX
+    // XML OFX — match each <STMTTRN>...</STMTTRN> block
+    const blockRe = /<STMTTRN[\s>]([\s\S]*?)<\/STMTTRN>/gi;
+    let match: RegExpExecArray | null;
     while ((match = blockRe.exec(text)) !== null) {
-      const block = match[1];
-      const row = extractOFXRow(block);
+      if (rows.length >= MAX_IMPORT_ROWS) break; // DoS guard
+      const row = extractOFXRow(match[1]);
       if (row) rows.push(row);
     }
   } else {
     // SGML OFX — split on <STMTTRN> open tags
     const parts = text.split(/<STMTTRN>/i);
-    for (let i = 1; i < parts.length; i++) {
+    for (let i = 1; i < parts.length && rows.length < MAX_IMPORT_ROWS; i++) {
       const row = extractOFXRow(parts[i]);
       if (row) rows.push(row);
     }
@@ -87,12 +95,18 @@ function extractOFXRow(block: string): BankRow | null {
   const name   = getTagValue(block, 'NAME') || getTagValue(block, 'MEMO') || 'Bank transaction';
 
   const date = parseDtPosted(dtRaw);
-  if (!date) return null;
+  if (!date) return null; // Fix #8: skip records without a valid posting date
 
-  const amount = parseFloat(amtRaw.replace(/[^0-9.\-]/g, ''));
-  if (isNaN(amount) || !isFinite(amount)) return null;
+  // Fix #2: parse, validate finite, and cap to MAX_IMPORT_AMOUNT
+  const rawAmt = parseFloat(amtRaw.replace(/[^0-9.\-]/g, ''));
+  if (isNaN(rawAmt) || !isFinite(rawAmt)) return null;
+  // Cap: if somehow 1e308 slipped through, reject rather than store garbage
+  if (Math.abs(rawAmt) > MAX_IMPORT_AMOUNT) return null;
+  // Fix #10: treat -0 as 0 (income of zero = skip)
+  const amount = rawAmt === 0 ? null : rawAmt;
+  if (amount === null) return null;
 
-  // Sanitise description (strip HTML-like entities to prevent XSS if ever rendered as HTML)
+  // Sanitise description (decode OFX HTML entities; do NOT re-interpret as HTML)
   const desc = name
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -132,7 +146,6 @@ const QIF_DATE_FORMATS: Array<(parts: string[]) => string | null> = [
 function parseQIFDate(raw: string): string | null {
   // Normalise separators to /
   const normalised = raw.trim().replace(/[-.']/g, '/');
-  // Handle QIF-specific apostrophe-year: "1/15'15" → "1/15/2015"
   const parts = normalised.split('/');
 
   // Try ISO first (YYYY-MM-DD)
@@ -165,15 +178,16 @@ function parseQIFDate(raw: string): string | null {
  * Throws a descriptive error if the input doesn't contain valid QIF records.
  */
 export function parseQIF(text: string): BankRow[] {
-  if (text.length > MAX_OFX_BYTES) throw new Error('QIF file exceeds 5 MB size limit');
+  if (text.length > MAX_BANK_FILE_BYTES) throw new Error('QIF file exceeds 5 MB size limit');
 
   const lines = text.split(/\r?\n/);
   const rows: BankRow[] = [];
 
   let date: string | null = null;
-  let amount: number | null = null;
+  let amount: number | null = null;  // Fix #7: set once from T field; U field does not overwrite
   let desc = '';
   let recordCount = 0;
+  let amountFieldSeen = false; // Fix #7: first T wins, U is only fallback
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -185,24 +199,38 @@ export function parseQIF(text: string): BankRow[] {
     switch (field) {
       case '!': break; // account type header — skip
       case 'D': date = parseQIFDate(value); break;
-      case 'T':
-      case 'U': {
-        // Remove commas (thousands separator) and trailing minus (some QIF exports)
+      case 'T': {
+        if (amountFieldSeen) break; // Fix #7: T wins; ignore subsequent T/U in same record
+        amountFieldSeen = true;
         let v = value.replace(/,/g, '').trim();
         if (v.endsWith('-')) v = '-' + v.slice(0, -1);
         const n = parseFloat(v);
-        if (!isNaN(n) && isFinite(n)) amount = n;
+        // Fix #2: reject NaN, Infinity, and unreasonably large values
+        if (!isNaN(n) && isFinite(n) && Math.abs(n) <= MAX_IMPORT_AMOUNT && n !== 0) {
+          // Fix: round to 2 decimal places to avoid floating-point noise
+          amount = Math.round(n * 100) / 100;
+        }
+        break;
+      }
+      case 'U': {
+        if (amountFieldSeen) break; // Fix #7: T wins; U is only used if T was absent
+        amountFieldSeen = true;
+        let v = value.replace(/,/g, '').trim();
+        if (v.endsWith('-')) v = '-' + v.slice(0, -1);
+        const n = parseFloat(v);
+        if (!isNaN(n) && isFinite(n) && Math.abs(n) <= MAX_IMPORT_AMOUNT && n !== 0) {
+          amount = Math.round(n * 100) / 100;
+        }
         break;
       }
       case 'P': desc = value.slice(0, 200); break;
       case 'M': if (!desc) desc = value.slice(0, 200); break; // memo as fallback
       case '^': {
-        // End of record
         recordCount++;
-        if (date !== null && amount !== null) {
+        if (date !== null && amount !== null && rows.length < MAX_IMPORT_ROWS) {
           rows.push({ date, desc: desc || 'Bank transaction', amount });
         }
-        date = null; amount = null; desc = '';
+        date = null; amount = null; desc = ''; amountFieldSeen = false;
         break;
       }
       default: break;
@@ -210,7 +238,7 @@ export function parseQIF(text: string): BankRow[] {
   }
 
   // Handle file without trailing ^
-  if (date !== null && amount !== null) {
+  if (date !== null && amount !== null && rows.length < MAX_IMPORT_ROWS) {
     rows.push({ date, desc: desc || 'Bank transaction', amount });
   }
 

@@ -487,8 +487,15 @@ export function updateCategoryTrendChart(
 
   const isDark = db.theme === 'dark';
 
+  // Fix #15: sanitise each monthly value — clamp NaN/Infinity/negative to 0
+  const sanitise = (v: number) => (isFinite(v) && v > 0 ? v : 0);
+  const sanitisedMap: Record<string, number[]> = {};
+  for (const [cat, vals] of Object.entries(catMonthlyMap)) {
+    sanitisedMap[cat] = vals.map(sanitise);
+  }
+
   // Pick top-8 categories by total spend
-  const catTotals = Object.entries(catMonthlyMap)
+  const catTotals = Object.entries(sanitisedMap)
     .map(([cat, values]) => ({ cat, total: values.reduce((a, b) => a + b, 0) }))
     .filter(e => e.total > 0)
     .sort((a, b) => b.total - a.total)
@@ -509,7 +516,7 @@ export function updateCategoryTrendChart(
 
   const datasets = catTotals.map(({ cat, total: _total }, i) => ({
     label: cat,
-    data: catMonthlyMap[cat],
+    data: sanitisedMap[cat],
     backgroundColor: palette[i % palette.length],
     borderRadius: 3,
     borderSkipped: false as const,

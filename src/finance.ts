@@ -736,9 +736,13 @@ export interface RecurringCandidate {
  * Returns candidates sorted by months-seen descending (most consistent first).
  */
 export function detectRecurringCandidates(): RecurringCandidate[] {
+  // Fix #3: NFC-normalise before lowercasing so full-width/homoglyph chars match ASCII
+  const normaliseDesc = (s: string) =>
+    s.trim().normalize('NFC').toLowerCase().replace(/\s+/g, ' ');
+
   // Build a set of already-tracked recurring template fingerprints
   const existingFingerprints = new Set(
-    db.recurring.map(r => `${r.desc.trim().toLowerCase()}||${Math.round(r.amount)}`),
+    db.recurring.map(r => `${normaliseDesc(r.desc)}||${Math.round(r.amount)}`),
   );
 
   const groups = new Map<
@@ -751,7 +755,8 @@ export function detectRecurringCandidates(): RecurringCandidate[] {
     .forEach(k => {
       (db.transactions[k] ?? []).forEach(t => {
         if (t.type !== 'expense') return;
-        const normDesc = t.desc.trim().toLowerCase().replace(/\s+/g, ' ');
+        const normDesc = normaliseDesc(t.desc);
+        // Fix #14: require at least $1 rounded (guards 0.49 cases)
         const roundedAmt = Math.round(t.amount);
         if (roundedAmt === 0) return;
         const key = `${normDesc}||${roundedAmt}`;

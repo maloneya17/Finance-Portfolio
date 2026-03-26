@@ -1029,7 +1029,7 @@ export function renderRecurringSuggestions(): void {
             <div class="flex items-center gap-2 ml-2">
               <span class="font-bold text-rose-600 dark:text-rose-400">${sym()}${fmt(c.amount)}</span>
               <button type="button"
-                data-accept-suggestion="${encodeURIComponent(c.desc)}|${c.amount}|${encodeURIComponent(c.category)}"
+                data-accept-suggestion="${encodeURIComponent(c.desc)}|${encodeURIComponent(String(c.amount))}|${encodeURIComponent(c.category)}"
                 class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition text-[10px] whitespace-nowrap">
                 + Add
               </button>

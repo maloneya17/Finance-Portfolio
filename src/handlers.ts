@@ -14,7 +14,7 @@ import {
   selectedTxIds,
 } from './render';
 import { getMonthPicker } from './main';
-import { getRollover, consolidateWealth, getCategoryAvgAmount, getCurrentCats, detectRecurringCandidates } from './finance';
+import { getRollover, consolidateWealth, getCategoryAvgAmount, getCurrentCats, detectRecurringCandidates, isValidMonthKey } from './finance';
 import { parseOFX, parseQIF } from './bankimport';
 import type { BankRow } from './bankimport';
 import type { SplitEntry } from './types';
@@ -1200,22 +1200,37 @@ export function handleBankFile(file: File): void {
 export function executeBankImport(): void {
   if (_bankRows.length === 0) { showToast('No file loaded — please choose a file first'); return; }
 
-  // Deduplicate against existing transactions
+  // Fix #12: enforce row limit to prevent client-side DoS
+  const MAX_BANK_IMPORT_ROWS = 10_000;
+  if (_bankRows.length > MAX_BANK_IMPORT_ROWS) {
+    showToast(`Import exceeds ${MAX_BANK_IMPORT_ROWS.toLocaleString()} rows — please split the file`);
+    return;
+  }
+
+  // Fix #5: use JSON-serialised array as dedup key to prevent pipe-char collisions
   const existingKeys = new Set<string>();
   Object.values(db.transactions).forEach(txs =>
-    txs.forEach(t => existingKeys.add(`${t.date ?? ''}|${t.desc}|${t.amount}|${t.type}`)),
+    txs.forEach(t => existingKeys.add(JSON.stringify([t.date ?? '', t.desc, t.amount, t.type]))),
   );
 
   let count = 0, skipped = 0;
   for (const row of _bankRows) {
     const finalAmt = Math.abs(row.amount);
-    const type = row.amount >= 0 ? 'income' as const : 'expense' as const;
-    const importKey = `${row.date}|${row.desc}|${finalAmt}|${type}`;
+    if (finalAmt === 0) { skipped++; continue; } // skip zero-value rows
+    if (finalAmt > MAX_TX_AMOUNT) { skipped++; continue; } // Fix: reject unreasonably large amounts
+    // Fix #10: use `< 0` not `>= 0` so -0 is never classified as income
+    const type = row.amount < 0 ? 'expense' as const : 'income' as const;
+
+    // Fix #5: JSON-based fingerprint prevents pipe-char injection collisions
+    const importKey = JSON.stringify([row.date, row.desc, finalAmt, type]);
     if (existingKeys.has(importKey)) { skipped++; continue; }
     existingKeys.add(importKey);
 
-    const [year, month] = row.date.split('-');
-    const monthKey = `${year}-${month}`;
+    // Fix #4: validate monthKey before storing to prevent invalid keys in db
+    const parts = row.date.split('-');
+    const monthKey = `${parts[0]}-${parts[1]}`;
+    if (!isValidMonthKey(monthKey)) { skipped++; continue; }
+
     if (!db.transactions[monthKey]) db.transactions[monthKey] = [];
     db.transactions[monthKey].push({
       id: genId(), updatedAt: Date.now(),
@@ -1244,23 +1259,29 @@ export function executeBankImport(): void {
 
 // ─── Smart Recurring Suggestions ─────────────────────────────────────────────
 export function acceptRecurringSuggestion(desc: string, amount: number, category: string): void {
+  // Fix #9: validate inputs — guard against NaN/Infinity/zero amounts and oversized strings
+  if (!isFinite(amount) || amount <= 0) { showToast('Invalid amount'); return; }
+  if (amount > MAX_TX_AMOUNT) { showToast('Amount exceeds maximum'); return; }
+  const safeDesc     = desc.trim().slice(0, MAX_DESC_LENGTH);
+  const safeCategory = category.trim().slice(0, 50); // Fix #9: cap category length
+
   // Prevent duplicates (desc + rounded amount)
-  const normDesc = desc.trim().toLowerCase().replace(/\s+/g, ' ');
+  const normDesc = safeDesc.toLowerCase().replace(/\s+/g, ' ');
   const exists = db.recurring.some(
     r => r.desc.trim().toLowerCase().replace(/\s+/g, ' ') === normDesc && Math.round(r.amount) === Math.round(amount),
   );
   if (exists) { showToast('Already in recurring templates'); return; }
   db.recurring.push({
     id: genId(),
-    desc: desc.trim().slice(0, MAX_DESC_LENGTH),
+    desc: safeDesc,
     amount,
-    category,
+    category: safeCategory,
     type: 'expense',
   });
   save();
   renderRecurring();
   renderRecurringSuggestions();
-  showToast(`Added "${desc}" as recurring expense`);
+  showToast(`Added "${safeDesc}" as recurring expense`);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
