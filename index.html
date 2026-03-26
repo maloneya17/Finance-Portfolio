@@ -634,6 +634,13 @@
                     </div>
                 </div>
             </div>
+            <!-- Category Spend Trend -->
+            <div class="cat-trend-wrap card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-8">
+                <h3 class="font-bold mb-4 text-slate-800 dark:text-white">Category Spend Trend</h3>
+                <div class="h-[280px] w-full relative">
+                    <canvas id="chartCatTrend" role="img" aria-label="Monthly category spend breakdown for the selected year"></canvas>
+                </div>
+            </div>
         </div>
 
         <!-- INSIGHTS -->
@@ -814,6 +821,24 @@
                     <button type="button" data-action="import-csv" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md">Import Transactions</button>
                 </div>
             </div>
+
+            <!-- Bank File Import (OFX / QIF) -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-1">Bank Statement Import (OFX / QIF)</h3>
+                <p class="text-xs text-slate-500 mb-4">Upload a .ofx, .qfx, or .qif file exported directly from your online banking portal. Transactions are automatically deduplicated.</p>
+                <input type="file" id="bankFile" accept=".ofx,.qfx,.qif" class="w-full mb-3 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
+                <div id="bankImportPreview" class="hidden mb-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl px-3 py-2 text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                    <i class="fas fa-check-circle text-indigo-500"></i>
+                    <span id="bankImportCount"></span>
+                </div>
+                <button id="btnBankImportConfirm" type="button" data-action="bank-import-confirm"
+                    class="hidden w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md hover:bg-indigo-500 transition">
+                    Import Bank Transactions
+                </button>
+            </div>
+
+            <!-- Smart Recurring Suggestions (auto-populated) -->
+            <div id="recurringSuggestions" class="hidden max-w-md"></div>
 
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
                 <div class="flex items-center justify-between mb-2">

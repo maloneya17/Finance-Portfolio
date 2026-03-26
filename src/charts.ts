@@ -474,6 +474,93 @@ export function updateDebtTimelineChart(plans: DebtPayoff[]): void {
   } as ChartConfiguration<'bar'>);
 }
 
+// ─── Category Trend stacked bar chart (Reports) ───────────────────────────────
+let categoryTrendChart: Chart | null = null;
+
+export function updateCategoryTrendChart(
+  monthLabels: string[],
+  catMonthlyMap: Record<string, number[]>,
+): void {
+  categoryTrendChart = destroyIfExists(categoryTrendChart);
+  const canvas = document.getElementById('chartCatTrend') as HTMLCanvasElement | null;
+  if (!canvas) return;
+
+  const isDark = db.theme === 'dark';
+
+  // Pick top-8 categories by total spend
+  const catTotals = Object.entries(catMonthlyMap)
+    .map(([cat, values]) => ({ cat, total: values.reduce((a, b) => a + b, 0) }))
+    .filter(e => e.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  if (catTotals.length === 0) {
+    const wrap = canvas.closest<HTMLElement>('.cat-trend-wrap');
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  const wrap = canvas.closest<HTMLElement>('.cat-trend-wrap');
+  if (wrap) wrap.style.display = '';
+
+  const palette = [
+    '#6366f1', '#f43f5e', '#f59e0b', '#10b981',
+    '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6',
+  ];
+
+  const datasets = catTotals.map(({ cat, total: _total }, i) => ({
+    label: cat,
+    data: catMonthlyMap[cat],
+    backgroundColor: palette[i % palette.length],
+    borderRadius: 3,
+    borderSkipped: false as const,
+    stack: 'stack0',
+  }));
+
+  categoryTrendChart = new Chart(canvas.getContext('2d')!, {
+    type: 'bar',
+    data: { labels: monthLabels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top' as const,
+          labels: {
+            usePointStyle: true,
+            boxWidth: 8,
+            font: { size: 10 },
+            color: isDark ? '#94a3b8' : '#64748b',
+          },
+        },
+        datalabels: { display: false },
+        tooltip: {
+          mode: 'index' as const,
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${sym()}${fmt(ctx.raw as number)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { font: { size: 10 }, color: isDark ? '#94a3b8' : '#64748b' },
+        },
+        y: {
+          stacked: true,
+          grid: { color: isDark ? '#1e293b' : '#f1f5f9' },
+          ticks: {
+            font: { size: 9 },
+            color: isDark ? '#94a3b8' : '#64748b',
+            callback: (v) => `${sym()}${fmt(v as number)}`,
+          },
+        },
+      },
+    },
+  } as ChartConfiguration<'bar'>);
+}
+
 // ─── FIRE calculation helper ──────────────────────────────────────────────────
 export function calcFireStats(currentNet: number): {
   avgMonthlyExp: number;

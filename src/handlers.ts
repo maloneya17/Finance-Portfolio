@@ -10,10 +10,13 @@ import {
   renderDropdowns,
   renderSettingsCats,
   renderRecurring,
+  renderRecurringSuggestions,
   selectedTxIds,
 } from './render';
 import { getMonthPicker } from './main';
-import { getRollover, consolidateWealth, getCategoryAvgAmount, getCurrentCats } from './finance';
+import { getRollover, consolidateWealth, getCategoryAvgAmount, getCurrentCats, detectRecurringCandidates } from './finance';
+import { parseOFX, parseQIF } from './bankimport';
+import type { BankRow } from './bankimport';
 import type { SplitEntry } from './types';
 import type { AssetType } from './types';
 
@@ -1153,6 +1156,111 @@ export function importJsonBackup(): void {
     location.reload();
   };
   input.click();
+}
+
+// ─── Bank File Import (OFX / QIF) ─────────────────────────────────────────────
+let _bankRows: BankRow[] = [];
+
+const MAX_BANK_BYTES = 5 * 1024 * 1024; // 5 MB
+
+export function handleBankFile(file: File): void {
+  const name = file.name.toLowerCase();
+  const isOFX = name.endsWith('.ofx') || name.endsWith('.qfx');
+  const isQIF = name.endsWith('.qif');
+  if (!isOFX && !isQIF) {
+    showToast('Please upload a .ofx, .qfx, or .qif file'); return;
+  }
+  if (file.size > MAX_BANK_BYTES) {
+    showToast('File too large — maximum 5 MB'); return;
+  }
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const text = evt.target?.result as string;
+    try {
+      const rows = isOFX ? parseOFX(text) : parseQIF(text);
+      if (rows.length === 0) { showToast('No transactions found in file'); return; }
+      _bankRows = rows;
+      // Show preview
+      const previewEl = document.getElementById('bankImportPreview');
+      const confirmBtn = document.getElementById('btnBankImportConfirm');
+      if (previewEl) {
+        previewEl.classList.remove('hidden');
+        setText('bankImportCount', `${rows.length} transaction${rows.length !== 1 ? 's' : ''} ready to import.`);
+      }
+      if (confirmBtn) confirmBtn.classList.remove('hidden');
+    } catch (e: unknown) {
+      showToast('Parse error: ' + (e instanceof Error ? e.message : String(e)));
+      _bankRows = [];
+    }
+  };
+  reader.onerror = () => showToast('Could not read file');
+  reader.readAsText(file, 'utf-8');
+}
+
+export function executeBankImport(): void {
+  if (_bankRows.length === 0) { showToast('No file loaded — please choose a file first'); return; }
+
+  // Deduplicate against existing transactions
+  const existingKeys = new Set<string>();
+  Object.values(db.transactions).forEach(txs =>
+    txs.forEach(t => existingKeys.add(`${t.date ?? ''}|${t.desc}|${t.amount}|${t.type}`)),
+  );
+
+  let count = 0, skipped = 0;
+  for (const row of _bankRows) {
+    const finalAmt = Math.abs(row.amount);
+    const type = row.amount >= 0 ? 'income' as const : 'expense' as const;
+    const importKey = `${row.date}|${row.desc}|${finalAmt}|${type}`;
+    if (existingKeys.has(importKey)) { skipped++; continue; }
+    existingKeys.add(importKey);
+
+    const [year, month] = row.date.split('-');
+    const monthKey = `${year}-${month}`;
+    if (!db.transactions[monthKey]) db.transactions[monthKey] = [];
+    db.transactions[monthKey].push({
+      id: genId(), updatedAt: Date.now(),
+      date: row.date,
+      desc: row.desc.slice(0, MAX_DESC_LENGTH),
+      amount: finalAmt,
+      category: 'Imported',
+      type,
+    });
+    count++;
+  }
+
+  save();
+  let msg = `Imported ${count} transaction${count !== 1 ? 's' : ''}`;
+  if (skipped > 0) msg += ` (${skipped} duplicate${skipped !== 1 ? 's' : ''} skipped)`;
+  showToast(msg);
+
+  // Reset UI
+  _bankRows = [];
+  const bankFileEl = document.getElementById('bankFile') as HTMLInputElement | null;
+  if (bankFileEl) bankFileEl.value = '';
+  document.getElementById('bankImportPreview')?.classList.add('hidden');
+  document.getElementById('btnBankImportConfirm')?.classList.add('hidden');
+  render();
+}
+
+// ─── Smart Recurring Suggestions ─────────────────────────────────────────────
+export function acceptRecurringSuggestion(desc: string, amount: number, category: string): void {
+  // Prevent duplicates (desc + rounded amount)
+  const normDesc = desc.trim().toLowerCase().replace(/\s+/g, ' ');
+  const exists = db.recurring.some(
+    r => r.desc.trim().toLowerCase().replace(/\s+/g, ' ') === normDesc && Math.round(r.amount) === Math.round(amount),
+  );
+  if (exists) { showToast('Already in recurring templates'); return; }
+  db.recurring.push({
+    id: genId(),
+    desc: desc.trim().slice(0, MAX_DESC_LENGTH),
+    amount,
+    category,
+    type: 'expense',
+  });
+  save();
+  renderRecurring();
+  renderRecurringSuggestions();
+  showToast(`Added "${desc}" as recurring expense`);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

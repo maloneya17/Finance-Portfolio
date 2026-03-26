@@ -717,3 +717,69 @@ export function getAchievements(currentKey: string, netWorth: number, fireTarget
     },
   ];
 }
+
+// ─── Smart Recurring Detection ────────────────────────────────────────────────
+
+export interface RecurringCandidate {
+  desc: string;         // normalised description (original casing from most recent match)
+  amount: number;       // typical amount (most recent)
+  category: string;     // category from most recent match
+  months: string[];     // YYYY-MM keys where it was seen (sorted)
+  monthsCount: number;  // unique months
+}
+
+/**
+ * Scans transaction history for expense patterns that appear in 2+ distinct
+ * months with the same description and amount (±1 unit tolerance), then
+ * filters out patterns the user has already added as recurring templates.
+ *
+ * Returns candidates sorted by months-seen descending (most consistent first).
+ */
+export function detectRecurringCandidates(): RecurringCandidate[] {
+  // Build a set of already-tracked recurring template fingerprints
+  const existingFingerprints = new Set(
+    db.recurring.map(r => `${r.desc.trim().toLowerCase()}||${Math.round(r.amount)}`),
+  );
+
+  const groups = new Map<
+    string,
+    { desc: string; amount: number; category: string; months: Set<string> }
+  >();
+
+  Object.keys(db.transactions)
+    .filter(isValidMonthKey)
+    .forEach(k => {
+      (db.transactions[k] ?? []).forEach(t => {
+        if (t.type !== 'expense') return;
+        const normDesc = t.desc.trim().toLowerCase().replace(/\s+/g, ' ');
+        const roundedAmt = Math.round(t.amount);
+        if (roundedAmt === 0) return;
+        const key = `${normDesc}||${roundedAmt}`;
+        // Skip patterns the user already tracks as recurring
+        if (existingFingerprints.has(key)) return;
+        if (!groups.has(key)) {
+          groups.set(key, { desc: t.desc, amount: t.amount, category: t.category, months: new Set() });
+        }
+        const g = groups.get(key)!;
+        g.months.add(k);
+        g.category = t.category; // keep most recent category
+        g.amount   = t.amount;   // keep most recent amount
+        g.desc     = t.desc;     // keep most recent description
+      });
+    });
+
+  const results: RecurringCandidate[] = [];
+  groups.forEach(({ desc, amount, category, months }) => {
+    if (months.size >= 2) {
+      results.push({
+        desc,
+        amount,
+        category,
+        months: Array.from(months).sort(),
+        monthsCount: months.size,
+      });
+    }
+  });
+
+  return results.sort((a, b) => b.monthsCount - a.monthsCount);
+}

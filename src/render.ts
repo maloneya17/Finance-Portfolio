@@ -2,13 +2,13 @@ import { db, save, persistOnly } from './db';
 import { showToast } from './toast';
 import { math, fmt, esc, sym, symFmt, getMonthKey } from './utils';
 import { BUDGET_WARN_PCT, CALENDAR_MAX_CHIPS } from './constants';
-import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats, updateDebtTimelineChart } from './charts';
+import { updateDashboardCharts, updateYearlyChart, updateWealthCharts, calcFireStats, updateDebtTimelineChart, updateCategoryTrendChart } from './charts';
 import { getMonthPicker } from './main';
 import {
   getRollover, getCurrentCats, consolidateWealth, isValidMonthKey,
   getSpendingVelocity, getDailyBurnRate, getMonthEndForecast,
   getCashRunway, getDebtPayoffPlans, compareDebtStrategies, getHealthScore, getRecentMonthKeys,
-  detectSubscriptions, getSmartTips, getAchievements,
+  detectSubscriptions, getSmartTips, getAchievements, detectRecurringCandidates,
   type VelocityEntry,
 } from './finance';
 
@@ -827,6 +827,26 @@ export function renderReports(): void {
     if (!hasData) monthTable.innerHTML = `<tr><td colspan="4" class="text-center py-8 text-slate-400 text-xs">No data for ${esc(targetYear)}</td></tr>`;
 
     updateYearlyChart(chLabels, chInc, chExp);
+
+    // Build per-month category spend map for the trend chart
+    const catMonthlyMap: Record<string, number[]> = {};
+    for (let mo = 1; mo <= 12; mo++) {
+      const mk = `${targetYear}-${String(mo).padStart(2, '0')}`;
+      const txs = db.transactions[mk] ?? [];
+      txs.forEach(t => {
+        if (t.type !== 'expense') return;
+        if (t.splits && t.splits.length > 0) {
+          t.splits.forEach((s: { category: string; amount: number }) => {
+            if (!catMonthlyMap[s.category]) catMonthlyMap[s.category] = Array(12).fill(0);
+            catMonthlyMap[s.category][mo - 1] += math(s.amount);
+          });
+        } else {
+          if (!catMonthlyMap[t.category]) catMonthlyMap[t.category] = Array(12).fill(0);
+          catMonthlyMap[t.category][mo - 1] += math(t.amount);
+        }
+      });
+    }
+    updateCategoryTrendChart(chLabels, catMonthlyMap);
   } catch (e) {
     console.error('Report render error:', e);
   }
@@ -978,6 +998,45 @@ export function renderRecurring(): void {
         </div>
       </div>`);
   });
+}
+
+// ─── Smart Recurring Suggestions ─────────────────────────────────────────────
+export function renderRecurringSuggestions(): void {
+  const container = document.getElementById('recurringSuggestions');
+  if (!container) return;
+  const candidates = detectRecurringCandidates();
+  if (candidates.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    return;
+  }
+  container.classList.remove('hidden');
+  // Show top 5 suggestions
+  const top = candidates.slice(0, 5);
+  container.innerHTML = `
+    <div class="card bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-5 max-w-md mb-6">
+      <h3 class="font-bold text-amber-800 dark:text-amber-300 mb-1 flex items-center gap-2">
+        <i class="fas fa-lightbulb"></i> Suggested Recurring Templates
+      </h3>
+      <p class="text-xs text-amber-700 dark:text-amber-400 mb-4">These expenses appear in ${top[0].monthsCount}+ months. Add them as recurring templates for auto-apply.</p>
+      <div class="space-y-2" id="suggestionList">
+        ${top.map(c => `
+          <div class="flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl px-3 py-2 text-xs">
+            <div class="flex-1 min-w-0">
+              <span class="font-semibold text-slate-700 dark:text-slate-200 truncate block">${esc(c.desc)}</span>
+              <span class="text-slate-400">${esc(c.category)} · seen ${c.monthsCount}×</span>
+            </div>
+            <div class="flex items-center gap-2 ml-2">
+              <span class="font-bold text-rose-600 dark:text-rose-400">${sym()}${fmt(c.amount)}</span>
+              <button type="button"
+                data-accept-suggestion="${encodeURIComponent(c.desc)}|${c.amount}|${encodeURIComponent(c.category)}"
+                class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition text-[10px] whitespace-nowrap">
+                + Add
+              </button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
 }
 
 // ─── Upcoming bills widget ────────────────────────────────────────────────────

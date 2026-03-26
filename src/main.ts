@@ -3,7 +3,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin, startInactivityWatcher } from './auth';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
-import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, selectedTxIds, updateBulkBar, setDebtSimulatorOpts, _debtStrategy, _debtExtra, setContribGoalId } from './render';
+import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, renderRecurringSuggestions, selectedTxIds, updateBulkBar, setDebtSimulatorOpts, _debtStrategy, _debtExtra, setContribGoalId } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
 import { debounce, math, setCurrencySymbol, csvEsc, sym, setHapticsEnabled } from './utils';
@@ -17,6 +17,7 @@ import {
   setRecType, saveRecurring, delRecurring, applyRecurring,
   editAnnualIncome, resetData, addCatPrompt, delCat,
   handleCsvFile, executeImport, importJsonBackup,
+  handleBankFile, executeBankImport, acceptRecurringSuggestion,
   bulkDeleteTx, bulkRecategorizeTx,
   addSplitRow, resetSplitPanel, updateSplitRemaining,
 } from './handlers';
@@ -305,6 +306,18 @@ function wireEvents(): void {
     const delRecEl = target.closest<HTMLElement>('[data-del-recurring]');
     if (delRecEl) { delRecurring(delRecEl.dataset['delRecurring']!); return; }
 
+    // Smart recurring suggestion — accept
+    const suggEl = target.closest<HTMLElement>('[data-accept-suggestion]');
+    if (suggEl) {
+      const raw = suggEl.dataset['acceptSuggestion'] ?? '';
+      const [descEnc, amtStr, catEnc] = raw.split('|');
+      const desc     = decodeURIComponent(descEnc ?? '');
+      const amount   = parseFloat(amtStr ?? '0');
+      const category = decodeURIComponent(catEnc ?? '');
+      if (desc && !isNaN(amount)) acceptRecurringSuggestion(desc, amount, category);
+      return;
+    }
+
     if (btn) {
       const action = btn.dataset['action'];
       switch (action) {
@@ -341,6 +354,7 @@ function wireEvents(): void {
         case 'edit-annual-income': editAnnualIncome(); break;
         case 'add-cat': addCatPrompt(); break;
         case 'import-csv': executeImport(); break;
+        case 'bank-import-confirm': executeBankImport(); break;
         case 'save-cloud-url': saveCloudUrl(); break;
         case 'save-sync-passphrase': saveSyncPassphrase(); break;
         case 'clear-sync-passphrase': clearSyncPassphrase(); break;
@@ -466,6 +480,12 @@ function wireEvents(): void {
   document.getElementById('csvFile')?.addEventListener('change', (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (file) handleCsvFile(file);
+  });
+
+  // Bank file input (OFX / QIF)
+  document.getElementById('bankFile')?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) handleBankFile(file);
   });
 
   // Cloud form submit
@@ -728,6 +748,7 @@ function bootApp(): void {
   renderWealth();
   updateCloudStatus();
   renderRecurring();
+  renderRecurringSuggestions();
   refreshAuthSettingsCard();
   const currInput = document.getElementById('currencySymbolInput') as HTMLInputElement | null;
   if (currInput) currInput.value = db.currency;
@@ -774,6 +795,7 @@ window.addEventListener('storage', (e: StorageEvent) => {
   renderDropdowns();      // categories may have changed in the other tab
   renderSettingsCats();   // ditto
   renderRecurring();      // recurring templates may have changed
+  renderRecurringSuggestions();
   updateCloudStatus();
 });
 
