@@ -259,6 +259,23 @@
                             <input type="text" id="txTags" placeholder="e.g. tax-deductible, work, joint" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" aria-describedby="txTagsHint">
                             <p id="txTagsHint" class="text-[10px] text-slate-400 mt-0.5">Comma-separated labels</p>
                         </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase" for="txAccount">Account</label>
+                            <select id="txAccount" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                        </div>
+                        <!-- NLP quick-add bar -->
+                        <div class="border-t border-slate-100 dark:border-slate-800 pt-3">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase" for="nlpInput">Quick Add (Natural Language)</label>
+                            <div class="flex gap-2 mt-1">
+                                <input type="text" id="nlpInput" placeholder='e.g. "Coffee £3.50 yesterday"'
+                                    class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                                <button type="button" id="btnNlpParse" data-action="nlp-parse"
+                                    class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition whitespace-nowrap">
+                                    <i class="fas fa-magic"></i>
+                                </button>
+                            </div>
+                            <p id="nlpHint" class="text-[10px] text-slate-400 mt-0.5 hidden"></p>
+                        </div>
                         <!-- Split transaction panel -->
                         <div>
                             <div class="flex items-center justify-between">
@@ -304,6 +321,10 @@
                             <select id="txCatFilter" aria-label="Filter by category"
                                 class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none focus:border-indigo-500 transition cursor-pointer">
                                 <option value="">All Categories</option>
+                            </select>
+                            <select id="txAccountFilter" aria-label="Filter by account"
+                                class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none focus:border-indigo-500 transition cursor-pointer">
+                                <option value="">All Accounts</option>
                             </select>
                             <div class="relative">
                                 <input type="text" id="txSearch" placeholder="Search..." aria-label="Search transactions"
@@ -524,26 +545,44 @@
                         <h3 class="font-bold text-emerald-600">Assets</h3>
                         <button type="button" data-action="cancel-asset" id="btnCancelAsset" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
-                    <form id="formAsset" class="flex gap-2 mb-4" onsubmit="return false;">
-                        <div class="w-1/4">
-                            <select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs">
-                                <option value="Savings">Savings</option>
-                                <option value="Investment">Invest</option>
-                                <option value="Property">Property</option>
-                                <option value="Vehicle">Vehicle</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Other">Other</option>
-                            </select>
+                    <form id="formAsset" class="space-y-2 mb-4" onsubmit="return false;">
+                        <div class="flex gap-2">
+                            <div class="w-1/4">
+                                <select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs">
+                                    <option value="Savings">Savings</option>
+                                    <option value="Investment">Invest</option>
+                                    <option value="Property">Property</option>
+                                    <option value="Vehicle">Vehicle</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <input id="assetName" placeholder="Name (e.g. ISA)"
+                                class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                            <div class="relative w-24 shrink-0">
+                                <span class="curr-prefix absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
+                                <input id="assetVal" type="number" step="0.01"
+                                    class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                            </div>
+                            <button type="button" data-action="save-asset" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs shrink-0">+</button>
                         </div>
-                        <input id="assetName" placeholder="Name (e.g. ISA)"
-                            class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
-                        <div class="relative w-24">
-                            <span class="curr-prefix absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
-                            <input id="assetVal" type="number" step="0.01"
-                                class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        <!-- Live price: ticker + quantity (optional) -->
+                        <div class="flex gap-2">
+                            <input id="assetTicker" type="text" placeholder="Ticker (e.g. BTC, AAPL)" maxlength="12"
+                                class="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:border-indigo-500 outline-none transition"
+                                title="Optional: ticker symbol for live price updates">
+                            <input id="assetQty" type="number" step="any" min="0" placeholder="Qty (optional)"
+                                class="w-28 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:border-indigo-500 outline-none transition">
                         </div>
-                        <button type="button" data-action="save-asset" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs">+</button>
                     </form>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] text-slate-400 font-semibold uppercase">Assets</span>
+                        <button type="button" id="btnRefreshPrices" data-action="refresh-prices"
+                            class="text-[10px] font-bold text-indigo-500 hover:text-indigo-400 flex items-center gap-1 transition"
+                            title="Refresh live prices for assets with ticker symbols">
+                            <i class="fas fa-sync-alt"></i> Refresh Prices
+                        </button>
+                    </div>
                     <div id="listAssets" class="space-y-2"></div>
                 </div>
 
@@ -880,6 +919,107 @@
                         Your passphrase is stored locally and never sent to the cloud. If you lose it, synced data cannot be recovered.
                     </p>
                 </div>
+            </div>
+
+            <!-- Phase 5A: Account Management -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Accounts</h3>
+                <p class="text-xs text-slate-500 mb-3">Organise transactions by account (e.g. Checking, Savings, Joint).</p>
+                <div id="accountList" class="mb-3 space-y-1"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="newAccountName" placeholder="New account name"
+                        class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                    <button type="button" data-action="add-account"
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap transition">Add</button>
+                </div>
+            </div>
+
+            <!-- Phase 5D: Instalment Plans -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Instalment Plans</h3>
+                <p class="text-xs text-slate-500 mb-4">Split a large expense across multiple months automatically.</p>
+                <form id="formInstalment" class="space-y-2" onsubmit="return false;">
+                    <input type="text" id="instDesc" placeholder="Description (e.g. New laptop)"
+                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <span class="curr-prefix absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
+                            <input type="number" id="instTotal" step="0.01" placeholder="Total amount"
+                                class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <input type="number" id="instMonths" min="2" max="120" placeholder="Months"
+                            class="w-24 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="month" id="instStart"
+                            class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        <select id="instCat"
+                            class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                    </div>
+                    <select id="instAccount"
+                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                    <button type="button" data-action="create-instalment"
+                        class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition">
+                        + Create Instalment Plan
+                    </button>
+                </form>
+            </div>
+
+            <!-- Phase 5E: Live Prices -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Live Asset Prices</h3>
+                <p class="text-xs text-slate-500 mb-3">Enter an Alpha Vantage API key to enable live stock prices (crypto is free via CoinGecko).</p>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="alphaVantageInput" placeholder="Alpha Vantage API key"
+                        class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                    <button type="button" data-action="save-alpha-key"
+                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap transition">Save</button>
+                </div>
+                <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="text-indigo-500 hover:underline">alphavantage.co</a>. Key stored locally only.</p>
+            </div>
+
+            <!-- Phase 5C: Weekly Digest -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Weekly Summary Digest</h3>
+                <p class="text-xs text-slate-500 mb-3">Show a weekly spending summary notification when you open the app on a new week.</p>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="weeklyDigestToggle" class="accent-indigo-600 w-4 h-4">
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Enable weekly digest</span>
+                </label>
+            </div>
+
+            <!-- Phase 5F: Tax Year Reporting -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Reporting Period</h3>
+                <p class="text-xs text-slate-500 mb-3">Switch annual reports between calendar year (Jan–Dec) and tax year (e.g. Apr–Mar for UK).</p>
+                <div class="flex gap-2 mb-3">
+                    <button type="button" id="btnPeriodCalendar" data-action="period-calendar"
+                        class="flex-1 py-2 rounded-lg text-xs font-bold transition bg-indigo-600 text-white">Calendar Year</button>
+                    <button type="button" id="btnPeriodTax" data-action="period-tax"
+                        class="flex-1 py-2 rounded-lg text-xs font-bold transition bg-slate-100 dark:bg-slate-800 text-slate-500">Tax Year</button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap" for="taxYearMonthSel">Tax year starts in:</label>
+                    <select id="taxYearMonthSel"
+                        class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer">
+                        <option value="1">January</option><option value="2">February</option>
+                        <option value="3">March</option><option value="4">April (UK)</option>
+                        <option value="5">May</option><option value="6">June</option>
+                        <option value="7">July</option><option value="8">August</option>
+                        <option value="9">September</option><option value="10">October (US)</option>
+                        <option value="11">November</option><option value="12">December</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Phase 5B: Print Statement -->
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+                <h3 class="font-bold text-slate-800 dark:text-white mb-2">Monthly Statement</h3>
+                <p class="text-xs text-slate-500 mb-3">Print or save as PDF a statement for the currently selected month.</p>
+                <button type="button" data-action="print-statement"
+                    class="w-full py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 dark:hover:bg-slate-600 transition">
+                    <i class="fas fa-print mr-2"></i>Print / Save as PDF
+                </button>
             </div>
 
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">

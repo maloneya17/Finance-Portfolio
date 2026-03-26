@@ -11,14 +11,16 @@ import {
   renderSettingsCats,
   renderRecurring,
   renderRecurringSuggestions,
+  renderAccounts,
   selectedTxIds,
 } from './render';
 import { getMonthPicker } from './main';
 import { getRollover, consolidateWealth, getCategoryAvgAmount, getCurrentCats, detectRecurringCandidates, isValidMonthKey } from './finance';
 import { parseOFX, parseQIF } from './bankimport';
 import type { BankRow } from './bankimport';
-import type { SplitEntry } from './types';
+import type { SplitEntry, InstalmentPlan } from './types';
 import type { AssetType } from './types';
+import { fetchAssetPrice, clearPriceCache } from './priceapi';
 
 export { consolidateWealth };
 
@@ -59,19 +61,20 @@ let editingTxMonth: string | null = null;
 
 export function saveTransaction(): void {
   const k = getMonthPicker().value;
-  const descEl  = document.getElementById('txDesc')  as HTMLInputElement | null;
-  const amtEl   = document.getElementById('txAmt')   as HTMLInputElement | null;
-  const catEl   = document.getElementById('txCat')   as HTMLSelectElement | null;
-  const dateEl  = document.getElementById('txDate')  as HTMLInputElement | null;
-  const notesEl = document.getElementById('txNotes') as HTMLInputElement | null;
+  const descEl    = document.getElementById('txDesc')    as HTMLInputElement | null;
+  const amtEl     = document.getElementById('txAmt')     as HTMLInputElement | null;
+  const catEl     = document.getElementById('txCat')     as HTMLSelectElement | null;
+  const dateEl    = document.getElementById('txDate')    as HTMLInputElement | null;
+  const notesEl   = document.getElementById('txNotes')   as HTMLInputElement | null;
+  const tagsEl    = document.getElementById('txTags')    as HTMLInputElement | null;
+  const accountEl = document.getElementById('txAccount') as HTMLSelectElement | null;
 
-  const tagsEl  = document.getElementById('txTags') as HTMLInputElement | null;
-
-  const desc  = descEl?.value.trim().slice(0, MAX_DESC_LENGTH) ?? '';
-  const amt   = math(amtEl?.value ?? '');
-  const cat   = catEl?.value ?? '';
-  const date  = dateEl?.value ?? '';
-  const notes = notesEl?.value.trim().slice(0, 200) ?? '';
+  const desc    = descEl?.value.trim().slice(0, MAX_DESC_LENGTH) ?? '';
+  const amt     = math(amtEl?.value ?? '');
+  const cat     = catEl?.value ?? '';
+  const date    = dateEl?.value ?? '';
+  const notes   = notesEl?.value.trim().slice(0, 200) ?? '';
+  const account = accountEl?.value || undefined;
   // Parse comma-separated tags
   const tags  = (tagsEl?.value ?? '')
     .split(',')
@@ -122,6 +125,7 @@ export function saveTransaction(): void {
         date: date || undefined, notes: notes || undefined,
         tags: tags.length ? tags : undefined,
         splits: isSplit ? splits : undefined,
+        account: account ?? db.transactions[srcKey][txIndex].account,
         updatedAt: Date.now(),
       };
     } else {
@@ -136,6 +140,7 @@ export function saveTransaction(): void {
       date: date || undefined, notes: notes || undefined,
       tags: tags.length ? tags : undefined,
       splits: isSplit ? splits : undefined,
+      account: account || undefined,
     });
     if (descEl) descEl.value = '';
     if (amtEl)  amtEl.value  = '';
@@ -551,9 +556,12 @@ let editingAssetId: string | null = null;
 let editingDebtId: string | null = null;
 
 export function saveAsset(): void {
-  const name = (inp('assetName')?.value ?? '').trim().slice(0, 100);
-  const val  = math(inp('assetVal')?.value ?? '');
-  const type = (sel('assetType')?.value ?? 'Other') as AssetType;
+  const name   = (inp('assetName')?.value ?? '').trim().slice(0, 100);
+  const val    = math(inp('assetVal')?.value ?? '');
+  const type   = (sel('assetType')?.value ?? 'Other') as AssetType;
+  const ticker = (inp('assetTicker')?.value ?? '').trim().toUpperCase().replace(/[^A-Z0-9.-]/g, '').slice(0, 12) || undefined;
+  const qty    = parseFloat(inp('assetQty')?.value ?? '');
+  const quantity = isFinite(qty) && qty > 0 ? qty : undefined;
 
   if (!name) return showToast('Please enter an asset name');
   if (isNaN(val) || val < 0) return showToast('Please enter a valid non-negative value');
@@ -578,7 +586,7 @@ export function saveAsset(): void {
           && (a.type ?? 'Other').toLowerCase() === type.toLowerCase(),
       );
       if (collision) { showToast(`An asset named "${collision.name}" (${type}) already exists — use a unique name.`); return; }
-      db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type, updatedAt: Date.now() };
+      db.wealth.assets[idx] = { ...db.wealth.assets[idx], name, value: val, type, ticker, quantity, updatedAt: Date.now() };
     }
     cancelWealthEdit();
   } else {
@@ -587,10 +595,12 @@ export function saveAsset(): void {
       existing.updatedAt = Date.now();
       showToast(`${db.currency}${fmt(val)} added to "${existing.name}"`);
     } else {
-      db.wealth.assets.push({ id: genId(), name, value: val, type, updatedAt: Date.now() });
+      db.wealth.assets.push({ id: genId(), name, value: val, type, ticker, quantity, updatedAt: Date.now() });
     }
     const anEl = inp('assetName'); if (anEl) anEl.value = '';
     const avEl = inp('assetVal');  if (avEl) avEl.value = '';
+    const atEl2 = inp('assetTicker'); if (atEl2) atEl2.value = '';
+    const aqEl  = inp('assetQty');    if (aqEl)  aqEl.value  = '';
   }
   consolidateWealth();
   save();
@@ -602,9 +612,11 @@ export function editAsset(id: string): void {
   if (!asset) return;
   cancelWealthEdit(); // clear any in-progress debt edit before starting asset edit
   editingAssetId = id;
-  const anEl = inp('assetName'); if (anEl) anEl.value = asset.name;
-  const avEl = inp('assetVal');  if (avEl) avEl.value = String(asset.value);
-  const atEl = sel('assetType'); if (atEl) atEl.value = asset.type ?? 'Other';
+  const anEl   = inp('assetName');   if (anEl)   anEl.value   = asset.name;
+  const avEl   = inp('assetVal');    if (avEl)   avEl.value   = String(asset.value);
+  const atEl   = sel('assetType');   if (atEl)   atEl.value   = asset.type ?? 'Other';
+  const aticEl = inp('assetTicker'); if (aticEl) aticEl.value = asset.ticker ?? '';
+  const aqEl   = inp('assetQty');    if (aqEl)   aqEl.value   = String(asset.quantity ?? '');
   const saveBtnA = btn('btnSaveAsset'); if (saveBtnA) saveBtnA.innerHTML = '<i class="fas fa-save"></i>';
   document.getElementById('btnCancelAsset')?.classList.remove('hidden');
 }
@@ -1282,6 +1294,181 @@ export function acceptRecurringSuggestion(desc: string, amount: number, category
   renderRecurring();
   renderRecurringSuggestions();
   showToast(`Added "${safeDesc}" as recurring expense`);
+}
+
+// ─── Phase 5A: Account management ────────────────────────────────────────────
+export function addAccount(): void {
+  const nameEl = inp('newAccountName');
+  const name = (nameEl?.value ?? '').trim().slice(0, 50);
+  if (!name) return showToast('Enter an account name');
+  if (db.accounts.includes(name)) return showToast('Account already exists');
+  db.accounts.push(name);
+  save();
+  if (nameEl) nameEl.value = '';
+  renderAccounts();
+  renderDropdowns(); // refresh account selectors
+}
+
+export async function delAccount(name: string): Promise<void> {
+  if (db.accounts.length <= 1) return showToast('Keep at least one account');
+  const txCount = Object.values(db.transactions).flat().filter(t => t.account === name).length;
+  if (txCount > 0) {
+    const ok = await showConfirmModal({
+      title: 'Delete account?',
+      message: `"${name}" is used on ${txCount} transaction${txCount !== 1 ? 's' : ''}. They'll become untagged.`,
+      confirmLabel: 'Delete',
+      dangerous: true,
+    });
+    if (!ok) return;
+    // Unlink the account from all transactions
+    Object.values(db.transactions).forEach(txs =>
+      txs.forEach(t => { if (t.account === name) delete t.account; }),
+    );
+  }
+  db.accounts = db.accounts.filter(a => a !== name);
+  save();
+  renderAccounts();
+  renderDropdowns();
+  render();
+}
+
+// ─── Phase 5D: Instalment plans ───────────────────────────────────────────────
+export function createInstalment(): void {
+  const descEl    = inp('instDesc');
+  const amtEl     = inp('instAmt');
+  const monthsEl  = inp('instMonths');
+  const catEl     = sel('instCat');
+  const startEl   = inp('instStart');
+  const accountEl = sel('instAccount');
+
+  const desc    = (descEl?.value ?? '').trim().slice(0, MAX_DESC_LENGTH);
+  const total   = math(amtEl?.value ?? '');
+  const months  = parseInt(monthsEl?.value ?? '');
+  const cat     = catEl?.value ?? 'Bills';
+  const start   = startEl?.value ?? getMonthPicker().value;
+  const account = accountEl?.value || undefined;
+
+  if (!desc) return showToast('Enter a description');
+  if (!total || total <= 0) return showToast('Enter a valid total amount');
+  if (total > MAX_TX_AMOUNT * 10) return showToast('Amount too large');
+  if (!months || months < 2 || months > 120) return showToast('Months must be between 2 and 120');
+  if (!isValidMonthKey(start)) return showToast('Invalid start month');
+
+  const planId      = genId();
+  const instalment  = Math.round((total / months) * 100) / 100;
+  const lastPayment = Math.round((total - instalment * (months - 1)) * 100) / 100;
+
+  const [startYear, startMonth] = start.split('-').map(Number);
+  for (let i = 0; i < months; i++) {
+    const d = new Date(startYear, startMonth - 1 + i, 1);
+    const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!isValidMonthKey(mk)) continue;
+    if (!db.transactions[mk]) db.transactions[mk] = [];
+    const amt = i === months - 1 ? lastPayment : instalment;
+    db.transactions[mk].push({
+      id: genId(), updatedAt: Date.now(),
+      date: `${mk}-01`,
+      desc: `${desc} (${i + 1}/${months})`,
+      amount: amt,
+      category: cat,
+      type: 'expense',
+      account,
+      instalmentId: planId,
+    });
+  }
+
+  const plan: InstalmentPlan = {
+    id: planId, desc, totalAmount: total, months, startMonth: start, category: cat,
+    type: 'expense', account,
+  };
+  db.instalmentPlans.push(plan);
+  save();
+
+  // Reset form
+  if (descEl) descEl.value = '';
+  if (amtEl) amtEl.value = '';
+  if (monthsEl) monthsEl.value = '';
+  showToast(`${months} monthly instalments of ${symFmt(instalment)} created`);
+  render();
+}
+
+// ─── Phase 5E: Live price refresh ─────────────────────────────────────────────
+export async function refreshAssetPrices(): Promise<void> {
+  const btn = document.getElementById('btnRefreshPrices');
+  if (btn) btn.classList.add('animate-spin');
+
+  const tickerAssets = db.wealth.assets.filter(a => a.ticker);
+  if (tickerAssets.length === 0) {
+    showToast('No assets have ticker symbols — add one in the asset form');
+    if (btn) btn.classList.remove('animate-spin');
+    return;
+  }
+
+  let updated = 0, failed = 0;
+  for (const asset of tickerAssets) {
+    if (!asset.ticker) continue;
+    const price = await fetchAssetPrice(asset.ticker, db.currency, db.alphaVantageKey);
+    if (price !== null && price > 0) {
+      const qty = asset.quantity ?? 1;
+      asset.value = Math.round(price * qty * 100) / 100;
+      asset.lastPriceUpdate = Date.now();
+      asset.updatedAt = Date.now();
+      updated++;
+    } else {
+      failed++;
+    }
+  }
+
+  if (updated > 0) { save(); renderWealth(); }
+  if (btn) btn.classList.remove('animate-spin');
+  const msg = updated > 0
+    ? `Updated ${updated} asset price${updated !== 1 ? 's' : ''}${failed > 0 ? ` (${failed} failed)` : ''}`
+    : `Could not fetch prices for ${failed} asset${failed !== 1 ? 's' : ''} — check ticker symbols`;
+  showToast(msg);
+}
+
+// ─── Phase 5E: Save asset ticker ─────────────────────────────────────────────
+export function saveAssetTicker(assetId: string, ticker: string, quantity: string): void {
+  const asset = db.wealth.assets.find(a => a.id === assetId);
+  if (!asset) return;
+  const safeTicker = ticker.trim().toUpperCase().replace(/[^A-Z0-9.-]/g, '').slice(0, 12);
+  const qty        = parseFloat(quantity);
+  asset.ticker   = safeTicker || undefined;
+  asset.quantity = isFinite(qty) && qty > 0 ? qty : undefined;
+  save();
+  renderWealth();
+  if (safeTicker) showToast(`Ticker set to ${safeTicker} — click Refresh Prices to update value`);
+}
+
+// ─── Phase 5C: Weekly digest preference ──────────────────────────────────────
+export function saveWeeklyDigestPref(enabled: boolean): void {
+  db.weeklyDigest = enabled;
+  save();
+}
+
+export function saveAlphaVantageKey(key: string): void {
+  db.alphaVantageKey = key.trim().slice(0, 64);
+  clearPriceCache(); // stale prices no longer valid with new key
+  save();
+  showToast('Alpha Vantage key saved');
+}
+
+// ─── Phase 5F: Tax year / reporting period ────────────────────────────────────
+export function saveReportingPeriod(period: 'calendar' | 'tax'): void {
+  db.reportingPeriod = period;
+  save();
+}
+
+export function saveTaxYearMonth(month: number): void {
+  if (month < 1 || month > 12) return;
+  db.taxYearMonth = month;
+  save();
+}
+
+// ─── Phase 5B: PDF / Print monthly statement ─────────────────────────────────
+export function printMonthlyStatement(): void {
+  // Trigger browser print — CSS @media print styles handle the layout
+  window.print();
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

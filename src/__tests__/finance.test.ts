@@ -21,7 +21,7 @@ vi.mock('../toast', () => ({ showToast: vi.fn() }));
 let _mockSaveCount = 0;
 
 const mockDb: AppDB = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   categories: ['Housing', 'Food', 'Transport', 'Utilities', 'Bills', 'Imported'],
   transactions: {},
   bills: [],
@@ -40,6 +40,13 @@ const mockDb: AppDB = {
   lastAutoAppliedMonth: '',
   syncPassphrase: '',
   haptics: true,
+  accounts: ['Personal'],
+  instalmentPlans: [],
+  weeklyDigest: false,
+  lastDigestDate: '',
+  alphaVantageKey: '',
+  taxYearMonth: 4,
+  reportingPeriod: 'calendar',
 };
 
 vi.mock('../db', () => ({

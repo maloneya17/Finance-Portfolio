@@ -58,6 +58,7 @@ export function render(): void {
 
     // Filtered transaction list
     const catFilter    = (document.getElementById('txCatFilter')  as HTMLSelectElement | null)?.value ?? '';
+    const acctFilter   = (document.getElementById('txAccountFilter') as HTMLSelectElement | null)?.value ?? '';
     const dateFrom     = (document.getElementById('filterDateFrom') as HTMLInputElement | null)?.value ?? '';
     const dateTo       = (document.getElementById('filterDateTo')   as HTMLInputElement | null)?.value ?? '';
     const amtMinStr    = (document.getElementById('filterAmtMin')   as HTMLInputElement | null)?.value ?? '';
@@ -84,10 +85,11 @@ export function render(): void {
         || String(t.amount).includes(searchTerm)
         || (t.tags ?? []).some(tag => tag.includes(searchTerm));
       const matchCat    = !catFilter || t.category === catFilter;
+      const matchAcct   = !acctFilter || (t.account ?? '') === acctFilter;
       const matchFrom   = !dateFrom || txDate >= dateFrom;
       const matchTo     = !dateTo   || txDate <= dateTo;
       const matchAmt    = (amtMin === null || t.amount >= amtMin) && (amtMax === null || t.amount <= amtMax);
-      return matchSearch && matchCat && matchFrom && matchTo && matchAmt;
+      return matchSearch && matchCat && matchAcct && matchFrom && matchTo && matchAmt;
     });
     filtered.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.updatedAt - a.updatedAt);
 
@@ -734,9 +736,15 @@ export function renderWealth(): void {
         listAssets.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No assets yet — add one above.</p>`;
       } else {
         db.wealth.assets.forEach(item => {
+          const tickerBadge = item.ticker
+            ? `<span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded ml-1">${esc(item.ticker)}</span>`
+            : '';
+          const priceAge = item.lastPriceUpdate
+            ? `<span class="text-[8px] text-slate-400 ml-1" title="Last updated">${new Date(item.lastPriceUpdate).toLocaleDateString()}</span>`
+            : '';
           listAssets.insertAdjacentHTML('beforeend',
             `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
-              <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span></span>
+              <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span>${tickerBadge}${priceAge}</span>
               <div class="flex gap-2">
                 <span class="text-emerald-600 text-xs font-bold money-val">${sym()}${fmt(item.value)}</span>
                 <button type="button" data-edit-asset="${item.id}" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
@@ -961,6 +969,63 @@ export function renderDropdowns(): void {
     db.categories.forEach(c => bulkCat.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
     if (db.categories.includes(bv)) bulkCat.value = bv;
   }
+
+  // Phase 5A: account selectors — tx form, filter, instalment form
+  const accountSelectors = ['txAccount', 'instAccount'];
+  accountSelectors.forEach(id => {
+    const el = document.getElementById(id) as HTMLSelectElement | null;
+    if (!el) return;
+    const prev = el.value;
+    el.innerHTML = '<option value="">No account</option>';
+    db.accounts.forEach(a => el.insertAdjacentHTML('beforeend', `<option value="${esc(a)}">${esc(a)}</option>`));
+    if (db.accounts.includes(prev)) el.value = prev;
+  });
+
+  // Account filter dropdown
+  const acctFilter = document.getElementById('txAccountFilter') as HTMLSelectElement | null;
+  if (acctFilter) {
+    const prev = acctFilter.value;
+    acctFilter.innerHTML = '<option value="">All accounts</option>';
+    db.accounts.forEach(a => acctFilter.insertAdjacentHTML('beforeend', `<option value="${esc(a)}">${esc(a)}</option>`));
+    if (db.accounts.includes(prev)) acctFilter.value = prev;
+  }
+
+  // Instalment category selector
+  const instCat = document.getElementById('instCat') as HTMLSelectElement | null;
+  if (instCat) {
+    const prev = instCat.value;
+    instCat.innerHTML = '';
+    db.categories.forEach(c => instCat.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
+    if (db.categories.includes(prev)) instCat.value = prev;
+    else if (db.categories.includes('Bills')) instCat.value = 'Bills';
+  }
+}
+
+// ─── Accounts ────────────────────────────────────────────────────────────────
+export function renderAccounts(): void {
+  const list = document.getElementById('accountList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!db.accounts || db.accounts.length === 0) {
+    list.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No accounts yet.</p>';
+    return;
+  }
+  db.accounts.forEach(name => {
+    const txCount = Object.values(db.transactions).flat().filter(t => t.account === name).length;
+    list.insertAdjacentHTML('beforeend',
+      `<div class="flex items-center justify-between bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg text-xs mb-1">
+        <div>
+          <span class="font-bold text-slate-700 dark:text-slate-200">${esc(name)}</span>
+          <span class="text-slate-400 ml-2">${txCount} tx</span>
+        </div>
+        ${db.accounts.length > 1
+          ? `<button type="button" data-del-account="${esc(name)}"
+               class="text-slate-400 hover:text-rose-500 transition ml-2" title="Remove account">
+               <i class="fas fa-times text-[10px]"></i>
+             </button>`
+          : ''}
+      </div>`);
+  });
 }
 
 // ─── Settings categories ──────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import type { AppDB } from './types';
 
-export const SCHEMA_VERSION      = 3;
+export const SCHEMA_VERSION      = 4;
 export const MAX_TX_AMOUNT       = 1_000_000;
 export const MAX_DESC_LENGTH     = 200;
 export const MAX_NAME_LENGTH     = 100;
@@ -34,4 +34,11 @@ export const DEFAULTS: AppDB = {
   lastAutoAppliedMonth: '',
   syncPassphrase: '',
   haptics: true,
+  accounts: ['Personal'],
+  instalmentPlans: [],
+  weeklyDigest: false,
+  lastDigestDate: '',
+  alphaVantageKey: '',
+  taxYearMonth: 4,
+  reportingPeriod: 'calendar',
 };

@@ -18,6 +18,17 @@ function migrate(db: AppDB): AppDB {
     if (db.autoRecurring === undefined) db.autoRecurring = false;
     db.schemaVersion = 3;
   }
+  // v3 → v4: accounts, instalments, digest, live prices, tax year
+  if (db.schemaVersion < 4) {
+    if (!Array.isArray(db.accounts)) db.accounts = ['Personal'];
+    if (!Array.isArray(db.instalmentPlans)) db.instalmentPlans = [];
+    if (db.weeklyDigest === undefined) db.weeklyDigest = false;
+    if (!db.lastDigestDate) db.lastDigestDate = '';
+    if (!db.alphaVantageKey) db.alphaVantageKey = '';
+    if (typeof db.taxYearMonth !== 'number') db.taxYearMonth = 4;
+    if (!db.reportingPeriod) db.reportingPeriod = 'calendar';
+    db.schemaVersion = 4;
+  }
   return db;
 }
 
@@ -61,6 +72,14 @@ function repair(db: AppDB): AppDB {
   if (!db.lastAutoAppliedMonth) db.lastAutoAppliedMonth = '';
   if (db.syncPassphrase === undefined) db.syncPassphrase = '';
   if (db.haptics === undefined) db.haptics = true;
+  // Phase 5A-5F guards
+  if (!Array.isArray(db.accounts) || db.accounts.length === 0) db.accounts = ['Personal'];
+  if (!Array.isArray(db.instalmentPlans)) db.instalmentPlans = [];
+  if (db.weeklyDigest === undefined) db.weeklyDigest = false;
+  if (typeof db.lastDigestDate !== 'string') db.lastDigestDate = '';
+  if (typeof db.alphaVantageKey !== 'string') db.alphaVantageKey = '';
+  if (typeof db.taxYearMonth !== 'number' || db.taxYearMonth < 1 || db.taxYearMonth > 12) db.taxYearMonth = 4;
+  if (db.reportingPeriod !== 'calendar' && db.reportingPeriod !== 'tax') db.reportingPeriod = 'calendar';
   return db;
 }
 

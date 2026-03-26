@@ -3,7 +3,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { hasAccount, isLoggedIn, createAccount, verifyPin, logout, getStoredUsername, deleteAccount, changePin, startInactivityWatcher } from './auth';
 import { db, save, syncFromStorage, STORAGE_KEY } from './db';
 import { setThemeDefaults } from './charts';
-import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, renderRecurringSuggestions, selectedTxIds, updateBulkBar, setDebtSimulatorOpts, _debtStrategy, _debtExtra, setContribGoalId } from './render';
+import { render, renderBudgets, renderCalendar, renderWealth, renderReports, renderInsights, renderDropdowns, renderSettingsCats, renderRecurring, renderGoals, renderRecurringSuggestions, renderAccounts, selectedTxIds, updateBulkBar, setDebtSimulatorOpts, _debtStrategy, _debtExtra, setContribGoalId } from './render';
 import { showToast, handleToastUndo } from './toast';
 import { updateCloudStatus, saveCloudUrl, manualSync, saveSyncPassphrase, clearSyncPassphrase } from './sync';
 import { debounce, math, setCurrencySymbol, csvEsc, sym, setHapticsEnabled } from './utils';
@@ -20,6 +20,9 @@ import {
   handleBankFile, executeBankImport, acceptRecurringSuggestion,
   bulkDeleteTx, bulkRecategorizeTx,
   addSplitRow, resetSplitPanel, updateSplitRemaining,
+  addAccount, delAccount, createInstalment, refreshAssetPrices,
+  saveWeeklyDigestPref, saveAlphaVantageKey, saveReportingPeriod, saveTaxYearMonth,
+  printMonthlyStatement,
 } from './handlers';
 import { consolidateWealth, isValidMonthKey } from './finance';
 
@@ -171,6 +174,89 @@ function toggleSidebar(): void {
   document.getElementById('sidebarOverlay')?.classList.toggle('open');
 }
 
+// ─── Phase 5F: Reporting period UI ────────────────────────────────────────────
+function updateReportingPeriodUI(): void {
+  const isTax = db.reportingPeriod === 'tax';
+  const calBtn = document.getElementById('btnPeriodCalendar');
+  const taxBtn = document.getElementById('btnPeriodTax');
+  calBtn?.classList.toggle('bg-indigo-600', !isTax);
+  calBtn?.classList.toggle('text-white', !isTax);
+  calBtn?.classList.toggle('bg-slate-100', isTax);
+  calBtn?.classList.toggle('dark:bg-slate-800', isTax);
+  calBtn?.classList.toggle('text-slate-500', isTax);
+  taxBtn?.classList.toggle('bg-indigo-600', isTax);
+  taxBtn?.classList.toggle('text-white', isTax);
+  taxBtn?.classList.toggle('bg-slate-100', !isTax);
+  taxBtn?.classList.toggle('dark:bg-slate-800', !isTax);
+  taxBtn?.classList.toggle('text-slate-500', !isTax);
+}
+
+// ─── Phase 5G: NLP quick-add ──────────────────────────────────────────────────
+function applyNlpResult(text: string): void {
+  import('./nlp').then(({ parseNL }) => {
+    const result = parseNL(text);
+    const hint   = document.getElementById('nlpHint');
+    if (!result.desc && result.amount === null) {
+      if (hint) { hint.textContent = 'Could not parse — try "Coffee £3.50 yesterday"'; hint.classList.remove('hidden'); }
+      return;
+    }
+    // Fill the form
+    const descEl  = document.getElementById('txDesc')  as HTMLInputElement | null;
+    const amtEl   = document.getElementById('txAmt')   as HTMLInputElement | null;
+    const dateEl  = document.getElementById('txDate')  as HTMLInputElement | null;
+    const catEl   = document.getElementById('txCat')   as HTMLSelectElement | null;
+    if (descEl && result.desc)   descEl.value = result.desc;
+    if (amtEl  && result.amount !== null) amtEl.value = String(result.amount);
+    if (dateEl && result.date)   dateEl.value = result.date;
+    if (catEl  && result.category && db.categories.includes(result.category)) catEl.value = result.category;
+    if (result.type) {
+      import('./handlers').then(({ setTxType }) => setTxType(result.type!));
+    }
+    // Clear NLP input and hint
+    const nlpEl = document.getElementById('nlpInput') as HTMLInputElement | null;
+    if (nlpEl) nlpEl.value = '';
+    if (hint) hint.classList.add('hidden');
+    // Focus amount if empty, otherwise desc
+    if (!result.amount) descEl?.focus();
+    else amtEl?.focus();
+  });
+}
+
+// ─── Phase 5C: Weekly digest check ────────────────────────────────────────────
+function initWeeklyDigest(): void {
+  if (!db.weeklyDigest) return;
+  const now        = new Date();
+  const weekKey    = `${now.getFullYear()}-W${Math.ceil(now.getDate() / 7)}`;
+  if (db.lastDigestDate === weekKey) return;
+
+  // Compute last week's spending
+  const prevWeekEnd   = new Date(now);
+  prevWeekEnd.setDate(now.getDate() - now.getDay()); // last Sunday
+  const prevWeekStart = new Date(prevWeekEnd);
+  prevWeekStart.setDate(prevWeekEnd.getDate() - 6);
+  const startStr = prevWeekStart.toISOString().slice(0, 10);
+  const endStr   = prevWeekEnd.toISOString().slice(0, 10);
+
+  let weekSpend = 0;
+  Object.values(db.transactions).forEach(txs => {
+    (txs ?? []).forEach(t => {
+      if (t.type === 'expense' && t.date && t.date >= startStr && t.date <= endStr) {
+        weekSpend += t.amount;
+      }
+    });
+  });
+
+  if (weekSpend > 0) {
+    const { sym: symFn, fmt: fmtFn } = { sym: () => db.currency, fmt: (n: number) => n.toFixed(2) };
+    setTimeout(() => showToast(
+      `Weekly digest: you spent ${symFn()}${fmtFn(weekSpend)} last week`,
+    ), 3000);
+  }
+
+  db.lastDigestDate = weekKey;
+  import('./db').then(({ persistOnly }) => persistOnly());
+}
+
 // ─── Currency prefix updater ──────────────────────────────────────────────────
 export function updateCurrencyPrefixes(): void {
   document.querySelectorAll<HTMLElement>('.curr-prefix').forEach(el => {
@@ -281,6 +367,10 @@ function wireEvents(): void {
     const delCatEl = target.closest<HTMLElement>('[data-del-cat]');
     if (delCatEl) { delCat(delCatEl.dataset['delCat']!); return; }
 
+    // Phase 5A: account management
+    const delAcctEl = target.closest<HTMLElement>('[data-del-account]');
+    if (delAcctEl) { void delAccount(delAcctEl.dataset['delAccount']!); return; }
+
     // Goals
     const editGoalEl = target.closest<HTMLElement>('[data-edit-goal]');
     if (editGoalEl) { editGoal(editGoalEl.dataset['editGoal']!); return; }
@@ -355,6 +445,22 @@ function wireEvents(): void {
         case 'add-cat': addCatPrompt(); break;
         case 'import-csv': executeImport(); break;
         case 'bank-import-confirm': executeBankImport(); break;
+        case 'add-account': addAccount(); break;
+        case 'create-instalment': createInstalment(); break;
+        case 'refresh-prices': void refreshAssetPrices(); break;
+        case 'save-alpha-key': {
+          const keyEl = document.getElementById('alphaVantageInput') as HTMLInputElement | null;
+          saveAlphaVantageKey(keyEl?.value ?? '');
+          break;
+        }
+        case 'period-calendar': saveReportingPeriod('calendar'); updateReportingPeriodUI(); break;
+        case 'period-tax': saveReportingPeriod('tax'); updateReportingPeriodUI(); break;
+        case 'print-statement': printMonthlyStatement(); break;
+        case 'nlp-parse': {
+          const nlpEl = document.getElementById('nlpInput') as HTMLInputElement | null;
+          if (nlpEl?.value) applyNlpResult(nlpEl.value);
+          break;
+        }
         case 'save-cloud-url': saveCloudUrl(); break;
         case 'save-sync-passphrase': saveSyncPassphrase(); break;
         case 'clear-sync-passphrase': clearSyncPassphrase(); break;
@@ -465,6 +571,9 @@ function wireEvents(): void {
   // Keep split "Remaining" label live as user types the total amount
   document.getElementById('txAmt')?.addEventListener('input', updateSplitRemaining);
 
+  // Account filter
+  document.getElementById('txAccountFilter')?.addEventListener('change', render);
+
   // Category filter
   document.getElementById('txCatFilter')?.addEventListener('change', render);
 
@@ -517,6 +626,32 @@ function wireEvents(): void {
       save();
     });
   }
+
+  // Phase 5C: Weekly digest toggle
+  const digestToggle = document.getElementById('weeklyDigestToggle') as HTMLInputElement | null;
+  if (digestToggle) {
+    digestToggle.checked = db.weeklyDigest;
+    digestToggle.addEventListener('change', () => saveWeeklyDigestPref(digestToggle.checked));
+  }
+
+  // Phase 5F: Tax year month selector
+  const taxYearSel = document.getElementById('taxYearMonthSel') as HTMLSelectElement | null;
+  if (taxYearSel) {
+    taxYearSel.value = String(db.taxYearMonth);
+    taxYearSel.addEventListener('change', () => saveTaxYearMonth(parseInt(taxYearSel.value, 10)));
+  }
+
+  // Phase 5E: Alpha Vantage pre-fill
+  const alphaInput = document.getElementById('alphaVantageInput') as HTMLInputElement | null;
+  if (alphaInput && db.alphaVantageKey) alphaInput.value = db.alphaVantageKey;
+
+  // Phase 5G: NLP Enter key
+  document.getElementById('nlpInput')?.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      const nlpEl = document.getElementById('nlpInput') as HTMLInputElement | null;
+      if (nlpEl?.value) applyNlpResult(nlpEl.value);
+    }
+  });
 
   // Debt Payoff Simulator extra payment input (delegated to body — re-rendered on each call)
   root.addEventListener('input', (e: Event) => {
@@ -749,6 +884,9 @@ function bootApp(): void {
   updateCloudStatus();
   renderRecurring();
   renderRecurringSuggestions();
+  renderAccounts();
+  updateReportingPeriodUI();
+  initWeeklyDigest();
   refreshAuthSettingsCard();
   const currInput = document.getElementById('currencySymbolInput') as HTMLInputElement | null;
   if (currInput) currInput.value = db.currency;
@@ -796,6 +934,7 @@ window.addEventListener('storage', (e: StorageEvent) => {
   renderSettingsCats();   // ditto
   renderRecurring();      // recurring templates may have changed
   renderRecurringSuggestions();
+  renderAccounts();
   updateCloudStatus();
 });
 
