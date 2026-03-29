@@ -231,13 +231,14 @@ function applyNlpResult(text: string): void {
 }
 
 // ─── Phase 5C: Weekly digest check ────────────────────────────────────────────
-// Expected format: "YYYY-WN" (e.g. "2026-W3")
-const DIGEST_KEY_RE = /^\d{4}-W[1-5]$/;
+// Format: "W<weeks-since-Unix-epoch>" — monotonically increasing, no month-boundary reset
+const DIGEST_KEY_RE = /^W\d+$/;
 
 function initWeeklyDigest(): void {
   if (!db.weeklyDigest) return;
-  const now        = new Date();
-  const weekKey    = `${now.getFullYear()}-W${Math.ceil(now.getDate() / 7)}`;
+  const now              = new Date();
+  const weeksSinceEpoch  = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
+  const weekKey          = `W${weeksSinceEpoch}`;
   // Validate stored key format before comparing — prevents poisoned localStorage bypass
   const storedKey  = typeof db.lastDigestDate === 'string' && DIGEST_KEY_RE.test(db.lastDigestDate)
     ? db.lastDigestDate : '';
@@ -251,14 +252,15 @@ function initWeeklyDigest(): void {
   const startStr = prevWeekStart.toISOString().slice(0, 10);
   const endStr   = prevWeekEnd.toISOString().slice(0, 10);
 
-  let weekSpend = 0;
+  let weekSpendCents = 0;
   Object.values(db.transactions).forEach(txs => {
     (txs ?? []).forEach(t => {
       if (t.type === 'expense' && t.date && t.date >= startStr && t.date <= endStr) {
-        weekSpend += t.amount;
+        weekSpendCents += Math.round(t.amount * 100);
       }
     });
   });
+  const weekSpend = weekSpendCents / 100;
 
   if (weekSpend > 0) {
     const { sym: symFn, fmt: fmtFn } = { sym: () => db.currency, fmt: (n: number) => n.toFixed(2) };

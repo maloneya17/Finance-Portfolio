@@ -1354,9 +1354,12 @@ export function createInstalment(): void {
   if (!months || months < 2 || months > 120) return showToast('Months must be between 2 and 120');
   if (!isValidMonthKey(start)) return showToast('Invalid start month');
 
-  const planId      = genId();
-  const instalment  = Math.round((total / months) * 100) / 100;
-  const lastPayment = Math.round((total - instalment * (months - 1)) * 100) / 100;
+  const planId           = genId();
+  // Integer cent arithmetic prevents floating-point drift across monthly instalments
+  const totalCents       = Math.round(total * 100);
+  const instalmentCents  = Math.floor(totalCents / months);
+  const instalment       = instalmentCents / 100;
+  let paidCents          = 0;
 
   const [startYear, startMonth] = start.split('-').map(Number);
   for (let i = 0; i < months; i++) {
@@ -1364,7 +1367,10 @@ export function createInstalment(): void {
     const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (!isValidMonthKey(mk)) continue;
     if (!db.transactions[mk]) db.transactions[mk] = [];
-    const amt = i === months - 1 ? lastPayment : instalment;
+    const isLast   = i === months - 1;
+    const amtCents = isLast ? (totalCents - paidCents) : instalmentCents;
+    const amt      = amtCents / 100;
+    paidCents     += amtCents;
     db.transactions[mk].push({
       id: genId(), updatedAt: Date.now(),
       date: `${mk}-01`,
@@ -1393,7 +1399,11 @@ export function createInstalment(): void {
 }
 
 // ─── Phase 5E: Live price refresh ─────────────────────────────────────────────
+let _priceRefreshBusy = false;
+
 export async function refreshAssetPrices(): Promise<void> {
+  if (_priceRefreshBusy) { showToast('Price refresh already in progress'); return; }
+  _priceRefreshBusy = true;
   const btn = document.getElementById('btnRefreshPrices');
   if (btn) btn.classList.add('animate-spin');
 
@@ -1421,6 +1431,7 @@ export async function refreshAssetPrices(): Promise<void> {
 
   if (updated > 0) { save(); renderWealth(); }
   if (btn) btn.classList.remove('animate-spin');
+  _priceRefreshBusy = false;
   const msg = updated > 0
     ? `Updated ${updated} asset price${updated !== 1 ? 's' : ''}${failed > 0 ? ` (${failed} failed)` : ''}`
     : `Could not fetch prices for ${failed} asset${failed !== 1 ? 's' : ''} — check ticker symbols`;
