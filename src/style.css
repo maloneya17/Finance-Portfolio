@@ -305,6 +305,15 @@ body.privacy-active .bill-amt {
 .money-val {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+/* ─── WIDE VIEWPORT CONTENT PADDING ─────────────────────────────────────────── */
+@media (min-width: 1536px) {
+  #main-content { padding-left: 3rem; padding-right: 3rem; }
+}
+@media (min-width: 1920px) {
+  #main-content { padding-left: 4rem; padding-right: 4rem; }
 }
 
 /* ─── TAG CHIPS ───────────────────────────────────────────────────────────────── */
