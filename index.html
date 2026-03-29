@@ -805,11 +805,12 @@
         </div>
 
         <!-- SETTINGS -->
-        <div id="view-settings" class="view-section hidden fade-in max-w-7xl mx-auto">
+        <div id="view-settings" class="view-section hidden fade-in">
+            <div class="max-w-xl mx-auto">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-6">Settings</h2>
 
             <!-- Account & Security -->
-            <div id="authSettingsCard" class="hidden card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div id="authSettingsCard" class="hidden card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2">
                     <i class="fas fa-shield-alt text-indigo-500 text-sm"></i> Account &amp; Security
                 </h3>
@@ -842,7 +843,7 @@
                 </div>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-4">Bank Data Import (CSV)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
                 <input type="file" id="csvFile" accept=".csv" class="w-full mb-4 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
@@ -862,7 +863,7 @@
             </div>
 
             <!-- Bank File Import (OFX / QIF) -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-1">Bank Statement Import (OFX / QIF)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a .ofx, .qfx, or .qif file exported directly from your online banking portal. Transactions are automatically deduplicated.</p>
                 <input type="file" id="bankFile" accept=".ofx,.qfx,.qif" class="w-full mb-3 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
@@ -877,9 +878,9 @@
             </div>
 
             <!-- Smart Recurring Suggestions (auto-populated) -->
-            <div id="recurringSuggestions" class="hidden max-w-md"></div>
+            <div id="recurringSuggestions" class="hidden"></div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="font-bold text-slate-800 dark:text-white">Cloud Sync</h3>
                     <span id="encryptionBadge" class="hidden flex items-center gap-1"></span>
@@ -922,7 +923,7 @@
             </div>
 
             <!-- Phase 5A: Account Management -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Accounts</h3>
                 <p class="text-xs text-slate-500 mb-3">Organise transactions by account (e.g. Checking, Savings, Joint).</p>
                 <div id="accountList" class="mb-3 space-y-1"></div>
@@ -935,7 +936,7 @@
             </div>
 
             <!-- Phase 5D: Instalment Plans -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Instalment Plans</h3>
                 <p class="text-xs text-slate-500 mb-4">Split a large expense across multiple months automatically.</p>
                 <form id="formInstalment" class="space-y-2" onsubmit="return false;">
@@ -966,7 +967,7 @@
             </div>
 
             <!-- Phase 5E: Live Prices -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Live Asset Prices</h3>
                 <p class="text-xs text-slate-500 mb-3">Enter an Alpha Vantage API key to enable live stock prices (crypto is free via CoinGecko).</p>
                 <div class="flex gap-2 mb-2">
@@ -981,7 +982,7 @@
             </div>
 
             <!-- Phase 5C: Weekly Digest -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Weekly Summary Digest</h3>
                 <p class="text-xs text-slate-500 mb-3">Show a weekly spending summary notification when you open the app on a new week.</p>
                 <label class="flex items-center gap-3 cursor-pointer">
@@ -991,7 +992,7 @@
             </div>
 
             <!-- Phase 5F: Tax Year Reporting -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Reporting Period</h3>
                 <p class="text-xs text-slate-500 mb-3">Switch annual reports between calendar year (Jan–Dec) and tax year (e.g. Apr–Mar for UK).</p>
                 <div class="flex gap-2 mb-3">
@@ -1015,7 +1016,7 @@
             </div>
 
             <!-- Phase 5B: Print Statement -->
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Monthly Statement</h3>
                 <p class="text-xs text-slate-500 mb-3">Print or save as PDF a statement for the currently selected month.</p>
                 <button type="button" data-action="print-statement"
@@ -1024,7 +1025,7 @@
                 </button>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Currency Symbol</h3>
                 <p class="text-xs text-slate-500 mb-3">Change the currency symbol shown throughout the app.</p>
                 <div class="flex gap-2">
@@ -1033,7 +1034,7 @@
                 </div>
             </div>
 
-            <div id="pwaInstallRow" class="hidden card bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-6 max-w-md mb-6">
+            <div id="pwaInstallRow" class="hidden card bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-indigo-700 dark:text-indigo-300 mb-2"><i class="fas fa-mobile-alt mr-2"></i>Install App</h3>
                 <p class="text-xs text-slate-500 mb-3">Add Finance Portfolio to your home screen for offline access and a native-app experience.</p>
                 <button type="button" data-action="pwa-install"
@@ -1042,7 +1043,7 @@
                 </button>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Haptic Feedback</h3>
                 <p class="text-xs text-slate-500 mb-3">Vibrate on transaction save, budget warnings, and goal celebrations (supported devices only).</p>
                 <label class="flex items-center gap-3 cursor-pointer">
@@ -1051,7 +1052,7 @@
                 </label>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Auto-Apply Recurring</h3>
                 <p class="text-xs text-slate-500 mb-3">Automatically apply recurring templates to the current month when you open the app.</p>
                 <label class="flex items-center gap-3 cursor-pointer">
@@ -1060,13 +1061,13 @@
                 </label>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Manage Categories</h3>
                 <div id="settingsCatList" class="flex flex-wrap gap-2 mb-4"></div>
                 <button type="button" data-action="add-cat" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Recurring Transactions</h3>
                 <p class="text-xs text-slate-500 mb-4">Templates applied to a month with one click from the Transactions panel.</p>
                 <form class="flex flex-col gap-2 mb-4" onsubmit="return false;">
@@ -1089,7 +1090,7 @@
                 <div id="recurringList" class="space-y-2"></div>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 max-w-md mb-6">
+            <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Export Data</h3>
                 <p class="text-xs text-slate-500 mb-4">Download your financial data for backup or analysis.</p>
                 <div class="flex gap-3 flex-wrap">
@@ -1108,11 +1109,12 @@
                 </div>
             </div>
 
-            <div class="card bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-6 max-w-md">
+            <div class="card bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-6">
                 <h3 class="font-bold text-rose-600 mb-2">Danger Zone</h3>
                 <button type="button" data-action="reset-data"
                     class="text-rose-600 bg-rose-50 dark:bg-rose-900/20 px-4 py-2 rounded-lg font-bold text-xs transition">Reset All Data</button>
             </div>
+            </div><!-- /max-w-xl -->
         </div>
 
     </div>
