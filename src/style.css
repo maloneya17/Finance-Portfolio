@@ -2,17 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── iOS DESIGN SYSTEM TOKENS ──────────────────────────────────────────────── */
+:root {
+  --ios-blue:   #007AFF;
+  --ios-green:  #34C759;
+  --ios-red:    #FF3B30;
+  --ios-orange: #FF9500;
+  --ios-yellow: #FFCC00;
+  --ios-purple: #AF52DE;
+  --ios-teal:   #30B0C7;
+
+  /* Soft multi-layer iOS shadows — light mode */
+  --shadow-ios-xs: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-ios-sm: 0 4px 16px rgba(0,0,0,0.10);
+  --shadow-ios-md: 0 8px 28px rgba(0,0,0,0.14);
+  --shadow-ios-lg: 0 16px 40px rgba(0,0,0,0.18);
+
+  --shadow-ios-blue:  0 6px 20px rgba(0,122,255,0.28);
+  --shadow-ios-green: 0 6px 20px rgba(52,199,89,0.28);
+  --shadow-ios-red:   0 6px 20px rgba(255,59,48,0.28);
+}
+html.dark {
+  --shadow-ios-xs: 0 2px 8px rgba(0,0,0,0.40);
+  --shadow-ios-sm: 0 4px 16px rgba(0,0,0,0.50);
+  --shadow-ios-md: 0 8px 28px rgba(0,0,0,0.60);
+  --shadow-ios-lg: 0 16px 40px rgba(0,0,0,0.70);
+}
+
 /* ─── CORE ─────────────────────────────────────────────────────────────────── */
 body { transition: background-color 0.3s, color 0.3s; }
 
 /* ─── NAVIGATION ────────────────────────────────────────────────────────────── */
-.nav-item { transition: all 0.2s ease; }
-.nav-item:hover { transform: translateX(4px); }
+.nav-item {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 14px;
+}
+.nav-item:hover {
+  transform: translateX(3px);
+  background-color: rgba(255,255,255,0.08) !important;
+}
 .nav-item:hover i { transform: scale(1.15); transition: transform 0.2s ease; }
-.nav-item.active { box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); transform: translateX(0); }
+.nav-item.active {
+  background-color: var(--ios-blue) !important;
+  box-shadow: var(--shadow-ios-blue) !important;
+  color: #fff !important;
+  transform: translateX(0);
+}
 
 /* ─── BUTTON MICRO-INTERACTIONS ─────────────────────────────────────────────── */
-/* Every interactive button gets a lift on hover and a press-down on active */
 button:not([disabled]):not([data-action="toggle-theme"]):not([data-action="toggle-privacy"]) {
   transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
@@ -20,37 +57,58 @@ button:not([disabled]):not([data-action="toggle-theme"]):not([data-action="toggl
               color 0.15s ease,
               opacity 0.15s ease;
 }
-/* Primary / action buttons: lift on hover */
 button.btn-lift:not([disabled]):hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-ios-sm);
 }
-/* All buttons: press feedback */
 button:not([disabled]):active {
-  transform: scale(0.96) !important;
+  transform: scale(0.95) !important;
 }
 
 /* ─── FOCUS VISIBLE RINGS ────────────────────────────────────────────────────── */
-/* Keyboard-only visible focus — doesn't show on mouse clicks */
 :focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--ios-blue);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
-/* Remove redundant focus ring on elements that already have custom styling */
 input:focus-visible,
 select:focus-visible,
-textarea:focus-visible {
-  outline: none; /* handled by Tailwind focus:ring classes */
-}
+textarea:focus-visible { outline: none; }
 [role="button"]:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--ios-blue);
   outline-offset: 2px;
 }
 
 /* ─── CALENDAR ────────────────────────────────────────────────────────────────── */
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; border-radius: 12px; overflow: hidden; }
-.calendar-day { min-height: 130px; padding: 8px; position: relative; transition: background-color 0.2s; content-visibility: auto; }
+/* Grid lines via cell borders, not a coloured gap background */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
+  background: transparent;
+}
+.calendar-day {
+  min-height: 130px;
+  padding: 8px;
+  position: relative;
+  transition: background-color 0.2s;
+  content-visibility: auto;
+  border-bottom: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+}
+.dark .calendar-day {
+  border-bottom-color: rgba(51,65,85,0.5);
+  border-right-color: rgba(51,65,85,0.5);
+}
+.day-number {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 4px;
+}
+.dark .day-number { color: #94a3b8; }
 
 /* ─── BILLS ───────────────────────────────────────────────────────────────────── */
 .bill-chip {
@@ -59,7 +117,7 @@ textarea:focus-visible {
   align-items: center;
   font-size: 10px;
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: 8px;   /* was 4px — iOS prefers 8px+ */
   margin-bottom: 4px;
   cursor: pointer;
   border-left: 3px solid transparent;
@@ -73,19 +131,15 @@ textarea:focus-visible {
 .btn-delete-bill { opacity: 0; transition: opacity 0.2s; }
 
 /* ─── CARD HOVER LIFT ────────────────────────────────────────────────────────── */
-/* KPI cards and main cards get a subtle lift on hover */
 .card {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-ios-md);
 }
-.dark .card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-/* Suppress lift on cards that contain forms (transaction form, bill form etc.) */
+.dark .card:hover { box-shadow: var(--shadow-ios-md); }
 .card.no-lift:hover {
   transform: none;
   box-shadow: none;
@@ -93,16 +147,15 @@ textarea:focus-visible {
 
 /* ─── ANIMATIONS ──────────────────────────────────────────────────────────────── */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.fade-in { animation: fadeIn 0.3s ease-in-out; }
+.fade-in { animation: fadeIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1); }
 
 @keyframes slideInRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
 .slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-/* Save success pulse on the Add Transaction button */
 @keyframes successPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
-  70%  { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(52,199,89,0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(52,199,89,0); }
+  100% { box-shadow: 0 0 0 0 rgba(52,199,89,0); }
 }
 .tx-save-success { animation: successPulse 0.55s ease-out; }
 
@@ -117,17 +170,15 @@ body.privacy-active .bill-amt {
 }
 
 /* ─── VIEW TRANSITIONS ────────────────────────────────────────────────────────── */
-/* Smoother: scale + translate, with a subtle spring */
 @keyframes viewIn {
-  from { opacity: 0; transform: scale(0.98) translateY(10px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+  from { opacity: 0; transform: scale(0.98) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
 }
-.view-enter { animation: viewIn 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
+.view-enter { animation: viewIn 0.28s cubic-bezier(0.34, 1.2, 0.64, 1) forwards; }
 
 /* ─── MOBILE TRANSACTION CARDS ────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   #listTx thead { display: none; }
-  /* Each row becomes a rounded card */
   #listTx tr {
     display: grid;
     grid-template-columns: 24px 1fr auto auto;
@@ -137,7 +188,6 @@ body.privacy-active .bill-amt {
     border-bottom: 1px solid #f1f5f9;
   }
   .dark #listTx tr { border-color: #1e293b; }
-  /* Hide select-all checkbox col on mobile */
   #listTx tr td:first-child { display: flex; align-items: center; }
   #listTx tr td:nth-child(2) { font-size: 0.875rem; min-width: 0; }
   #listTx tr td:nth-child(3) { font-size: 0.8125rem; white-space: nowrap; }
@@ -145,7 +195,7 @@ body.privacy-active .bill-amt {
 }
 
 /* ─── BILL PAID STATE ─────────────────────────────────────────────────────────── */
-.bill-chip.paid { opacity: 0.6; }
+.bill-chip.paid { opacity: 0.65; }
 .bill-chip.paid .bill-name { text-decoration: line-through; }
 
 /* ─── PROGRESS BARS ───────────────────────────────────────────────────────────── */
@@ -162,7 +212,7 @@ body.privacy-active .bill-amt {
   transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── TOAST ────────────────────────────────────────────────────────────────────── */
+/* ─── TOAST — frosted glass ─────────────────────────────────────────────────── */
 #toastContainer {
   position: fixed;
   bottom: 1.5rem;
@@ -178,24 +228,26 @@ body.privacy-active .bill-amt {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: #1e293b;
+  padding: 0.875rem 1.125rem;
+  background: rgba(15, 23, 42, 0.85);
   color: #f1f5f9;
-  border-radius: 0.75rem;
+  border-radius: 16px;
   font-size: 0.8125rem;
   font-weight: 500;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06);
+  box-shadow: var(--shadow-ios-lg), 0 0 0 1px rgba(255,255,255,0.08);
   animation: slideInRight 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
   pointer-events: all;
-  min-width: 200px;
-  backdrop-filter: blur(12px);
+  min-width: 220px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.10);
 }
 @keyframes toastOut { to { opacity: 0; transform: translateX(12px); } }
 .toast.dismissing { animation: toastOut 0.2s ease-in forwards; }
 .toast-btn {
   background: none;
   border: none;
-  color: #818cf8;
+  color: var(--ios-blue);
   font-weight: 700;
   cursor: pointer;
   font-size: 0.8125rem;
@@ -204,23 +256,20 @@ body.privacy-active .bill-amt {
   white-space: nowrap;
   transition: color 0.15s;
 }
-.toast-btn:hover { color: #a5b4fc; }
+.toast-btn:hover { color: #5AC8FA; }
 
 /* ─── MOBILE SIDEBAR ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   #sidebar {
     position: fixed;
     left: -280px;
-    /* Use dynamic viewport height so the sidebar fills correctly when mobile
-       browser chrome (address bar) is shown or hidden */
     height: 100dvh;
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 200;
     overflow-y: auto;
-    /* Safe area for notched devices */
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
   }
-  #sidebar.open { left: 0; box-shadow: 0 0 40px rgba(0,0,0,0.4); }
+  #sidebar.open { left: 0; box-shadow: 0 0 60px rgba(0,0,0,0.5); }
   #sidebarOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; display: none; }
   #sidebarOverlay.open { display: block; }
   #mobileMenuBtn { display: flex !important; }
@@ -229,29 +278,19 @@ body.privacy-active .bill-amt {
 @media (min-width: 769px) { #mobileMenuBtn { display: none !important; } #fabAddTx { display: none !important; } }
 
 /* ─── MOBILE TOUCH TARGETS ────────────────────────────────────────────────────── */
-/* Ensure all interactive controls meet 44×44px minimum on touch devices */
 @media (max-width: 768px) {
-  input,
-  select,
-  textarea {
-    /* Prevent iOS from zooming on focus — needs font-size ≥ 16px */
+  input, select, textarea {
     font-size: max(16px, 0.875rem) !important;
     min-height: 44px;
   }
-  button {
-    min-height: 44px;
-  }
-  /* Exception: very small icon-only buttons (delete/edit inside rows) */
-  [data-del-tx],
-  [data-edit-tx],
-  [data-del-bill],
-  [data-edit-bill] {
+  button { min-height: 44px; }
+  [data-del-tx], [data-edit-tx], [data-del-bill], [data-edit-bill] {
     min-height: 32px;
     padding: 0.25rem 0.5rem;
   }
 }
 
-/* ─── FLOATING ACTION BUTTON (mobile quick-add transaction) ──────────────────── */
+/* ─── FLOATING ACTION BUTTON ─────────────────────────────────────────────────── */
 #fabAddTx {
   position: fixed;
   bottom: 1.5rem;
@@ -263,9 +302,9 @@ body.privacy-active .bill-amt {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #4f46e5;
+  background: var(--ios-blue);
   color: white;
-  box-shadow: 0 4px 20px rgba(79, 70, 229, 0.5);
+  box-shadow: var(--shadow-ios-blue);
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.2s ease;
   border: none;
@@ -273,7 +312,7 @@ body.privacy-active .bill-amt {
 }
 #fabAddTx:hover {
   transform: scale(1.1);
-  box-shadow: 0 6px 28px rgba(79, 70, 229, 0.65);
+  box-shadow: 0 8px 32px rgba(0,122,255,0.50);
 }
 #fabAddTx:active { transform: scale(0.92); }
 
@@ -282,7 +321,7 @@ body.privacy-active .bill-amt {
   background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 0.5rem;
+  border-radius: 10px;
 }
 .dark .skeleton {
   background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
@@ -298,13 +337,12 @@ body.privacy-active .bill-amt {
   60%       { transform: translateX(-5px); }
   80%       { transform: translateX(5px); }
 }
-.auth-shake { animation: authShake 0.4s ease-in-out; border-color: #f43f5e !important; }
+.auth-shake { animation: authShake 0.4s ease-in-out; border-color: var(--ios-red) !important; }
 
 /* ─── MONEY VALUE FORMATTING ──────────────────────────────────────────────────── */
-/* Tabular numbers so values don't shift width as they update */
 .money-val {
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   font-weight: 700;
 }
 
@@ -317,7 +355,6 @@ body.privacy-active .bill-amt {
 }
 
 /* ─── TAG CHIPS ───────────────────────────────────────────────────────────────── */
-/* Smooth appearance for new tags added after save */
 .tag-chip {
   display: inline-flex;
   align-items: center;
@@ -330,60 +367,53 @@ body.privacy-active .bill-amt {
 .heatmap-cell {
   width: 14px;
   height: 14px;
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: default;
   transition: transform 0.1s ease, opacity 0.1s ease;
   position: relative;
 }
 .heatmap-cell:hover { transform: scale(1.4); z-index: 10; }
-/* Tooltip via CSS — shown on hover of heatmap cell */
 .heatmap-cell[data-tip]:hover::after {
   content: attr(data-tip);
   position: absolute;
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  background: #1e293b;
+  background: rgba(15,23,42,0.9);
+  backdrop-filter: blur(12px);
   color: #f1f5f9;
   font-size: 10px;
   white-space: nowrap;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   pointer-events: none;
   z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  box-shadow: var(--shadow-ios-md);
 }
 
 /* ─── FINANCIAL HEALTH AMBIENT ────────────────────────────────────────────────── */
-/* The ambient bar pulses gently when health is low */
 @keyframes ambientPulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.6; }
+  50%       { opacity: 0.55; }
 }
 #healthAmbientFill.health-low { animation: ambientPulse 2s ease-in-out infinite; }
 
-/* ─── FINANCIAL WEATHER — health-tier-driven sidebar theming ─────────────────── */
-/* Score ≥ 75 = thriving (emerald), 45-74 = steady (amber/indigo), < 45 = watchful (slate) */
+/* ─── FINANCIAL WEATHER — health-tier sidebar theming ─────────────────────────── */
 [data-health-tier="thriving"] #sidebar { background: linear-gradient(180deg, #064e3b 0%, #0f172a 60%); }
-[data-health-tier="thriving"] .nav-item.active { background-color: #059669 !important; box-shadow: 0 4px 12px rgba(5,150,105,0.4) !important; }
+[data-health-tier="thriving"] .nav-item.active { background-color: #059669 !important; box-shadow: 0 4px 16px rgba(5,150,105,0.4) !important; }
 [data-health-tier="watchful"] #sidebar { background: linear-gradient(180deg, #1c1917 0%, #0c0a09 60%); }
-[data-health-tier="watchful"] .nav-item.active { background-color: #4b5563 !important; box-shadow: 0 4px 12px rgba(75,85,99,0.3) !important; }
-/* Smooth tier transitions */
+[data-health-tier="watchful"] .nav-item.active { background-color: #4b5563 !important; box-shadow: 0 4px 16px rgba(75,85,99,0.3) !important; }
 #sidebar { transition: background 1.2s ease; }
 .nav-item.active { transition: background-color 0.8s ease, box-shadow 0.8s ease !important; }
 
 /* ─── MONTH PRESSURE GAUGE ────────────────────────────────────────────────────── */
 @keyframes pressurePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(244,63,94,0); }
-  50%       { box-shadow: 0 0 0 4px rgba(244,63,94,0.4); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,48,0); }
+  50%       { box-shadow: 0 0 0 4px rgba(255,59,48,0.4); }
 }
 #monthPressureFill.pressure-warn { animation: pressurePulse 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  /* Disable all animations — covers ambient, pressure, view transitions,
-     toasts, fade-ins, shake, shimmer, and any custom keyframes */
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -393,6 +423,88 @@ body.privacy-active .bill-amt {
 
 /* ─── BILL CHIP KEYBOARD FOCUS ────────────────────────────────────────────────── */
 .bill-chip:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--ios-blue);
   outline-offset: 2px;
 }
+
+/* ─── GLASS MORPHISM UTILITIES ────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.30);
+}
+.dark .glass {
+  background: rgba(15,23,42,0.75);
+  border-color: rgba(255,255,255,0.08);
+}
+
+/* ─── ASSET / DEBT LIST ITEMS ─────────────────────────────────────────────────── */
+.wealth-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem 0.75rem;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.dark .wealth-item {
+  background: #1e293b;
+  border-color: rgba(71,85,105,0.5);
+}
+.wealth-item:hover {
+  box-shadow: var(--shadow-ios-sm);
+  transform: translateX(2px);
+}
+.wealth-item-actions button {
+  padding: 0.25rem 0.375rem;
+  border-radius: 6px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.wealth-item-actions button:hover {
+  background-color: rgba(148,163,184,0.15);
+}
+
+/* ─── iOS-STYLE SEGMENTED CONTROL ─────────────────────────────────────────────── */
+.seg-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 12px;
+  background: rgba(118,118,128,0.12);
+}
+.dark .seg-control { background: rgba(118,118,128,0.24); }
+.seg-btn {
+  padding: 0.5rem;
+  border-radius: 9px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: #64748b;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dark .seg-btn { color: #94a3b8; }
+.seg-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: var(--shadow-ios-xs);
+}
+.dark .seg-btn.active {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+/* ─── SCROLLBAR ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(148,163,184,0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.7); }

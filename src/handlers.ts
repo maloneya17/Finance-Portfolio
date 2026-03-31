@@ -36,13 +36,14 @@ export function getTxType(): 'income' | 'expense' { return currentTxType; }
 
 export function setTxType(type: 'income' | 'expense'): void {
   currentTxType = type;
-  const activeExp = 'bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-300';
-  const activeInc = 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-300';
-  const inactive = 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700';
   const btnExp = document.getElementById('btnExp');
   const btnInc = document.getElementById('btnInc');
-  if (btnExp) btnExp.className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'expense' ? activeExp : inactive}`;
-  if (btnInc) btnInc.className = `flex-1 py-2 rounded-lg font-bold text-sm transition ${type === 'income' ? activeInc : inactive}`;
+  if (btnExp) {
+    btnExp.className = `seg-btn text-rose-600${type === 'expense' ? ' active' : ''}`;
+  }
+  if (btnInc) {
+    btnInc.className = `seg-btn text-emerald-600${type === 'income' ? ' active' : ''}`;
+  }
 }
 
 // ─── Transaction form error helper ────────────────────────────────────────────
@@ -834,8 +835,8 @@ export function setRecType(type: 'income' | 'expense'): void {
   const isExp = type === 'expense';
   const btnExp = document.getElementById('recBtnExp');
   const btnInc = document.getElementById('recBtnInc');
-  if (btnExp) btnExp.className = `py-1.5 rounded-md text-xs font-bold transition ${isExp ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400'}`;
-  if (btnInc) btnInc.className = `py-1.5 rounded-md text-xs font-bold transition ${!isExp ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`;
+  if (btnExp) btnExp.className = `seg-btn text-rose-600${isExp ? ' active' : ''}`;
+  if (btnInc) btnInc.className = `seg-btn text-emerald-600${!isExp ? ' active' : ''}`;
 }
 
 export function saveRecurring(): void {

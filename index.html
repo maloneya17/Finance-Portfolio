@@ -23,63 +23,64 @@
     <div id="sidebarOverlay"></div>
     <button id="mobileMenuBtn" type="button" data-action="toggle-sidebar" style="display:none"
         aria-label="Open navigation menu"
-        class="fixed top-3 left-3 z-[201] bg-slate-900 text-white w-11 h-11 rounded-xl shadow-lg flex items-center justify-center">
+        class="fixed top-3 left-3 z-[201] text-white w-11 h-11 rounded-2xl flex items-center justify-center" style="background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">
         <i class="fas fa-bars text-base"></i>
     </button>
 
     <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between z-50">
         <div>
             <div class="flex items-center gap-3 mb-10">
-                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg transform rotate-3">
-                    <i class="fas fa-wallet text-white"></i>
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-ios-blue" style="background:var(--ios-blue)">
+                    <i class="fas fa-wallet text-white text-sm"></i>
                 </div>
-                <h1 class="font-bold text-lg leading-tight tracking-tight">Infinity<br><span class="text-indigo-400">Finance</span></h1>
+                <h1 class="font-bold text-lg leading-tight tracking-tight">Infinity<br><span style="color:var(--ios-blue)">Finance</span></h1>
             </div>
 
             <div class="mb-8">
                 <label for="monthPicker" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Timeline</label>
                 <input type="month" id="monthPicker" aria-label="Select month to view"
-                    class="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-lg font-bold text-white text-sm outline-none focus:border-indigo-500 transition cursor-pointer hover:bg-slate-700">
+                    class="w-full p-2.5 bg-slate-800/80 border border-slate-700/60 rounded-xl font-bold text-white text-sm outline-none transition cursor-pointer hover:bg-slate-700/80" style="focus-border-color:var(--ios-blue)">
             </div>
 
             <nav class="space-y-1" aria-label="Main navigation">
                 <div role="button" tabindex="0" data-nav="dashboard" id="nav-dashboard"
-                    class="nav-item active flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer bg-indigo-600 text-white shadow-lg shadow-indigo-900/50"
+                    class="nav-item active flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer text-white"
                     aria-current="page"><i class="fas fa-chart-pie w-5" aria-hidden="true"></i> Dashboard</div>
                 <div role="button" tabindex="0" data-nav="budget" id="nav-budget"
-                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
                     <i class="fas fa-coins w-5" aria-hidden="true"></i> Budgets</div>
                 <div role="button" tabindex="0" data-nav="bills" id="nav-bills"
-                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
                     <i class="fas fa-calendar-alt w-5" aria-hidden="true"></i> Bills</div>
                 <div role="button" tabindex="0" data-nav="wealth" id="nav-wealth"
-                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
                     <i class="fas fa-landmark w-5" aria-hidden="true"></i> Net Worth</div>
                 <div role="button" tabindex="0" data-nav="reports" id="nav-reports"
-                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
                     <i class="fas fa-chart-line w-5" aria-hidden="true"></i> Reports</div>
                 <div role="button" tabindex="0" data-nav="insights" id="nav-insights"
-                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
                     <i class="fas fa-brain w-5" aria-hidden="true"></i> Insights</div>
                 <div role="button" tabindex="0" data-nav="settings" id="nav-settings"
-                    class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-400 cursor-pointer hover:bg-slate-800 hover:text-white">
+                    class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
                     <i class="fas fa-sliders-h w-5" aria-hidden="true"></i> Settings</div>
             </nav>
         </div>
 
         <div class="pt-6 border-t border-slate-800">
             <button type="button" id="btnLock" data-action="lock"
-                class="w-full py-2 mb-2 rounded-lg bg-indigo-900/60 hover:bg-indigo-800/70 text-indigo-300 text-xs font-bold transition flex items-center justify-center gap-2">
+                class="w-full py-2.5 mb-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2"
+                style="background:rgba(0,122,255,0.15);color:#5AC8FA">
                 <i class="fas fa-lock"></i> Lock
             </button>
             <button type="button" data-action="toggle-privacy"
-                class="w-full py-2 mb-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
+                class="w-full py-2.5 mb-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-semibold transition flex items-center justify-center gap-2">
                 <i class="fas fa-eye-slash" id="privacyIcon"></i> <span id="privacyLabel">Hide Figures</span>
             </button>
             <button type="button" data-action="toggle-theme"
-                class="w-full py-2 mb-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center justify-center gap-2">
+                class="w-full py-2.5 mb-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-semibold transition flex items-center justify-center gap-2">
                 <i class="fas fa-moon"></i> <span id="themeLabel">Dark Mode</span>
-                <span id="themeSystemIcon" class="hidden text-[9px] bg-slate-700 px-1.5 py-0.5 rounded text-slate-400">auto</span>
+                <span id="themeSystemIcon" class="hidden text-[9px] bg-slate-700/80 px-2 py-0.5 rounded-full text-slate-400">auto</span>
             </button>
 
             <div class="flex justify-between items-center mb-2 px-1">
@@ -87,7 +88,8 @@
                 <span id="syncIndicator" class="hidden text-[10px] text-amber-500"><i class="fas fa-sync fa-spin"></i></span>
             </div>
             <button type="button" data-action="sync" id="btnSync"
-                class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition mb-2 shadow-lg shadow-indigo-900/50">
+                class="w-full py-2.5 text-white rounded-xl font-bold text-xs transition mb-2"
+                style="background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">
                 <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now
             </button>
             <div class="text-[10px] text-center text-slate-500 font-medium mt-1 flex justify-center items-center gap-2"
@@ -223,9 +225,9 @@
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="txFormTitle">Add Transaction</h3>
                     </div>
                     <form id="formTx" class="space-y-4" onsubmit="return false;">
-                        <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                            <button type="button" id="btnExp" class="py-2 rounded-md text-sm font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
-                            <button type="button" id="btnInc" class="py-2 rounded-md text-sm font-bold text-slate-400 transition">Income</button>
+                        <div class="seg-control">
+                            <button type="button" id="btnExp" class="seg-btn active text-rose-600">Expense</button>
+                            <button type="button" id="btnInc" class="seg-btn text-emerald-600">Income</button>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase" for="txDesc">Description</label>
@@ -300,7 +302,7 @@
                         </div>
                         <div class="flex items-center gap-2 mt-2">
                             <button type="button" data-action="save-tx" id="btnSubmitTx"
-                                class="btn-lift flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-sm shadow-md transition">Add Transaction</button>
+                                class="btn-lift flex-1 py-3 text-white rounded-2xl font-bold text-sm transition" style="background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">Add Transaction</button>
                             <button type="button" data-action="cancel-edit-tx" id="btnCancelEdit" class="hidden text-xs text-rose-500 font-bold hover:underline px-2">Cancel</button>
                         </div>
                         <!-- Screen-reader live region for form validation errors -->
@@ -469,14 +471,14 @@
                                 <option value="Bills">Bills</option>
                             </select>
                         </div>
-                        <button type="button" id="btnSaveBill" data-action="save-bill" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-sm transition">Add Bill</button>
+                        <button type="button" id="btnSaveBill" data-action="save-bill" class="w-full py-2.5 text-white rounded-2xl font-bold text-sm transition" style="background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">Add Bill</button>
                     </form>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-0 lg:col-span-2 overflow-hidden">
                     <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="calendarMonthLabel"></h3>
                     </div>
-                    <div class="calendar-grid bg-slate-200 dark:bg-slate-800 gap-[1px] border border-slate-200 dark:border-slate-800">
+                    <div class="calendar-grid border-t border-slate-100 dark:border-slate-800">
                         <div id="calendarCells" class="contents"></div>
                     </div>
                 </div>
@@ -1070,9 +1072,9 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Recurring Transactions</h3>
                 <p class="text-xs text-slate-500 mb-4">Templates applied to a month with one click from the Transactions panel.</p>
                 <form class="flex flex-col gap-2 mb-4" onsubmit="return false;">
-                    <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                        <button type="button" id="recBtnExp" class="py-1.5 rounded-md text-xs font-bold bg-white text-rose-600 shadow-sm transition">Expense</button>
-                        <button type="button" id="recBtnInc" class="py-1.5 rounded-md text-xs font-bold text-slate-400 transition">Income</button>
+                    <div class="seg-control">
+                        <button type="button" id="recBtnExp" class="seg-btn active text-rose-600">Expense</button>
+                        <button type="button" id="recBtnInc" class="seg-btn text-emerald-600">Income</button>
                     </div>
                     <input type="text" id="recDesc" placeholder="Description"
                         class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">

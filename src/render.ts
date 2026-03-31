@@ -629,7 +629,7 @@ export function renderCalendar(): void {
     grid.innerHTML = '';
 
     for (let i = 0; i < startOffset; i++) {
-      grid.insertAdjacentHTML('beforeend', `<div class="bg-slate-100 dark:bg-slate-900 min-h-[130px]"></div>`);
+      grid.insertAdjacentHTML('beforeend', `<div class="calendar-day bg-slate-50/60 dark:bg-slate-900/30"></div>`);
     }
 
     for (let d = 1; d <= daysInMonth; d++) {
@@ -650,10 +650,10 @@ export function renderCalendar(): void {
         const statusLabel = isPaid ? 'Paid' : 'Unpaid';
         billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}" tabindex="0" role="button" aria-pressed="${isPaid}" aria-label="${esc(b.name)}: ${sym()}${fmt(b.amount)}, ${statusLabel}. Press to toggle."${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover:text-indigo-500" data-edit-bill="${b.id}" tabindex="0" role="button" aria-label="Edit ${esc(b.name)}"><i class="fas fa-pencil-alt" style="font-size:9px" aria-hidden="true"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}" tabindex="0" role="button" aria-label="Delete ${esc(b.name)}"><i class="fas fa-times-circle" aria-hidden="true"></i></span></div></div>`;
       });
-      if (overflow > 0) billsHtml += `<div class="text-[9px] text-slate-400 font-bold pl-1">+${overflow} more</div>`;
+      if (overflow > 0) billsHtml += `<div class="text-[10px] text-slate-400 font-semibold pl-1 pt-0.5">+${overflow} more</div>`;
 
       grid.insertAdjacentHTML('beforeend',
-        `<div class="calendar-day bg-white dark:bg-slate-900/50 border-b border-r border-slate-200 dark:border-slate-800"><div class="day-number text-slate-400 dark:text-slate-500">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`);
+        `<div class="calendar-day bg-white dark:bg-slate-900/60"><div class="day-number">${d}</div><div class="flex flex-col gap-1">${billsHtml}</div></div>`);
     }
 
     setText('calendarMonthLabel', new Date(y, m - 1).toLocaleString('default', { month: 'long', year: 'numeric' }));
@@ -743,12 +743,12 @@ export function renderWealth(): void {
             ? `<span class="text-[8px] text-slate-400 ml-1" title="Last updated">${new Date(item.lastPriceUpdate).toLocaleDateString()}</span>`
             : '';
           listAssets.insertAdjacentHTML('beforeend',
-            `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
-              <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span>${tickerBadge}${priceAge}</span>
-              <div class="flex gap-2">
-                <span class="text-emerald-600 text-xs font-bold money-val">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-asset="${item.id}" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
-                <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
+            `<div class="wealth-item">
+              <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span>${tickerBadge}${priceAge}</span>
+              <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
+                <span class="text-emerald-600 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
+                <button type="button" data-edit-asset="${item.id}" class="text-slate-400 hover:text-blue-500"><i class="fas fa-pencil-alt text-xs"></i></button>
+                <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-400 hover:text-red-500"><i class="fas fa-trash-alt text-xs"></i></button>
               </div>
             </div>`);
         });
@@ -763,12 +763,12 @@ export function renderWealth(): void {
       } else {
         db.wealth.debts.forEach(item => {
           listDebts.insertAdjacentHTML('beforeend',
-            `<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded mb-1">
-              <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">${esc(item.name)}</span>
-              <div class="flex gap-2">
-                <span class="text-rose-600 text-xs font-bold money-val">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-debt="${item.id}" class="text-slate-300 hover:text-indigo-500"><i class="fas fa-pencil-alt"></i></button>
-                <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-300 hover:text-rose-500"><i class="fas fa-trash-alt"></i></button>
+            `<div class="wealth-item">
+              <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)}</span>
+              <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
+                <span class="text-rose-500 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
+                <button type="button" data-edit-debt="${item.id}" class="text-slate-400 hover:text-blue-500"><i class="fas fa-pencil-alt text-xs"></i></button>
+                <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-400 hover:text-red-500"><i class="fas fa-trash-alt text-xs"></i></button>
               </div>
             </div>`);
         });
