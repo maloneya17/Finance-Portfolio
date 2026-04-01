@@ -1155,6 +1155,18 @@ export function importJsonBackup(): void {
       showToast('Invalid backup — expected a Finance Tracker JSON export');
       return;
     }
+    // Validate critical numeric fields to prevent a malicious backup from
+    // poisoning financial calculations with out-of-range values.
+    const annualIncome = parsed['annualIncome'];
+    if (annualIncome !== undefined && (typeof annualIncome !== 'number' || !isFinite(annualIncome) || annualIncome < 0)) {
+      showToast('Invalid backup — annual income value is out of range');
+      return;
+    }
+    const schemaVer = parsed['schemaVersion'];
+    if (typeof schemaVer !== 'number' || schemaVer < 1 || schemaVer > 99) {
+      showToast('Invalid backup — schema version is out of range');
+      return;
+    }
     const ok = await showConfirmModal({
       title: 'Restore from backup?',
       message: 'All current data will be replaced. Sync credentials (cloud URL & passphrase) are preserved.',
@@ -1162,9 +1174,11 @@ export function importJsonBackup(): void {
       dangerous: true,
     });
     if (!ok) return;
-    // Preserve sync credentials from current session; restore everything else
+    // Preserve sync credentials and API keys from current session — these are
+    // device-specific secrets and should never be overwritten by an imported file.
     parsed['cloudURL'] = db.cloudURL;
     parsed['syncPassphrase'] = db.syncPassphrase;
+    parsed['alphaVantageKey'] = db.alphaVantageKey;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
     location.reload();
   };

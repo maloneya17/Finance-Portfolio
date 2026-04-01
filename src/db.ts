@@ -33,6 +33,12 @@ function migrate(db: AppDB): AppDB {
 }
 
 function repair(db: AppDB): AppDB {
+  // Strip prototype-pollution keys before any property access.
+  // JSON.parse + Object.assign can propagate __proto__ as an own property
+  // if a malicious backup file contains it.
+  for (const key of ['__proto__', 'constructor', 'prototype']) {
+    delete (db as unknown as Record<string, unknown>)[key];
+  }
   if (!db.transactions || Array.isArray(db.transactions)) db.transactions = {};
   if (!db.theme) db.theme = 'light';
   // Strict array guards — malicious backups can supply objects/null for arrays

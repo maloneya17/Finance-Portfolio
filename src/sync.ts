@@ -46,11 +46,11 @@ export function saveCloudUrl(): void {
   if (!url) return;
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-      showToast('Cloud URL must start with https:// or http://'); return;
+    if (parsed.protocol !== 'https:') {
+      showToast('Cloud URL must use HTTPS (https://) to protect your data in transit'); return;
     }
   } catch {
-    showToast('Please enter a valid URL (e.g. https://…)'); return;
+    showToast('Please enter a valid HTTPS URL (e.g. https://…)'); return;
   }
   db.cloudURL = url; save(); manualSync(true);
 }
@@ -81,8 +81,10 @@ export function clearSyncPassphrase(): void {
 
 /** Serialize the database, stripping credentials and transient render flags. */
 function buildPayload(): typeof db {
+  // Strip cloudURL and syncPassphrase (device-specific sync credentials) and
+  // alphaVantageKey (user's API key — should never leave this device).
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { cloudURL: _u, syncPassphrase: _p, ...rest } = db;
+  const { cloudURL: _u, syncPassphrase: _p, alphaVantageKey: _a, ...rest } = db;
   // Strip _shifted (transient render flag) from bills — same as save() does for localStorage
   return { ...rest, bills: rest.bills.map(({ _shifted: _, ...b }) => b) } as typeof db;
 }
