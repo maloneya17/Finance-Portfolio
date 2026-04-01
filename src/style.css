@@ -508,3 +508,37 @@ body.privacy-active .bill-amt {
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.7); }
+
+/* ─── iOS BUTTON UTILITY ──────────────────────────────────────────────────────── */
+/* Drop-in replacement for bg-indigo-600 hover:bg-indigo-500 */
+.btn-ios {
+  background: var(--ios-blue);
+  box-shadow: var(--shadow-ios-blue);
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.btn-ios:hover:not([disabled]) { background: #0069DB; }
+.btn-ios:active:not([disabled]) { background: #0051BA; }
+
+/* ─── iOS FOCUS STATES (global) ───────────────────────────────────────────────── */
+/* Replaces all focus:border-indigo-500 / focus:ring-indigo-* across every input */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--ios-blue) !important;
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.15) !important;
+  outline: none !important;
+}
+
+/* ─── iOS ACCENT (checkboxes, radios) ────────────────────────────────────────── */
+.accent-ios { accent-color: var(--ios-blue); }
+
+/* ─── iOS-TINTED STATES ───────────────────────────────────────────────────────── */
+/* Row selected, filter active, month banner — iOS blue tint at 8% */
+.ios-tint {
+  background: rgba(0,122,255,0.08);
+  border-color: rgba(0,122,255,0.25);
+}
+.dark .ios-tint {
+  background: rgba(0,122,255,0.12);
+  border-color: rgba(0,122,255,0.30);
+}

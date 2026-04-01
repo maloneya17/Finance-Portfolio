@@ -187,9 +187,9 @@
                 </div>
             </div>
 
-            <div id="monthBanner" class="hidden flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl px-5 py-3 mb-6 text-sm">
-                <span class="text-indigo-700 dark:text-indigo-300 font-medium"><i class="fas fa-calendar-alt mr-2"></i>Viewing <span id="monthBannerLabel"></span></span>
-                <button type="button" data-action="go-current-month" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline whitespace-nowrap ml-4">Go to today &rarr;</button>
+            <div id="monthBanner" class="hidden flex items-center justify-between ios-tint border rounded-2xl px-5 py-3 mb-6 text-sm">
+                <span class="text-[var(--ios-blue)] dark:text-blue-400 font-medium"><i class="fas fa-calendar-alt mr-2"></i>Viewing <span id="monthBannerLabel"></span></span>
+                <button type="button" data-action="go-current-month" class="text-xs font-bold text-[var(--ios-blue)] dark:text-blue-400 hover:underline whitespace-nowrap ml-4">Go to today &rarr;</button>
             </div>
 
             <div id="upcomingBillsWidget" class="hidden card bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-8">
@@ -220,7 +220,7 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="card no-lift bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm h-fit sticky top-6">
+                <div class="card no-lift bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm h-fit sticky top-6 z-10">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white" id="txFormTitle">Add Transaction</h3>
                     </div>
@@ -272,7 +272,7 @@
                                 <input type="text" id="nlpInput" placeholder='e.g. "Coffee £3.50 yesterday"'
                                     class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
                                 <button type="button" id="btnNlpParse" data-action="nlp-parse"
-                                    class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition whitespace-nowrap">
+                                    class="px-3 py-2 btn-ios text-white rounded-2xl font-bold text-xs transition whitespace-nowrap">
                                     <i class="fas fa-magic"></i>
                                 </button>
                             </div>
@@ -368,11 +368,11 @@
                     </div>
                     <!-- Bulk action bar — shown when ≥1 transaction is checked -->
                     <div id="bulkBar" class="hidden mb-3 flex flex-wrap items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
-                        <span id="bulkCount" class="text-xs font-bold text-indigo-700 dark:text-indigo-300 min-w-[70px]">0 selected</span>
+                        <span id="bulkCount" class="text-xs font-bold text-[var(--ios-blue)] dark:text-blue-400 min-w-[70px]">0 selected</span>
                         <select id="bulkCatSel" class="flex-1 min-w-[120px] p-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500">
                             <option value="">Pick category…</option>
                         </select>
-                        <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition whitespace-nowrap">Recategorise</button>
+                        <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 btn-ios text-white rounded-2xl hover:bg-indigo-500 transition whitespace-nowrap">Recategorise</button>
                         <button type="button" data-action="bulk-delete" class="text-xs font-bold px-3 py-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-500 transition">Delete</button>
                         <button type="button" data-action="bulk-clear" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium px-2">✕ Clear</button>
                     </div>
@@ -380,7 +380,7 @@
                         <table class="w-full text-left border-collapse" aria-label="Transaction list">
                             <thead>
                                 <tr class="text-xs text-slate-400 uppercase border-b border-slate-100 dark:border-slate-800">
-                                    <th class="py-2 pl-2 w-8"><input type="checkbox" id="selectAllTx" class="accent-indigo-600 rounded cursor-pointer" title="Select all visible"></th>
+                                    <th class="py-2 pl-2 w-8"><input type="checkbox" id="selectAllTx" class="accent-ios rounded cursor-pointer" title="Select all visible"></th>
                                     <th class="py-2 font-bold" scope="col">Description</th>
                                     <th class="py-2 font-bold text-right" scope="col">Amount</th>
                                     <th class="py-2 font-bold text-right pr-2" scope="col">Actions</th>
@@ -416,7 +416,7 @@
         <div id="view-budget" class="view-section hidden fade-in max-w-7xl mx-auto">
             <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight mb-8">Monthly Budgets</h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 h-fit sticky top-6">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 h-fit sticky top-6 z-10">
                     <h3 class="font-bold text-lg text-slate-800 dark:text-white mb-4">Set Limits</h3>
                     <p class="text-xs text-slate-500 mb-6">Define your monthly spending limit for each category.</p>
                     <div id="budgetInputs" class="space-y-4"></div>
@@ -424,7 +424,7 @@
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 lg:col-span-2">
                     <div class="flex justify-between items-center mb-6">
                         <h3 class="font-bold text-lg text-slate-800 dark:text-white">Current Month Performance</h3>
-                        <span class="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded" id="budgetMonthLabel"></span>
+                        <span class="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg" id="budgetMonthLabel"></span>
                     </div>
                     <div id="budgetBars" class="space-y-6"></div>
                     <div id="budgetEmpty" class="hidden text-center py-12 text-slate-400 text-sm">Set a budget on the left to see progress.</div>
@@ -490,7 +490,7 @@
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Net Worth</h2>
                 <button type="button" data-action="log-net-worth"
-                    class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-lg transition">
+                    class="btn-ios text-white font-bold py-2 px-4 rounded-2xl text-xs shadow-lg transition">
                     <i class="fas fa-camera mr-2"></i> Log Snapshot
                 </button>
             </div>
@@ -643,7 +643,7 @@
                         <label class="text-[10px] uppercase font-bold text-slate-500 whitespace-nowrap">Deadline (optional)</label>
                         <input type="date" id="goalDeadline" class="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
                     </div>
-                    <button type="button" id="btnSaveGoal" data-action="save-goal" class="col-span-2 py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs">+ Add Goal</button>
+                    <button type="button" id="btnSaveGoal" data-action="save-goal" class="col-span-2 py-2 btn-ios text-white rounded-2xl font-bold text-xs">+ Add Goal</button>
                 </form>
                 <div id="listGoals" class="space-y-2"></div>
             </div>
@@ -838,7 +838,7 @@
                     <div id="changePinError" class="hidden text-rose-500 text-xs text-center py-1"></div>
                     <div id="changePinSuccess" class="hidden text-emerald-600 text-xs text-center py-1"><i class="fas fa-check mr-1"></i>PIN updated successfully.</div>
                     <button id="btnChangePin" type="button"
-                        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                        class="w-full btn-ios text-white font-bold py-2.5 rounded-xl text-xs transition">
                         Update PIN
                     </button>
                 </div>
@@ -849,17 +849,17 @@
                 <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
                 <input type="file" id="csvFile" accept=".csv" class="w-full mb-4 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
                 <div id="csvMapper" class="hidden space-y-4 mb-4">
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div><label class="text-[10px] uppercase font-bold text-slate-500">Date Col</label><select id="mapDate" class="w-full p-2 text-xs rounded border bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"></select></div>
                         <div><label class="text-[10px] uppercase font-bold text-slate-500">Desc Col</label><select id="mapDesc" class="w-full p-2 text-xs rounded border bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"></select></div>
                         <div><label class="text-[10px] uppercase font-bold text-slate-500">Amount Col</label><select id="mapAmt" class="w-full p-2 text-xs rounded border bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white"></select></div>
                     </div>
                     <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded">
                         <span class="text-xs text-slate-500">Invert amounts?</span>
-                        <input type="checkbox" id="mapInvert" class="accent-indigo-600">
+                        <input type="checkbox" id="mapInvert" class="accent-ios">
                     </div>
                     <div class="text-xs text-slate-400 italic" id="csvPreview"></div>
-                    <button type="button" data-action="import-csv" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md">Import Transactions</button>
+                    <button type="button" data-action="import-csv" class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs shadow-md">Import Transactions</button>
                 </div>
             </div>
 
@@ -868,12 +868,12 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-1">Bank Statement Import (OFX / QIF)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a .ofx, .qfx, or .qif file exported directly from your online banking portal. Transactions are automatically deduplicated.</p>
                 <input type="file" id="bankFile" accept=".ofx,.qfx,.qif" class="w-full mb-3 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
-                <div id="bankImportPreview" class="hidden mb-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl px-3 py-2 text-xs text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                <div id="bankImportPreview" class="hidden mb-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl px-3 py-2 text-xs text-[var(--ios-blue)] dark:text-blue-400 flex items-center gap-2">
                     <i class="fas fa-check-circle text-indigo-500"></i>
                     <span id="bankImportCount"></span>
                 </div>
                 <button id="btnBankImportConfirm" type="button" data-action="bank-import-confirm"
-                    class="hidden w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs shadow-md hover:bg-indigo-500 transition">
+                    class="hidden w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs shadow-md hover:bg-indigo-500 transition">
                     Import Bank Transactions
                 </button>
             </div>
@@ -892,7 +892,7 @@
                 <form id="formCloud" class="flex gap-2 mb-5" onsubmit="return false;">
                     <input type="text" id="cloudInput" placeholder="https://script.google.com/..."
                         class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white outline-none focus:border-indigo-500 transition">
-                    <button type="button" data-action="save-cloud-url" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap transition">Save</button>
+                    <button type="button" data-action="save-cloud-url" class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Save</button>
                 </form>
 
                 <!-- Encryption passphrase -->
@@ -911,7 +911,7 @@
                             autocomplete="new-password"
                             class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white outline-none focus:border-indigo-500 transition">
                         <button type="button" data-action="save-sync-passphrase"
-                            class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap transition">Set</button>
+                            class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Set</button>
                         <button type="button" data-action="clear-sync-passphrase"
                             class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 rounded-lg font-bold text-xs whitespace-nowrap transition"
                             title="Remove passphrase — sync will be unencrypted">Clear</button>
@@ -932,7 +932,7 @@
                     <input type="text" id="newAccountName" placeholder="New account name"
                         class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
                     <button type="button" data-action="add-account"
-                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap transition">Add</button>
+                        class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Add</button>
                 </div>
             </div>
 
@@ -961,7 +961,7 @@
                     <select id="instAccount"
                         class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
                     <button type="button" data-action="create-instalment"
-                        class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition">
+                        class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs transition">
                         + Create Instalment Plan
                     </button>
                 </form>
@@ -976,7 +976,7 @@
                         autocomplete="off"
                         class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
                     <button type="button" data-action="save-alpha-key"
-                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap transition">Save</button>
+                        class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Save</button>
                 </div>
                 <p id="alphaKeyStatus" class="hidden text-[10px] text-emerald-600 dark:text-emerald-400 mb-1"><i class="fas fa-check mr-1"></i>Key saved — paste a new key to replace it.</p>
                 <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="text-indigo-500 hover:underline">alphavantage.co</a>. Key stored locally and never transmitted except to Alpha Vantage.</p>
@@ -987,7 +987,7 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Weekly Summary Digest</h3>
                 <p class="text-xs text-slate-500 mb-3">Show a weekly spending summary notification when you open the app on a new week.</p>
                 <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" id="weeklyDigestToggle" class="accent-indigo-600 w-4 h-4">
+                    <input type="checkbox" id="weeklyDigestToggle" class="accent-ios w-4 h-4">
                     <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Enable weekly digest</span>
                 </label>
             </div>
@@ -998,7 +998,7 @@
                 <p class="text-xs text-slate-500 mb-3">Switch annual reports between calendar year (Jan–Dec) and tax year (e.g. Apr–Mar for UK).</p>
                 <div class="flex gap-2 mb-3">
                     <button type="button" id="btnPeriodCalendar" data-action="period-calendar"
-                        class="flex-1 py-2 rounded-lg text-xs font-bold transition bg-indigo-600 text-white">Calendar Year</button>
+                        class="flex-1 py-2 rounded-2xl text-xs font-bold transition btn-ios text-white">Calendar Year</button>
                     <button type="button" id="btnPeriodTax" data-action="period-tax"
                         class="flex-1 py-2 rounded-lg text-xs font-bold transition bg-slate-100 dark:bg-slate-800 text-slate-500">Tax Year</button>
                 </div>
@@ -1031,15 +1031,15 @@
                 <p class="text-xs text-slate-500 mb-3">Change the currency symbol shown throughout the app.</p>
                 <div class="flex gap-2">
                     <input type="text" id="currencySymbolInput" maxlength="3" placeholder="£" class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
-                    <button type="button" data-action="save-currency" class="bg-indigo-600 text-white px-4 rounded-lg font-bold text-xs whitespace-nowrap">Save</button>
+                    <button type="button" data-action="save-currency" class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap">Save</button>
                 </div>
             </div>
 
-            <div id="pwaInstallRow" class="hidden card bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-6 mb-6">
-                <h3 class="font-bold text-indigo-700 dark:text-indigo-300 mb-2"><i class="fas fa-mobile-alt mr-2"></i>Install App</h3>
+            <div id="pwaInstallRow" class="hidden card ios-tint border rounded-2xl p-6 mb-6">
+                <h3 class="font-bold text-[var(--ios-blue)] dark:text-blue-400 mb-2"><i class="fas fa-mobile-alt mr-2"></i>Install App</h3>
                 <p class="text-xs text-slate-500 mb-3">Add Finance Portfolio to your home screen for offline access and a native-app experience.</p>
                 <button type="button" data-action="pwa-install"
-                    class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs transition">
+                    class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs transition">
                     <i class="fas fa-download mr-2"></i>Install on this device
                 </button>
             </div>
@@ -1048,7 +1048,7 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Haptic Feedback</h3>
                 <p class="text-xs text-slate-500 mb-3">Vibrate on transaction save, budget warnings, and goal celebrations (supported devices only).</p>
                 <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" id="hapticsToggle" class="accent-indigo-600 w-4 h-4">
+                    <input type="checkbox" id="hapticsToggle" class="accent-ios w-4 h-4">
                     <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Enable haptic feedback</span>
                 </label>
             </div>
@@ -1057,7 +1057,7 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Auto-Apply Recurring</h3>
                 <p class="text-xs text-slate-500 mb-3">Automatically apply recurring templates to the current month when you open the app.</p>
                 <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" id="autoRecurringToggle" class="accent-indigo-600 w-4 h-4">
+                    <input type="checkbox" id="autoRecurringToggle" class="accent-ios w-4 h-4">
                     <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Enable auto-apply</span>
                 </label>
             </div>
@@ -1086,7 +1086,7 @@
                         </div>
                         <select id="recCat" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
                     </div>
-                    <button type="button" data-action="save-recurring" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-xs hover:bg-indigo-500 transition">+ Add Template</button>
+                    <button type="button" data-action="save-recurring" class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs hover:bg-indigo-500 transition">+ Add Template</button>
                 </form>
                 <div id="recurringList" class="space-y-2"></div>
             </div>

@@ -70,10 +70,10 @@ export function render(): void {
     // Highlight the filter button when advanced filters are active
     const filterBtn = document.getElementById('btnFilterToggle');
     if (filterBtn) {
-      filterBtn.classList.toggle('border-indigo-500', hasAdvFilter);
-      filterBtn.classList.toggle('text-indigo-500', hasAdvFilter);
-      filterBtn.classList.toggle('bg-indigo-50', hasAdvFilter);
-      filterBtn.classList.toggle('dark:bg-indigo-900/20', hasAdvFilter);
+      filterBtn.classList.toggle('border-blue-500', hasAdvFilter);
+      filterBtn.classList.toggle('text-blue-500', hasAdvFilter);
+      filterBtn.classList.toggle('bg-blue-50', hasAdvFilter);
+      filterBtn.classList.toggle('dark:bg-blue-900/20', hasAdvFilter);
     }
 
     const filtered = data.filter(t => {
@@ -113,14 +113,14 @@ export function render(): void {
         // Build tag chips HTML (all values from stored tags array, already sanitized on save)
         const tagsHtml = (t.tags ?? []).length
           ? `<div class="flex flex-wrap gap-1 mt-1">${(t.tags!).map(tag =>
-              `<span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">#${esc(tag)}</span>`
+              `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-semibold ios-tint border">#${esc(tag)}</span>`
             ).join('')}</div>`
           : '';
         const tr = document.createElement('tr');
-        tr.className = `border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group${isChecked ? ' bg-indigo-50 dark:bg-indigo-900/10' : ''}`;
+        tr.className = `border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group${isChecked ? ' bg-blue-50 dark:bg-blue-900/10' : ''}`;
         tr.innerHTML = `
           <td class="pl-2 py-3 w-8">
-            <input type="checkbox" data-tx-checkbox="${esc(t.id)}" ${isChecked ? 'checked' : ''} class="accent-indigo-600 rounded cursor-pointer">
+            <input type="checkbox" data-tx-checkbox="${esc(t.id)}" ${isChecked ? 'checked' : ''} class="accent-ios rounded cursor-pointer">
           </td>
           <td class="py-3">
             <div class="font-bold text-slate-700 dark:text-slate-200">${esc(t.desc)}</div>
@@ -130,7 +130,7 @@ export function render(): void {
           </td>
           <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
           <td class="text-right pr-2">
-            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-300 hover:text-indigo-500 transition px-2" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt"></i></button>
+            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-300 hover:text-blue-500 transition px-2 py-1" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt"></i></button>
             <button type="button" data-del-tx="${esc(t.id)}" class="text-slate-300 hover:text-rose-500 transition px-2" aria-label="Delete ${esc(t.desc)}"><i class="fas fa-trash-alt"></i></button>
           </td>`;
         frag.appendChild(tr);
@@ -202,7 +202,7 @@ export function render(): void {
     const rateEl = document.getElementById('kpiSavingsRate');
     if (rateEl) {
       rateEl.innerText = `${savingsRate.toFixed(1)}%`;
-      rateEl.className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : 'text-indigo-600 dark:text-indigo-400'}`;
+      rateEl.className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`;
     }
     setText('kpiSavingsAmt', isDeficit ? `${sym()}${fmt(Math.abs(savedAmt))} deficit` : `${sym()}${fmt(savedAmt)} saved`);
 
@@ -648,7 +648,7 @@ export function renderCalendar(): void {
         const shiftTitle = b._shifted ? ` title="Scheduled day ${b.day} — moved to last day of this month"` : '';
         const shiftMark = b._shifted ? ' <span title="Date adjusted" style="font-size:9px">*</span>' : '';
         const statusLabel = isPaid ? 'Paid' : 'Unpaid';
-        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}" tabindex="0" role="button" aria-pressed="${isPaid}" aria-label="${esc(b.name)}: ${sym()}${fmt(b.amount)}, ${statusLabel}. Press to toggle."${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover:text-indigo-500" data-edit-bill="${b.id}" tabindex="0" role="button" aria-label="Edit ${esc(b.name)}"><i class="fas fa-pencil-alt" style="font-size:9px" aria-hidden="true"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}" tabindex="0" role="button" aria-label="Delete ${esc(b.name)}"><i class="fas fa-times-circle" aria-hidden="true"></i></span></div></div>`;
+        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}" tabindex="0" role="button" aria-pressed="${isPaid}" aria-label="${esc(b.name)}: ${sym()}${fmt(b.amount)}, ${statusLabel}. Press to toggle."${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover:text-blue-500" data-edit-bill="${b.id}" tabindex="0" role="button" aria-label="Edit ${esc(b.name)}"><i class="fas fa-pencil-alt" style="font-size:9px" aria-hidden="true"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}" tabindex="0" role="button" aria-label="Delete ${esc(b.name)}"><i class="fas fa-times-circle" aria-hidden="true"></i></span></div></div>`;
       });
       if (overflow > 0) billsHtml += `<div class="text-[10px] text-slate-400 font-semibold pl-1 pt-0.5">+${overflow} more</div>`;
 
@@ -737,7 +737,7 @@ export function renderWealth(): void {
       } else {
         db.wealth.assets.forEach(item => {
           const tickerBadge = item.ticker
-            ? `<span class="text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded ml-1">${esc(item.ticker)}</span>`
+            ? `<span class="text-[9px] font-bold ios-tint border px-1.5 py-0.5 rounded-md ml-1" style="color:var(--ios-blue)">${esc(item.ticker)}</span>`
             : '';
           const priceAge = item.lastPriceUpdate
             ? `<span class="text-[8px] text-slate-400 ml-1" title="Last updated">${new Date(item.lastPriceUpdate).toLocaleDateString()}</span>`
@@ -821,7 +821,7 @@ export function renderReports(): void {
       if (mInc > 0 || mExp > 0) {
         hasData = true;
         const net = mInc - mExp;
-        const netColor = net >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400';
+        const netColor = net >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400';
         monthTable.insertAdjacentHTML('beforeend',
           `<tr class="border-b border-slate-50 dark:border-slate-800">
             <td class="py-3 pl-3 font-medium text-slate-700 dark:text-slate-300">${new Date(Number(targetYear), mo - 1).toLocaleString('default', { month: 'long' })}</td>
@@ -872,7 +872,7 @@ export function renderGoals(): void {
   db.goals.forEach(g => {
     const pct   = g.target > 0 ? Math.min(Math.max((g.current / g.target) * 100, 0), 100) : 0;
     const remaining = Math.max(0, g.target - g.current);
-    const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-indigo-500' : 'bg-amber-500';
+    const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-500';
     let deadlineHtml = '';
     if (g.deadline) {
       const dlDate  = new Date(g.deadline + 'T00:00:00');
@@ -889,9 +889,9 @@ export function renderGoals(): void {
            <span class="curr-prefix text-xs text-slate-400 font-semibold">${sym()}</span>
            <input id="contribInput-${g.id}" type="number" min="0.01" step="0.01" max="${remaining}"
              placeholder="Amount to add" autofocus
-             class="flex-1 p-1.5 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-300">
+             class="flex-1 p-1.5 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-600 dark:text-white outline-none">
            <button type="button" data-do-contrib="${g.id}"
-             class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition">Add</button>
+             class="px-3 py-1.5 btn-ios text-white text-xs font-bold rounded-xl transition">Add</button>
            <button type="button" data-cancel-contrib="${g.id}"
              class="text-xs text-slate-400 hover:text-rose-500 font-bold">✕</button>
          </div>`
@@ -912,7 +912,7 @@ export function renderGoals(): void {
                    title="Add contribution"
                    class="text-emerald-500 hover:text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-[10px] transition">+</button>`
               : ''}
-            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-indigo-500"><i class="fas fa-pencil-alt" style="font-size:10px"></i></button>
+            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-blue-500"><i class="fas fa-pencil-alt" style="font-size:10px"></i></button>
             <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times" style="font-size:10px"></i></button>
           </div>
         </div>
@@ -1095,7 +1095,7 @@ export function renderRecurringSuggestions(): void {
               <span class="font-bold text-rose-600 dark:text-rose-400">${sym()}${fmt(c.amount)}</span>
               <button type="button"
                 data-accept-suggestion="${encodeURIComponent(c.desc)}|${encodeURIComponent(String(c.amount))}|${encodeURIComponent(c.category)}"
-                class="bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-bold transition text-[10px] whitespace-nowrap">
+                class="btn-ios text-white px-2.5 py-1 rounded-xl font-bold transition text-[10px] whitespace-nowrap">
                 + Add
               </button>
             </div>
@@ -1230,11 +1230,11 @@ export function renderDebtPlanner(): void {
       <div class="flex flex-wrap items-center gap-2">
         <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
           <button type="button" data-debt-strategy="avalanche"
-            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${isAvalanche ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${isAvalanche ? 'bg-white dark:bg-slate-700 text-blue-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
             ⛰ Avalanche
           </button>
           <button type="button" data-debt-strategy="snowball"
-            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${!isAvalanche ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${!isAvalanche ? 'bg-white dark:bg-slate-700 text-blue-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
             ❄ Snowball
           </button>
         </div>
@@ -1242,7 +1242,7 @@ export function renderDebtPlanner(): void {
           <span class="curr-prefix text-xs text-slate-400 font-semibold">${sym()}</span>
           <input id="debtExtraInput" type="number" min="0" step="10" placeholder="Extra/mo"
             value="${_debtExtra > 0 ? _debtExtra : ''}"
-            class="w-24 p-1.5 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-indigo-300 outline-none">
+            class="w-24 p-1.5 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-300 outline-none">
         </div>
       </div>
     </div>
@@ -1306,7 +1306,7 @@ export function renderInsights(): void {
             <span>${label}</span><span class="font-bold">${val}/${max}</span>
           </div>
           <div class="w-full bg-slate-700 rounded-full h-1.5">
-            <div class="bg-indigo-400 h-1.5 rounded-full" style="width:${Math.round((val / max) * 100)}%"></div>
+            <div class="h-1.5 rounded-full" style="width:${Math.round((val / max) * 100)}%;background:var(--ios-blue)"></div>
           </div>
         </div>`).join('');
     }
@@ -1456,7 +1456,7 @@ export function renderInsights(): void {
       const achievements = getAchievements(key, netWorth, fireTarget);
       achievementsEl.innerHTML = achievements.map(a => {
         const earnedClass = a.earned
-          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30'
+          ? 'btn-ios text-white'
           : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 opacity-50';
         return `
           <div class="flex flex-col items-center gap-1 p-3 rounded-xl ${earnedClass} transition" title="${esc(a.desc)}">
@@ -1499,7 +1499,7 @@ export function renderInsights(): void {
                 <span class="text-xs text-slate-500">Annual projection</span>
                 <span class="ml-2 text-sm font-bold text-rose-600 dark:text-rose-400 money-val">${symFmt(math(monthlyTotal * 12))}</span>
               </div>
-              <span class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 rounded-full px-2 py-0.5 font-bold">${subs.length} detected</span>
+              <span class="text-[10px] ios-tint border rounded-full px-2 py-0.5 font-bold" style="color:var(--ios-blue)">${subs.length} detected</span>
             </div>`;
         }
         subsEl.innerHTML = subs.map(sub => {

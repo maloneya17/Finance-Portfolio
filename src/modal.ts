@@ -76,7 +76,7 @@ export function showTextInputModal(opts: TextInputModalOpts): Promise<string | n
     const card    = buildCard();
     const confirmClass = opts.dangerous
       ? 'bg-rose-600 hover:bg-rose-500 text-white'
-      : 'bg-indigo-600 hover:bg-indigo-500 text-white';
+      : 'btn-ios text-white';
 
     // ARIA: dialog role so screen readers announce the modal correctly
     card.setAttribute('role', 'dialog');
@@ -90,7 +90,7 @@ export function showTextInputModal(opts: TextInputModalOpts): Promise<string | n
       <input type="${esc(opts.inputType ?? 'text')}"
         id="_modalInput"
         placeholder="${esc(opts.placeholder ?? '')}"
-        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 transition mb-4">
+        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition mb-4">
       <div class="flex gap-2 justify-end">
         <button id="_modalCancel" class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">Cancel</button>
         <button id="_modalConfirm" class="px-4 py-2 text-xs font-bold rounded-lg transition ${confirmClass}">${esc(opts.confirmLabel ?? 'OK')}</button>
@@ -143,7 +143,7 @@ export function showConfirmModal(opts: ConfirmModalOpts): Promise<boolean> {
     const card    = buildCard();
     const confirmClass = opts.dangerous
       ? 'bg-rose-600 hover:bg-rose-500 text-white'
-      : 'bg-indigo-600 hover:bg-indigo-500 text-white';
+      : 'btn-ios text-white';
 
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
