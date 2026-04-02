@@ -150,9 +150,9 @@ export async function manualSync(ui = false): Promise<void> {
       const cloudIds  = (Array.isArray(cloudData.deletedIds) ? cloudData.deletedIds : [])
         .filter((id): id is string => typeof id === 'string' && id.length <= 128);
       const allDeleted = new Set([...localIds, ...cloudIds]);
-      // Prune deletedIds to prevent unbounded localStorage growth
+      // Prune deletedIds to prevent unbounded localStorage growth (keep OLDEST 500)
       const deletedArr = Array.from(allDeleted);
-      db.deletedIds = deletedArr.length > 500 ? deletedArr.slice(deletedArr.length - 500) : deletedArr;
+      db.deletedIds = deletedArr.length > 500 ? deletedArr.slice(0, 500) : deletedArr;
 
       // Reject entries with future timestamps (allows 5-min clock skew) to prevent
       // a malicious cloud payload from using far-future updatedAt to overwrite local data.
@@ -169,8 +169,8 @@ export async function manualSync(ui = false): Promise<void> {
       });
       db.bills = Array.from(billMap.values());
 
-      // Assets — last-write-wins per id using updatedAt; ties go to local.
-      // Legacy assets without updatedAt use 0 so newer entries always win.
+      // Assets — last-write-wins per id using updatedAt; local wins on ties.
+      // Process cloud first, then local so local overwrites on equal timestamps.
       const assetMap = new Map<string, typeof db.wealth.assets[0]>();
       [...safeArr<typeof db.wealth.assets[0]>(cloudData.wealth?.assets), ...db.wealth.assets].forEach(a => {
         if (allDeleted.has(a.id) || !validTs(a.updatedAt)) return;
@@ -179,7 +179,7 @@ export async function manualSync(ui = false): Promise<void> {
       });
       db.wealth.assets = Array.from(assetMap.values());
 
-      // Debts — last-write-wins per id using updatedAt
+      // Debts — last-write-wins per id using updatedAt; local wins on ties.
       const debtMap = new Map<string, typeof db.wealth.debts[0]>();
       [...safeArr<typeof db.wealth.debts[0]>(cloudData.wealth?.debts), ...db.wealth.debts].forEach(d => {
         if (allDeleted.has(d.id) || !validTs(d.updatedAt)) return;
@@ -225,16 +225,14 @@ export async function manualSync(ui = false): Promise<void> {
         db.recurring = Array.from(recMap.values());
       }
 
-      // Annual income — last-write-wins using annualIncomeUpdatedAt timestamp.
-      // Falls back to "adopt cloud only if local is 0" for entries without timestamps.
-      if (typeof cloudData.annualIncome === 'number' && cloudData.annualIncome > 0) {
+      // Annual income — pure last-write-wins using annualIncomeUpdatedAt timestamp.
+      // Accept any valid finite income including 0 (user may intentionally set income to zero).
+      if (typeof cloudData.annualIncome === 'number' && isFinite(cloudData.annualIncome) && cloudData.annualIncome >= 0) {
         const cloudTs = typeof cloudData.annualIncomeUpdatedAt === 'number' ? cloudData.annualIncomeUpdatedAt : 0;
         const localTs = db.annualIncomeUpdatedAt ?? 0;
         if (cloudTs > localTs) {
           db.annualIncome = cloudData.annualIncome;
           db.annualIncomeUpdatedAt = cloudTs;
-        } else if (localTs === 0 && db.annualIncome === 0) {
-          db.annualIncome = cloudData.annualIncome; // legacy: adopt if local never set
         }
       }
 

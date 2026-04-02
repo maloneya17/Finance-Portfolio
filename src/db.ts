@@ -111,8 +111,9 @@ export let saveCount = 0;
 
 export function save(skipRender = false): void {
   try {
-    // Prune deletedIds to prevent unbounded growth (keep most recent 500)
-    if (db.deletedIds.length > 500) db.deletedIds = db.deletedIds.slice(db.deletedIds.length - 500);
+    // Prune deletedIds to prevent unbounded growth (keep OLDEST 500 — these are the IDs
+    // most likely to still exist on remote devices and need to be suppressed on sync).
+    if (db.deletedIds.length > 500) db.deletedIds = db.deletedIds.slice(0, 500);
     // Strip transient render-only flags before persisting
     const toSave = { ...db, bills: db.bills.map(({ _shifted: _, ...b }) => b) };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));

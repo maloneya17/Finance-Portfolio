@@ -19,12 +19,14 @@
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 h-screen flex overflow-hidden">
 
+    <a href="#main-content" class="skip-nav">Skip to main content</a>
     <div id="toastContainer" role="region" aria-live="assertive" aria-atomic="false"></div>
     <div id="sidebarOverlay"></div>
-    <button id="mobileMenuBtn" type="button" data-action="toggle-sidebar" style="display:none"
+    <button id="mobileMenuBtn" type="button" data-action="toggle-sidebar"
         aria-label="Open navigation menu"
-        class="fixed top-3 left-3 z-[201] text-white w-11 h-11 rounded-2xl flex items-center justify-center" style="background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">
-        <i class="fas fa-bars text-base"></i>
+        class="fixed top-3 left-3 z-[201] text-white w-11 h-11 rounded-2xl flex items-center justify-center"
+        style="display:none;background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">
+        <i class="fas fa-bars text-base" aria-hidden="true"></i>
     </button>
 
     <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between z-50">
@@ -39,31 +41,31 @@
             <div class="mb-8">
                 <label for="monthPicker" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Timeline</label>
                 <input type="month" id="monthPicker" aria-label="Select month to view"
-                    class="w-full p-2.5 bg-slate-800/80 border border-slate-700/60 rounded-xl font-bold text-white text-sm outline-none transition cursor-pointer hover:bg-slate-700/80" style="focus-border-color:var(--ios-blue)">
+                    class="w-full p-2.5 bg-slate-800/80 border border-slate-700/60 rounded-xl font-bold text-white text-sm outline-none transition cursor-pointer hover:bg-slate-700/80">
             </div>
 
             <nav class="space-y-1" aria-label="Main navigation">
                 <div role="button" tabindex="0" data-nav="dashboard" id="nav-dashboard"
                     class="nav-item active flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer text-white"
-                    aria-current="page"><i class="fas fa-chart-pie w-5" aria-hidden="true"></i> Dashboard</div>
+                    aria-current="page"><i class="fas fa-chart-pie w-5" aria-hidden="true"></i> <span class="nav-label">Dashboard</span></div>
                 <div role="button" tabindex="0" data-nav="budget" id="nav-budget"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-coins w-5" aria-hidden="true"></i> Budgets</div>
+                    <i class="fas fa-coins w-5" aria-hidden="true"></i> <span class="nav-label">Budgets</span></div>
                 <div role="button" tabindex="0" data-nav="bills" id="nav-bills"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-calendar-alt w-5" aria-hidden="true"></i> Bills</div>
+                    <i class="fas fa-calendar-alt w-5" aria-hidden="true"></i> <span class="nav-label">Bills</span></div>
                 <div role="button" tabindex="0" data-nav="wealth" id="nav-wealth"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-landmark w-5" aria-hidden="true"></i> Net Worth</div>
+                    <i class="fas fa-landmark w-5" aria-hidden="true"></i> <span class="nav-label">Net Worth</span></div>
                 <div role="button" tabindex="0" data-nav="reports" id="nav-reports"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-chart-line w-5" aria-hidden="true"></i> Reports</div>
+                    <i class="fas fa-chart-line w-5" aria-hidden="true"></i> <span class="nav-label">Reports</span></div>
                 <div role="button" tabindex="0" data-nav="insights" id="nav-insights"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-brain w-5" aria-hidden="true"></i> Insights</div>
+                    <i class="fas fa-brain w-5" aria-hidden="true"></i> <span class="nav-label">Insights</span></div>
                 <div role="button" tabindex="0" data-nav="settings" id="nav-settings"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-sliders-h w-5" aria-hidden="true"></i> Settings</div>
+                    <i class="fas fa-sliders-h w-5" aria-hidden="true"></i> <span class="nav-label">Settings</span></div>
             </nav>
         </div>
 
@@ -136,7 +138,7 @@
                     <h2 class="text-3xl font-extrabold money-val" id="kpiSalary">£0.00</h2>
                     <div class="mt-4 flex gap-4 text-xs font-medium text-slate-300">
                         <span><i class="fas fa-calendar-check text-emerald-400 mr-1"></i>YTD: <span id="kpiYTD" class="text-white money-val font-bold">£0</span></span>
-                        <span><i class="fas fa-clock text-indigo-300 mr-1"></i>Avg: <span id="kpiAvg" class="text-white money-val font-bold">£0</span></span>
+                        <span><i class="fas fa-clock text-blue-300 mr-1"></i>Avg: <span id="kpiAvg" class="text-white money-val font-bold">£0</span></span>
                     </div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-emerald-500 rounded-2xl p-6 shadow-sm"
@@ -156,9 +158,9 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 money-val" id="kpiMaxVal">£0.00</p>
                     </div>
                 </div>
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-indigo-500 rounded-2xl p-6 shadow-sm">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-blue-500 rounded-2xl p-6 shadow-sm">
                     <p class="text-xs text-slate-400 font-bold uppercase">Savings Rate</p>
-                    <h3 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="kpiSavingsRate">0%</h3>
+                    <h3 class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="kpiSavingsRate">0%</h3>
                     <p class="text-xs text-slate-500 mt-1 money-val" id="kpiSavingsAmt">£0.00 saved</p>
                 </div>
             </div>
@@ -231,49 +233,50 @@
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase" for="txDesc">Description</label>
-                            <input type="text" id="txDesc" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                            <input type="text" id="txDesc" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition" required>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase" for="txAmt">Amount</label>
                                 <div class="relative mt-1">
                                     <span class="curr-prefix absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
-                                    <input type="number" id="txAmt" step="0.01" inputmode="decimal" class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                                    <input type="number" id="txAmt" step="0.01" inputmode="decimal" class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition" required>
                                 </div>
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase" for="txCat">Category</label>
-                                <select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition cursor-pointer"></select>
+                                <select id="txCat" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer"></select>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase" for="txDate">Date</label>
-                                <input type="date" id="txDate" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                                <input type="date" id="txDate" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase" for="txNotes">Notes</label>
-                                <input type="text" id="txNotes" placeholder="Optional memo" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                                <input type="text" id="txNotes" placeholder="Optional memo" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                             </div>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase" for="txTags">Tags</label>
-                            <input type="text" id="txTags" placeholder="e.g. tax-deductible, work, joint" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition" aria-describedby="txTagsHint">
+                            <input type="text" id="txTags" placeholder="e.g. tax-deductible, work, joint" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition" aria-describedby="txTagsHint">
                             <p id="txTagsHint" class="text-[10px] text-slate-400 mt-0.5">Comma-separated labels</p>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-slate-400 uppercase" for="txAccount">Account</label>
-                            <select id="txAccount" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                            <select id="txAccount" class="w-full mt-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer"></select>
                         </div>
                         <!-- NLP quick-add bar -->
                         <div class="border-t border-slate-100 dark:border-slate-800 pt-3">
                             <label class="text-[10px] font-bold text-slate-400 uppercase" for="nlpInput">Quick Add (Natural Language)</label>
                             <div class="flex gap-2 mt-1">
                                 <input type="text" id="nlpInput" placeholder='e.g. "Coffee £3.50 yesterday"'
-                                    class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                                    class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                                 <button type="button" id="btnNlpParse" data-action="nlp-parse"
+                                    aria-label="Parse natural language input"
                                     class="px-3 py-2 btn-ios text-white rounded-2xl font-bold text-xs transition whitespace-nowrap">
-                                    <i class="fas fa-magic"></i>
+                                    <i class="fas fa-magic" aria-hidden="true"></i>
                                 </button>
                             </div>
                             <p id="nlpHint" class="text-[10px] text-slate-400 mt-0.5 hidden"></p>
@@ -283,7 +286,7 @@
                             <div class="flex items-center justify-between">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase">Split Transaction</label>
                                 <button type="button" id="btnToggleSplit" data-action="toggle-split"
-                                    class="text-[10px] font-bold text-indigo-500 hover:text-indigo-400 transition flex items-center gap-1">
+                                    class="text-[10px] font-bold text-blue-500 hover:text-blue-400 transition flex items-center gap-1">
                                     <i class="fas fa-code-branch text-[9px]"></i> <span id="splitToggleLabel">Add Split</span>
                                 </button>
                             </div>
@@ -295,7 +298,7 @@
                                 </div>
                                 <div id="splitRows" class="space-y-1.5"></div>
                                 <button type="button" data-action="add-split-row"
-                                    class="w-full text-[10px] font-bold text-indigo-500 border border-dashed border-indigo-300 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg py-1.5 transition">
+                                    class="w-full text-[10px] font-bold text-blue-500 border border-dashed border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg py-1.5 transition">
                                     <i class="fas fa-plus mr-1"></i> Add row
                                 </button>
                             </div>
@@ -315,27 +318,27 @@
                             <h3 class="font-bold text-lg text-slate-800 dark:text-white">Transactions</h3>
                             <button type="button" data-action="apply-recurring"
                                 title="Apply recurring templates to this month"
-                                class="text-xs text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-1 border border-indigo-200 dark:border-indigo-800 px-2 py-1 rounded-lg transition hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                class="text-xs text-blue-500 hover:text-blue-600 font-bold flex items-center gap-1 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded-lg transition hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                 <i class="fas fa-redo-alt"></i> Recurring
                             </button>
                         </div>
                         <div class="flex gap-2 w-full sm:w-auto flex-wrap">
                             <select id="txCatFilter" aria-label="Filter by category"
-                                class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none focus:border-indigo-500 transition cursor-pointer">
+                                class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none transition cursor-pointer">
                                 <option value="">All Categories</option>
                             </select>
                             <select id="txAccountFilter" aria-label="Filter by account"
-                                class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none focus:border-indigo-500 transition cursor-pointer">
+                                class="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white py-1.5 px-2 outline-none transition cursor-pointer">
                                 <option value="">All Accounts</option>
                             </select>
                             <div class="relative">
                                 <input type="text" id="txSearch" placeholder="Search..." aria-label="Search transactions"
-                                    class="pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 outline-none dark:text-white transition w-36">
+                                    class="pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none dark:text-white transition w-36">
                                 <i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs" aria-hidden="true"></i>
                             </div>
                             <button type="button" id="btnFilterToggle" data-action="toggle-filter"
                                 aria-expanded="false" aria-controls="advFilterPanel"
-                                class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-500 transition flex items-center gap-1">
+                                class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-slate-300 hover:border-blue-400 hover:text-blue-500 transition flex items-center gap-1">
                                 <i class="fas fa-sliders-h text-[10px]"></i> Filter
                             </button>
                         </div>
@@ -345,19 +348,19 @@
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 items-end">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterDateFrom">Date From</label>
-                                <input type="date" id="filterDateFrom" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                                <input type="date" id="filterDateFrom" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none transition">
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterDateTo">Date To</label>
-                                <input type="date" id="filterDateTo" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                                <input type="date" id="filterDateTo" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none transition">
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterAmtMin">Min Amount</label>
-                                <input type="number" id="filterAmtMin" min="0" step="0.01" placeholder="0.00" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                                <input type="number" id="filterAmtMin" min="0" step="0.01" placeholder="0.00" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none transition">
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1" for="filterAmtMax">Max Amount</label>
-                                <input type="number" id="filterAmtMax" min="0" step="0.01" placeholder="No limit" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition">
+                                <input type="number" id="filterAmtMax" min="0" step="0.01" placeholder="No limit" class="w-full p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none transition">
                             </div>
                         </div>
                         <div class="flex justify-end mt-2">
@@ -367,12 +370,12 @@
                     <div class="sr-only" aria-live="polite" id="filterStatus"></div>
                     </div>
                     <!-- Bulk action bar — shown when ≥1 transaction is checked -->
-                    <div id="bulkBar" class="hidden mb-3 flex flex-wrap items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                    <div id="bulkBar" class="hidden mb-3 flex flex-wrap items-center gap-2 p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                         <span id="bulkCount" class="text-xs font-bold text-[var(--ios-blue)] dark:text-blue-400 min-w-[70px]">0 selected</span>
-                        <select id="bulkCatSel" class="flex-1 min-w-[120px] p-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500">
+                        <select id="bulkCatSel" class="flex-1 min-w-[120px] p-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none">
                             <option value="">Pick category…</option>
                         </select>
-                        <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 btn-ios text-white rounded-2xl hover:bg-indigo-500 transition whitespace-nowrap">Recategorise</button>
+                        <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 btn-ios text-white rounded-2xl hover:bg-blue-500 transition whitespace-nowrap">Recategorise</button>
                         <button type="button" data-action="bulk-delete" class="text-xs font-bold px-3 py-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-500 transition">Delete</button>
                         <button type="button" data-action="bulk-clear" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium px-2">✕ Clear</button>
                     </div>
@@ -457,19 +460,31 @@
                         <button type="button" id="btnCancelBill" data-action="cancel-bill" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
                     <form id="formBill" class="space-y-4" onsubmit="return false;">
-                        <input type="text" id="billName" placeholder="Bill Name"
-                            class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                        <div>
+                            <label for="billName" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Bill Name</label>
+                            <input type="text" id="billName" placeholder="e.g. Netflix"
+                                class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition" required>
+                        </div>
                         <div class="flex gap-2">
-                            <div class="relative w-1/3">
-                                <span class="curr-prefix absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
-                                <input type="number" id="billAmt" step="0.01" inputmode="decimal"
-                                    class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
+                            <div class="w-1/3">
+                                <label for="billAmt" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Amount</label>
+                                <div class="relative">
+                                    <span class="curr-prefix absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
+                                    <input type="number" id="billAmt" step="0.01" inputmode="decimal"
+                                        class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition" required>
+                                </div>
                             </div>
-                            <input type="number" id="billDay" placeholder="Day (1-31)"
-                                class="w-1/3 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition" required>
-                            <select id="billCat" class="w-1/3 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer">
-                                <option value="Bills">Bills</option>
-                            </select>
+                            <div class="w-1/3">
+                                <label for="billDay" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Day Due</label>
+                                <input type="number" id="billDay" placeholder="1–31" min="1" max="31"
+                                    class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition" required>
+                            </div>
+                            <div class="w-1/3">
+                                <label for="billCat" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Category</label>
+                                <select id="billCat" class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer">
+                                    <option value="Bills">Bills</option>
+                                </select>
+                            </div>
                         </div>
                         <button type="button" id="btnSaveBill" data-action="save-bill" class="w-full py-2.5 text-white rounded-2xl font-bold text-sm transition" style="background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">Add Bill</button>
                     </form>
@@ -506,7 +521,7 @@
                         <div class="text-right"><p class="text-[10px] text-slate-400 uppercase font-bold">Total Liabilities</p><p class="text-lg font-bold text-rose-400 money-val" id="wealthTotalDebts">£0.00</p></div>
                     </div>
                     <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
-                        <p class="text-[10px] text-indigo-400 uppercase font-bold"><i class="fas fa-wallet mr-1"></i> Liquid Cash (Auto)</p>
+                        <p class="text-[10px] text-blue-400 uppercase font-bold"><i class="fas fa-wallet mr-1"></i> Liquid Cash (Auto)</p>
                         <p class="text-sm font-bold text-white money-val" id="wealthLiquid">£0.00</p>
                     </div>
                 </div>
@@ -525,16 +540,16 @@
                             <h3 class="font-bold text-slate-800 dark:text-white">Retirement (FIRE)</h3>
                             <p class="text-xs text-slate-500 mt-1">Target: 25x Annual Spending</p>
                         </div>
-                        <h3 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 money-val" id="wealthFireNumber">£0.00</h3>
+                        <h3 class="text-xl font-bold text-blue-600 dark:text-blue-400 money-val" id="wealthFireNumber">£0.00</h3>
                     </div>
                     <div class="relative pt-2">
                         <div class="flex justify-between text-xs font-bold mb-2">
                             <span class="text-slate-500">0%</span>
-                            <span class="text-indigo-600" id="wealthFirePct">0%</span>
+                            <span class="text-blue-600" id="wealthFirePct">0%</span>
                             <span class="text-slate-500">100%</span>
                         </div>
                         <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden">
-                            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" id="wealthFireBar" style="width:0%"></div>
+                            <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" id="wealthFireBar" style="width:0%"></div>
                         </div>
                         <p class="text-xs text-center text-slate-400 mt-3" id="wealthFireMsg">Loading...</p>
                     </div>
@@ -548,8 +563,9 @@
                         <button type="button" data-action="cancel-asset" id="btnCancelAsset" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
                     <form id="formAsset" class="space-y-2 mb-4" onsubmit="return false;">
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 items-end">
                             <div class="w-1/4">
+                                <label for="assetType" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Type</label>
                                 <select id="assetType" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs">
                                     <option value="Savings">Savings</option>
                                     <option value="Investment">Invest</option>
@@ -559,28 +575,40 @@
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
-                            <input id="assetName" placeholder="Name (e.g. ISA)"
-                                class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
-                            <div class="relative w-24 shrink-0">
-                                <span class="curr-prefix absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
-                                <input id="assetVal" type="number" step="0.01" inputmode="decimal"
-                                    class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                            <div class="flex-1">
+                                <label for="assetName" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Name</label>
+                                <input id="assetName" placeholder="e.g. ISA"
+                                    class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition" required>
                             </div>
-                            <button type="button" data-action="save-asset" id="btnSaveAsset" class="px-4 bg-emerald-600 text-white rounded-lg font-bold text-xs shrink-0">+</button>
+                            <div class="w-24 shrink-0">
+                                <label for="assetVal" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Value</label>
+                                <div class="relative">
+                                    <span class="curr-prefix absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
+                                    <input id="assetVal" type="number" step="0.01" inputmode="decimal"
+                                        class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition" required>
+                                </div>
+                            </div>
+                            <button type="button" data-action="save-asset" id="btnSaveAsset" aria-label="Save asset" class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs shrink-0">+</button>
                         </div>
                         <!-- Live price: ticker + quantity (optional) -->
                         <div class="flex gap-2">
-                            <input id="assetTicker" type="text" placeholder="Ticker (e.g. BTC, AAPL)" maxlength="12"
-                                class="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:border-indigo-500 outline-none transition"
-                                title="Optional: ticker symbol for live price updates">
-                            <input id="assetQty" type="number" step="any" min="0" placeholder="Qty (optional)"
-                                class="w-28 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:border-indigo-500 outline-none transition">
+                            <div class="flex-1">
+                                <label for="assetTicker" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Ticker (optional)</label>
+                                <input id="assetTicker" type="text" placeholder="e.g. BTC, AAPL" maxlength="12"
+                                    class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition"
+                                    title="Optional: ticker symbol for live price updates">
+                            </div>
+                            <div class="w-28">
+                                <label for="assetQty" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Qty (optional)</label>
+                                <input id="assetQty" type="number" step="any" min="0" placeholder="0"
+                                    class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
+                            </div>
                         </div>
                     </form>
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[10px] text-slate-400 font-semibold uppercase">Assets</span>
                         <button type="button" id="btnRefreshPrices" data-action="refresh-prices"
-                            class="text-[10px] font-bold text-indigo-500 hover:text-indigo-400 flex items-center gap-1 transition"
+                            class="text-[10px] font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1 transition"
                             title="Refresh live prices for assets with ticker symbols">
                             <i class="fas fa-sync-alt"></i> Refresh Prices
                         </button>
@@ -594,22 +622,34 @@
                         <button type="button" data-action="cancel-debt" id="btnCancelDebt" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                     </div>
                     <form id="formDebt" class="space-y-2 mb-4" onsubmit="return false;">
-                        <div class="flex gap-2">
-                            <input id="debtName" placeholder="Name"
-                                class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
-                            <div class="relative w-24 shrink-0">
-                                <span class="curr-prefix absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
-                                <input id="debtVal" type="number" step="0.01" inputmode="decimal" placeholder="Value"
-                                    class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 focus:border-indigo-500 outline-none transition" required>
+                        <div class="flex gap-2 items-end">
+                            <div class="flex-1">
+                                <label for="debtName" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Liability Name</label>
+                                <input id="debtName" placeholder="e.g. Car Loan"
+                                    class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition" required>
+                            </div>
+                            <div class="w-24 shrink-0">
+                                <label for="debtVal" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Balance</label>
+                                <div class="relative">
+                                    <span class="curr-prefix absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-semibold pointer-events-none">£</span>
+                                    <input id="debtVal" type="number" step="0.01" inputmode="decimal"
+                                        class="w-full p-2 pl-5 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition" required>
+                                </div>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <input id="debtRate" type="number" step="0.01" min="0" max="100" placeholder="APR % (optional)"
-                                class="w-1/2 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
-                            <input id="debtMinPay" type="number" step="0.01" min="0" placeholder="Min payment (optional)"
-                                class="w-1/2 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
+                            <div class="w-1/2">
+                                <label for="debtRate" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">APR % (optional)</label>
+                                <input id="debtRate" type="number" step="0.01" min="0" max="100" placeholder="0.00"
+                                    class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
+                            </div>
+                            <div class="w-1/2">
+                                <label for="debtMinPay" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Min Payment (optional)</label>
+                                <input id="debtMinPay" type="number" step="0.01" min="0" placeholder="0.00"
+                                    class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
+                            </div>
                         </div>
-                        <button type="button" data-action="save-debt" id="btnSaveDebt" class="w-full py-2 bg-rose-600 text-white rounded-lg font-bold text-xs">+</button>
+                        <button type="button" data-action="save-debt" id="btnSaveDebt" aria-label="Save liability" class="w-full py-2 bg-rose-600 text-white rounded-lg font-bold text-xs">Add Liability</button>
                     </form>
                     <div id="listDebts" class="space-y-2"></div>
                 </div>
@@ -635,13 +675,25 @@
                     <button type="button" id="btnCancelGoal" data-action="cancel-goal" class="hidden text-xs text-rose-500 font-bold hover:underline">Cancel</button>
                 </div>
                 <form id="formGoal" class="grid grid-cols-2 gap-2 mb-4" onsubmit="return false;">
-                    <input type="text" id="goalName" placeholder="Goal name" class="col-span-2 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
-                    <input type="number" id="goalTarget" step="0.01" inputmode="decimal" placeholder="Target amount" class="p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
-                    <input type="number" id="goalCurrent" step="0.01" inputmode="decimal" placeholder="Current saved" class="p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
-                    <input type="text" id="goalNotes" placeholder="Notes (optional)" class="col-span-2 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
+                    <div class="col-span-2">
+                        <label for="goalName" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Goal Name</label>
+                        <input type="text" id="goalName" placeholder="e.g. Emergency Fund" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
+                    </div>
+                    <div>
+                        <label for="goalTarget" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Target</label>
+                        <input type="number" id="goalTarget" step="0.01" inputmode="decimal" placeholder="0.00" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
+                    </div>
+                    <div>
+                        <label for="goalCurrent" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Saved So Far</label>
+                        <input type="number" id="goalCurrent" step="0.01" inputmode="decimal" placeholder="0.00" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
+                    </div>
+                    <div class="col-span-2">
+                        <label for="goalNotes" class="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">Notes (optional)</label>
+                        <input type="text" id="goalNotes" placeholder="e.g. For house deposit" class="w-full p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
+                    </div>
                     <div class="col-span-2 flex items-center gap-2">
-                        <label class="text-[10px] uppercase font-bold text-slate-500 whitespace-nowrap">Deadline (optional)</label>
-                        <input type="date" id="goalDeadline" class="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none transition">
+                        <label for="goalDeadline" class="text-[10px] uppercase font-bold text-slate-500 whitespace-nowrap">Deadline (optional)</label>
+                        <input type="date" id="goalDeadline" class="flex-1 p-2 border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white text-xs outline-none transition">
                     </div>
                     <button type="button" id="btnSaveGoal" data-action="save-goal" class="col-span-2 py-2 btn-ios text-white rounded-2xl font-bold text-xs">+ Add Goal</button>
                 </form>
@@ -754,7 +806,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-8">
                 <div class="flex items-center gap-3 mb-1">
                     <h3 class="font-bold text-slate-800 dark:text-white">Achievements</h3>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300">Milestones</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">Milestones</span>
                 </div>
                 <p class="text-xs text-slate-500 mb-4">Financial milestones you've unlocked — keep building good habits</p>
                 <div id="insAchievements" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-3"></div>
@@ -794,7 +846,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                 <div class="flex items-center gap-3 mb-1">
                     <h3 class="font-bold text-slate-800 dark:text-white">Subscription Manager</h3>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300">Auto-detected</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">Auto-detected</span>
                 </div>
                 <p class="text-xs text-slate-500 mb-3">Recurring charges detected across multiple months — including annual cost and dormant services</p>
                 <div id="insSubsTotal" class="hidden rounded-xl bg-slate-50 dark:bg-slate-800/60 border dark:border-slate-700 px-4 py-3 mb-4 text-sm"></div>
@@ -813,27 +865,27 @@
             <!-- Account & Security -->
             <div id="authSettingsCard" class="hidden card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2">
-                    <i class="fas fa-shield-alt text-indigo-500 text-sm"></i> Account &amp; Security
+                    <i class="fas fa-shield-alt text-blue-500 text-sm"></i> Account &amp; Security
                 </h3>
                 <p class="text-xs text-slate-500 mb-5">Signed in as <strong id="authSettingsUsername" class="text-slate-700 dark:text-slate-300"></strong></p>
                 <div id="changePinForm" class="space-y-3">
                     <div>
-                        <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Current PIN</label>
+                        <label for="changePinCurrent" class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Current PIN</label>
                         <input id="changePinCurrent" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="current-password"
                             placeholder="••••"
-                            class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition placeholder-slate-400 text-center tracking-widest">
+                            class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none transition placeholder-slate-400 text-center tracking-widest">
                     </div>
                     <div>
-                        <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">New PIN (4–8 digits)</label>
+                        <label for="changePinNew" class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">New PIN (4–8 digits)</label>
                         <input id="changePinNew" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password"
                             placeholder="••••"
-                            class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition placeholder-slate-400 text-center tracking-widest">
+                            class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none transition placeholder-slate-400 text-center tracking-widest">
                     </div>
                     <div>
                         <label class="text-[10px] uppercase font-bold text-slate-500 mb-1 block">Confirm New PIN</label>
                         <input id="changePinConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password"
                             placeholder="••••"
-                            class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition placeholder-slate-400 text-center tracking-widest">
+                            class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none transition placeholder-slate-400 text-center tracking-widest">
                     </div>
                     <div id="changePinError" class="hidden text-rose-500 text-xs text-center py-1"></div>
                     <div id="changePinSuccess" class="hidden text-emerald-600 text-xs text-center py-1"><i class="fas fa-check mr-1"></i>PIN updated successfully.</div>
@@ -847,6 +899,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-4">Bank Data Import (CSV)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a CSV file from your bank. Map the columns to bulk import transactions.</p>
+                <label for="csvFile" class="sr-only">Upload CSV file</label>
                 <input type="file" id="csvFile" accept=".csv" class="w-full mb-4 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
                 <div id="csvMapper" class="hidden space-y-4 mb-4">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -867,13 +920,14 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-1">Bank Statement Import (OFX / QIF)</h3>
                 <p class="text-xs text-slate-500 mb-4">Upload a .ofx, .qfx, or .qif file exported directly from your online banking portal. Transactions are automatically deduplicated.</p>
+                <label for="bankFile" class="sr-only">Upload bank statement file (OFX/QIF)</label>
                 <input type="file" id="bankFile" accept=".ofx,.qfx,.qif" class="w-full mb-3 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
-                <div id="bankImportPreview" class="hidden mb-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl px-3 py-2 text-xs text-[var(--ios-blue)] dark:text-blue-400 flex items-center gap-2">
-                    <i class="fas fa-check-circle text-indigo-500"></i>
+                <div id="bankImportPreview" class="hidden mb-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-3 py-2 text-xs text-[var(--ios-blue)] dark:text-blue-400 flex items-center gap-2">
+                    <i class="fas fa-check-circle text-blue-500"></i>
                     <span id="bankImportCount"></span>
                 </div>
                 <button id="btnBankImportConfirm" type="button" data-action="bank-import-confirm"
-                    class="hidden w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs shadow-md hover:bg-indigo-500 transition">
+                    class="hidden w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs shadow-md hover:bg-blue-500 transition">
                     Import Bank Transactions
                 </button>
             </div>
@@ -890,15 +944,16 @@
                 <!-- Cloud URL -->
                 <p class="text-xs text-slate-500 mb-2">Paste your Google Apps Script URL to enable cross-device syncing.</p>
                 <form id="formCloud" class="flex gap-2 mb-5" onsubmit="return false;">
+                    <label for="cloudInput" class="sr-only">Cloud Sync URL</label>
                     <input type="text" id="cloudInput" placeholder="https://script.google.com/..."
-                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white outline-none focus:border-indigo-500 transition">
+                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white outline-none transition">
                     <button type="button" data-action="save-cloud-url" class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Save</button>
                 </form>
 
                 <!-- Encryption passphrase -->
                 <div class="border-t border-slate-100 dark:border-slate-800 pt-4">
                     <div class="flex items-center gap-1.5 mb-1">
-                        <i class="fas fa-shield-alt text-indigo-400 text-xs"></i>
+                        <i class="fas fa-shield-alt text-blue-400 text-xs"></i>
                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">End-to-End Encryption</span>
                     </div>
                     <p class="text-xs text-slate-500 mb-3">
@@ -907,9 +962,10 @@
                         Leave blank to sync without encryption.
                     </p>
                     <div class="flex gap-2">
+                        <label for="syncPassphraseInput" class="sr-only">Encryption passphrase</label>
                         <input type="password" id="syncPassphraseInput" placeholder="Passphrase (min 8 chars)"
                             autocomplete="new-password"
-                            class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white outline-none focus:border-indigo-500 transition">
+                            class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs dark:text-white outline-none transition">
                         <button type="button" data-action="save-sync-passphrase"
                             class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Set</button>
                         <button type="button" data-action="clear-sync-passphrase"
@@ -929,8 +985,9 @@
                 <p class="text-xs text-slate-500 mb-3">Organise transactions by account (e.g. Checking, Savings, Joint).</p>
                 <div id="accountList" class="mb-3 space-y-1"></div>
                 <div class="flex gap-2">
+                    <label for="newAccountName" class="sr-only">New account name</label>
                     <input type="text" id="newAccountName" placeholder="New account name"
-                        class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                     <button type="button" data-action="add-account"
                         class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Add</button>
                 </div>
@@ -942,24 +999,24 @@
                 <p class="text-xs text-slate-500 mb-4">Split a large expense across multiple months automatically.</p>
                 <form id="formInstalment" class="space-y-2" onsubmit="return false;">
                     <input type="text" id="instDesc" placeholder="Description (e.g. New laptop)"
-                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                     <div class="flex gap-2">
                         <div class="relative flex-1">
                             <span class="curr-prefix absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
                             <input type="number" id="instAmt" step="0.01" inputmode="decimal" placeholder="Total amount"
-                                class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                                class="w-full p-2.5 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                         </div>
                         <input type="number" id="instMonths" min="2" max="120" placeholder="Months"
-                            class="w-24 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                            class="w-24 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                     </div>
                     <div class="flex gap-2">
                         <input type="month" id="instStart"
-                            class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                            class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                         <select id="instCat"
-                            class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                            class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer"></select>
                     </div>
                     <select id="instAccount"
-                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                        class="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer"></select>
                     <button type="button" data-action="create-instalment"
                         class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs transition">
                         + Create Instalment Plan
@@ -972,14 +1029,15 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Live Asset Prices</h3>
                 <p class="text-xs text-slate-500 mb-3">Enter an Alpha Vantage API key to enable live stock prices (crypto is free via CoinGecko).</p>
                 <div class="flex gap-2 mb-2">
+                    <label for="alphaVantageInput" class="sr-only">Alpha Vantage API key</label>
                     <input type="password" id="alphaVantageInput" placeholder="Paste API key here"
                         autocomplete="off"
-                        class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                     <button type="button" data-action="save-alpha-key"
                         class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Save</button>
                 </div>
                 <p id="alphaKeyStatus" class="hidden text-[10px] text-emerald-600 dark:text-emerald-400 mb-1"><i class="fas fa-check mr-1"></i>Key saved — paste a new key to replace it.</p>
-                <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="text-indigo-500 hover:underline">alphavantage.co</a>. Key stored locally and never transmitted except to Alpha Vantage.</p>
+                <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="text-blue-500 hover:underline">alphavantage.co</a>. Key stored locally and never transmitted except to Alpha Vantage.</p>
             </div>
 
             <!-- Phase 5C: Weekly Digest -->
@@ -1005,7 +1063,7 @@
                 <div class="flex items-center gap-2">
                     <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap" for="taxYearMonthSel">Tax year starts in:</label>
                     <select id="taxYearMonthSel"
-                        class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer">
+                        class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer">
                         <option value="1">January</option><option value="2">February</option>
                         <option value="3">March</option><option value="4">April (UK)</option>
                         <option value="5">May</option><option value="6">June</option>
@@ -1030,7 +1088,8 @@
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Currency Symbol</h3>
                 <p class="text-xs text-slate-500 mb-3">Change the currency symbol shown throughout the app.</p>
                 <div class="flex gap-2">
-                    <input type="text" id="currencySymbolInput" maxlength="3" placeholder="£" class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                    <label for="currencySymbolInput" class="sr-only">Currency symbol</label>
+                    <input type="text" id="currencySymbolInput" maxlength="3" placeholder="£" class="flex-1 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                     <button type="button" data-action="save-currency" class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap">Save</button>
                 </div>
             </div>
@@ -1065,7 +1124,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Manage Categories</h3>
                 <div id="settingsCatList" class="flex flex-wrap gap-2 mb-4"></div>
-                <button type="button" data-action="add-cat" class="text-indigo-600 font-bold text-xs">+ Add Category</button>
+                <button type="button" data-action="add-cat" class="text-blue-600 font-bold text-xs">+ Add Category</button>
             </div>
 
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
@@ -1077,16 +1136,16 @@
                         <button type="button" id="recBtnInc" class="seg-btn text-emerald-600">Income</button>
                     </div>
                     <input type="text" id="recDesc" placeholder="Description"
-                        class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition">
+                        class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                     <div class="flex gap-2">
                         <div class="relative flex-1">
                             <span class="curr-prefix absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-semibold pointer-events-none">£</span>
                             <input type="number" id="recAmt" step="0.01" inputmode="decimal"
-                                class="w-full p-2 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition">
+                                class="w-full p-2 pl-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition">
                         </div>
-                        <select id="recCat" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer"></select>
+                        <select id="recCat" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer"></select>
                     </div>
-                    <button type="button" data-action="save-recurring" class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs hover:bg-indigo-500 transition">+ Add Template</button>
+                    <button type="button" data-action="save-recurring" class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs hover:bg-blue-500 transition">+ Add Template</button>
                 </form>
                 <div id="recurringList" class="space-y-2"></div>
             </div>
@@ -1129,11 +1188,11 @@
 
             <!-- Branding -->
             <div class="flex items-center gap-3 mb-8 justify-center">
-                <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg" style="transform:rotate(3deg)">
+                <div class="w-12 h-12 bg-[var(--ios-blue)] rounded-xl flex items-center justify-center shadow-lg" style="transform:rotate(3deg)">
                     <i class="fas fa-wallet text-white text-lg"></i>
                 </div>
                 <h1 class="font-bold text-2xl text-white leading-tight tracking-tight">
-                    Infinity<br><span class="text-indigo-400">Finance</span>
+                    Infinity<br><span class="text-blue-400">Finance</span>
                 </h1>
             </div>
 
@@ -1143,26 +1202,26 @@
                 <p class="text-slate-400 text-sm mb-6">Set a username and PIN to secure your portfolio.</p>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">Username</label>
+                        <label for="authUsername" class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">Username</label>
                         <input id="authUsername" type="text" autocomplete="username" maxlength="50" spellcheck="false"
                             placeholder="e.g. Alex"
-                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition placeholder-slate-500">
+                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none transition placeholder-slate-500">
                     </div>
                     <div>
-                        <label class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">PIN (4–8 digits)</label>
+                        <label for="authNewPin" class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">PIN (4–8 digits)</label>
                         <input id="authNewPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password"
                             placeholder="••••"
-                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition placeholder-slate-500 tracking-[0.5em] text-center text-lg">
+                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none transition placeholder-slate-500 tracking-[0.5em] text-center text-lg">
                     </div>
                     <div>
-                        <label class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">Confirm PIN</label>
+                        <label for="authConfirmPin" class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">Confirm PIN</label>
                         <input id="authConfirmPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="new-password"
                             placeholder="••••"
-                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition placeholder-slate-500 tracking-[0.5em] text-center text-lg">
+                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none transition placeholder-slate-500 tracking-[0.5em] text-center text-lg">
                     </div>
                     <div id="authSetupError" class="hidden text-rose-400 text-sm text-center py-1 font-medium"></div>
                     <button id="btnCreateAccount" type="button"
-                        class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg mt-2">
+                        class="w-full btn-ios hover:bg-blue-500 active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg mt-2">
                         <i class="fas fa-user-plus mr-2"></i>Create Account
                     </button>
                 </div>
@@ -1174,14 +1233,14 @@
                 <p class="text-slate-400 text-sm mb-6">Enter your PIN to unlock your portfolio.</p>
                 <div class="space-y-4">
                     <div>
-                        <label class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">PIN</label>
+                        <label for="authLoginPin" class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-1.5 block">PIN</label>
                         <input id="authLoginPin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="current-password"
                             placeholder="••••"
-                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition placeholder-slate-500 tracking-[0.5em] text-center text-lg">
+                            class="w-full bg-slate-700 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm focus:outline-none transition placeholder-slate-500 tracking-[0.5em] text-center text-lg">
                     </div>
                     <div id="authLoginError" class="hidden text-rose-400 text-sm text-center py-1 font-medium"></div>
                     <button id="btnUnlock" type="button"
-                        class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg">
+                        class="w-full btn-ios hover:bg-blue-500 active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg">
                         <i class="fas fa-unlock mr-2"></i>Unlock
                     </button>
                     <button id="btnForgotPin" type="button"

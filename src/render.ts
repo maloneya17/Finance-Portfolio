@@ -130,8 +130,8 @@ export function render(): void {
           </td>
           <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
           <td class="text-right pr-2">
-            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-300 hover:text-blue-500 transition px-2 py-1" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt"></i></button>
-            <button type="button" data-del-tx="${esc(t.id)}" class="text-slate-300 hover:text-rose-500 transition px-2" aria-label="Delete ${esc(t.desc)}"><i class="fas fa-trash-alt"></i></button>
+            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-300 hover:text-blue-500 transition px-2 py-1" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt" aria-hidden="true"></i></button>
+            <button type="button" data-del-tx="${esc(t.id)}" class="text-slate-300 hover:text-rose-500 transition px-2" aria-label="Delete ${esc(t.desc)}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
           </td>`;
         frag.appendChild(tr);
       });
@@ -747,8 +747,8 @@ export function renderWealth(): void {
               <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span>${tickerBadge}${priceAge}</span>
               <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
                 <span class="text-emerald-600 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-asset="${item.id}" class="text-slate-400 hover:text-blue-500"><i class="fas fa-pencil-alt text-xs"></i></button>
-                <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-400 hover:text-red-500"><i class="fas fa-trash-alt text-xs"></i></button>
+                <button type="button" data-edit-asset="${item.id}" class="text-slate-400 hover:text-blue-500" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-400 hover:text-rose-500" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
               </div>
             </div>`);
         });
@@ -767,8 +767,8 @@ export function renderWealth(): void {
               <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)}</span>
               <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
                 <span class="text-rose-500 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-debt="${item.id}" class="text-slate-400 hover:text-blue-500"><i class="fas fa-pencil-alt text-xs"></i></button>
-                <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-400 hover:text-red-500"><i class="fas fa-trash-alt text-xs"></i></button>
+                <button type="button" data-edit-debt="${item.id}" class="text-slate-400 hover:text-blue-500" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-400 hover:text-rose-500" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
               </div>
             </div>`);
         });
@@ -912,8 +912,8 @@ export function renderGoals(): void {
                    title="Add contribution"
                    class="text-emerald-500 hover:text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-[10px] transition">+</button>`
               : ''}
-            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-blue-500"><i class="fas fa-pencil-alt" style="font-size:10px"></i></button>
-            <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times" style="font-size:10px"></i></button>
+            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-blue-500" aria-label="Edit goal ${esc(g.name)}"><i class="fas fa-pencil-alt" style="font-size:10px" aria-hidden="true"></i></button>
+            <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500" aria-label="Delete goal ${esc(g.name)}"><i class="fas fa-times" style="font-size:10px" aria-hidden="true"></i></button>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -1020,8 +1020,9 @@ export function renderAccounts(): void {
         </div>
         ${db.accounts.length > 1
           ? `<button type="button" data-del-account="${esc(name)}"
-               class="text-slate-400 hover:text-rose-500 transition ml-2" title="Remove account">
-               <i class="fas fa-times text-[10px]"></i>
+               class="text-slate-400 hover:text-rose-500 transition ml-2"
+               aria-label="Remove account ${esc(name)}" title="Remove account">
+               <i class="fas fa-times text-[10px]" aria-hidden="true"></i>
              </button>`
           : ''}
       </div>`);
@@ -1037,7 +1038,7 @@ export function renderSettingsCats(): void {
     if (c === 'Bills') return;
     const chip = document.createElement('div');
     chip.className = 'px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-xs flex items-center gap-2 border dark:border-slate-700 dark:text-slate-300';
-    chip.innerHTML = `${esc(c)} <span data-del-cat="${esc(c)}" class="cursor-pointer text-slate-400 hover:text-rose-500">&times;</span>`;
+    chip.innerHTML = `${esc(c)} <button type="button" data-del-cat="${esc(c)}" class="cursor-pointer text-slate-400 hover:text-rose-500 transition leading-none" aria-label="Delete category ${esc(c)}">&times;</button>`;
     div.appendChild(chip);
   });
 }
@@ -1059,7 +1060,7 @@ export function renderRecurring(): void {
         <div><span class="font-bold text-slate-700 dark:text-slate-200">${esc(r.desc)}</span> <span class="text-slate-400 dark:text-slate-500 ml-1">${esc(r.category)}</span></div>
         <div class="flex items-center gap-2">
           <span class="font-bold ${col}">${sign}${sym()}${fmt(r.amount)}</span>
-          <button type="button" data-del-recurring="${r.id}" class="text-slate-400 hover:text-rose-500 transition"><i class="fas fa-times"></i></button>
+          <button type="button" data-del-recurring="${r.id}" class="text-slate-400 hover:text-rose-500 transition" aria-label="Delete ${esc(r.desc)}"><i class="fas fa-times" aria-hidden="true"></i></button>
         </div>
       </div>`);
   });

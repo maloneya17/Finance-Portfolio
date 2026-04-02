@@ -141,14 +141,17 @@ function switchView(id: string): void {
   void el.offsetWidth; // force reflow
   el.classList.add('view-enter');
   document.querySelectorAll('.nav-item').forEach(n => {
-    n.classList.remove('active', 'bg-indigo-600', 'text-white', 'shadow-lg');
+    n.classList.remove('active');
     n.removeAttribute('aria-current');
   });
   const nav = document.getElementById(`nav-${id}`);
   if (nav) {
-    nav.classList.add('active', 'bg-indigo-600', 'text-white', 'shadow-lg');
+    nav.classList.add('active');
     nav.classList.remove('text-slate-400', 'hover:bg-slate-800');
     nav.setAttribute('aria-current', 'page');
+    // Update document title for browser history usability
+    const label = nav.querySelector<HTMLElement>('.nav-label')?.textContent?.trim();
+    if (label) document.title = `Finance Portfolio — ${label}`;
   }
   if (id === 'reports') renderReports();
   if (id === 'bills') renderCalendar();
@@ -179,12 +182,12 @@ function updateReportingPeriodUI(): void {
   const isTax = db.reportingPeriod === 'tax';
   const calBtn = document.getElementById('btnPeriodCalendar');
   const taxBtn = document.getElementById('btnPeriodTax');
-  calBtn?.classList.toggle('bg-indigo-600', !isTax);
+  calBtn?.classList.toggle('btn-ios', !isTax);
   calBtn?.classList.toggle('text-white', !isTax);
   calBtn?.classList.toggle('bg-slate-100', isTax);
   calBtn?.classList.toggle('dark:bg-slate-800', isTax);
   calBtn?.classList.toggle('text-slate-500', isTax);
-  taxBtn?.classList.toggle('bg-indigo-600', isTax);
+  taxBtn?.classList.toggle('btn-ios', isTax);
   taxBtn?.classList.toggle('text-white', isTax);
   taxBtn?.classList.toggle('bg-slate-100', !isTax);
   taxBtn?.classList.toggle('dark:bg-slate-800', !isTax);
@@ -577,8 +580,8 @@ function wireEvents(): void {
       else selectedTxIds.delete(id);
       updateBulkBar();
       // Update row highlight
-      target.closest('tr')?.classList.toggle('bg-indigo-50', target.checked);
-      target.closest('tr')?.classList.toggle('dark:bg-indigo-900/10', target.checked);
+      target.closest('tr')?.classList.toggle('bg-blue-50', target.checked);
+      target.closest('tr')?.classList.toggle('dark:bg-blue-900/10', target.checked);
     }
   });
 
