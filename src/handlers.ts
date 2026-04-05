@@ -248,7 +248,7 @@ export function addSplitRow(): void {
   // Category select — clone options from the main txCat select
   const catSel = document.createElement('select');
   catSel.setAttribute('data-split-cat', '');
-  catSel.className = 'flex-1 p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition cursor-pointer';
+  catSel.className = 'flex-1 p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none transition cursor-pointer';
   const mainCat = document.getElementById('txCat') as HTMLSelectElement | null;
   if (mainCat) {
     Array.from(mainCat.options)
@@ -268,7 +268,7 @@ export function addSplitRow(): void {
   amtInput.min = '0';
   amtInput.placeholder = '0.00';
   amtInput.setAttribute('data-split-amt', '');
-  amtInput.className = 'w-24 p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 transition';
+  amtInput.className = 'w-24 p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none transition';
   amtInput.addEventListener('input', updateSplitRemaining);
 
   const removeBtn = document.createElement('button');
@@ -488,6 +488,8 @@ export function toggleBill(id: string): void {
       db.transactions[key] = (db.transactions[key] ?? []).filter(t => t.id !== txId);
       if (db.transactions[key]?.length === 0) delete db.transactions[key]; // keep storage tidy
       save();
+      renderCalendar();
+      render();
     });
   } else {
     // Remove the auto-created expense transaction if it exists

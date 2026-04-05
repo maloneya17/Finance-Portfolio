@@ -160,6 +160,12 @@ function switchView(id: string): void {
   // Note: render() below already calls renderBudgets() when the budget view is visible,
   // so we don't call it explicitly here to avoid a redundant double-render.
   render();
+  // Move focus to the view heading so screen readers announce the new section
+  const heading = el.querySelector<HTMLElement>('h2, h3, [tabindex="-1"]');
+  if (heading) {
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+  }
   // Close sidebar on mobile
   document.getElementById('sidebar')?.classList.remove('open');
   document.getElementById('sidebarOverlay')?.classList.remove('open');
@@ -498,11 +504,14 @@ function wireEvents(): void {
         case 'bulk-clear': selectedTxIds.clear(); render(); break;
         case 'toggle-split': {
           const panel = document.getElementById('splitPanel');
+          const splitBtn = document.getElementById('btnToggleSplit');
           if (!panel) break;
           if (panel.classList.contains('hidden')) {
             addSplitRow(); // adding first row opens the panel automatically
+            splitBtn?.setAttribute('aria-expanded', 'true');
           } else {
             resetSplitPanel();
+            splitBtn?.setAttribute('aria-expanded', 'false');
           }
           break;
         }

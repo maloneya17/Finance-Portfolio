@@ -158,9 +158,9 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 money-val" id="kpiMaxVal">£0.00</p>
                     </div>
                 </div>
-                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-blue-500 rounded-2xl p-6 shadow-sm">
+                <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 shadow-sm" style="border-left:4px solid var(--ios-blue)">
                     <p class="text-xs text-slate-400 font-bold uppercase">Savings Rate</p>
-                    <h3 class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1" id="kpiSavingsRate">0%</h3>
+                    <h3 class="text-2xl font-bold mt-1" id="kpiSavingsRate" style="color:var(--ios-blue)">0%</h3>
                     <p class="text-xs text-slate-500 mt-1 money-val" id="kpiSavingsAmt">£0.00 saved</p>
                 </div>
             </div>
@@ -286,6 +286,7 @@
                             <div class="flex items-center justify-between">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase">Split Transaction</label>
                                 <button type="button" id="btnToggleSplit" data-action="toggle-split"
+                                    aria-expanded="false" aria-controls="splitPanel"
                                     class="text-[10px] font-bold text-blue-500 hover:text-blue-400 transition flex items-center gap-1">
                                     <i class="fas fa-code-branch text-[9px]"></i> <span id="splitToggleLabel">Add Split</span>
                                 </button>
@@ -376,7 +377,7 @@
                             <option value="">Pick category…</option>
                         </select>
                         <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 btn-ios text-white rounded-2xl hover:bg-blue-500 transition whitespace-nowrap">Recategorise</button>
-                        <button type="button" data-action="bulk-delete" class="text-xs font-bold px-3 py-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-500 transition">Delete</button>
+                        <button type="button" data-action="bulk-delete" class="text-xs font-bold px-3 py-1.5 bg-rose-600 text-white rounded-2xl hover:bg-rose-500 transition">Delete</button>
                         <button type="button" data-action="bulk-clear" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium px-2">✕ Clear</button>
                     </div>
                     <div class="overflow-x-auto">
@@ -394,7 +395,7 @@
                         <div id="emptyState" class="hidden py-12 text-center" aria-live="polite">
                             <div class="flex justify-center mb-4">
                                 <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                    <i class="fas fa-receipt text-2xl text-slate-300 dark:text-slate-600" aria-hidden="true"></i>
+                                    <i class="fas fa-receipt text-2xl text-slate-400 dark:text-slate-500" aria-hidden="true"></i>
                                 </div>
                             </div>
                             <p class="text-slate-600 dark:text-slate-300 font-bold text-base mb-1">No transactions yet</p>
@@ -540,12 +541,12 @@
                             <h3 class="font-bold text-slate-800 dark:text-white">Retirement (FIRE)</h3>
                             <p class="text-xs text-slate-500 mt-1">Target: 25x Annual Spending</p>
                         </div>
-                        <h3 class="text-xl font-bold text-blue-600 dark:text-blue-400 money-val" id="wealthFireNumber">£0.00</h3>
+                        <h3 class="text-xl font-bold money-val" id="wealthFireNumber" style="color:var(--ios-blue)">£0.00</h3>
                     </div>
                     <div class="relative pt-2">
                         <div class="flex justify-between text-xs font-bold mb-2">
                             <span class="text-slate-500">0%</span>
-                            <span class="text-blue-600" id="wealthFirePct">0%</span>
+                            <span id="wealthFirePct" style="color:var(--ios-blue)">0%</span>
                             <span class="text-slate-500">100%</span>
                         </div>
                         <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden">
@@ -806,7 +807,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-8">
                 <div class="flex items-center gap-3 mb-1">
                     <h3 class="font-bold text-slate-800 dark:text-white">Achievements</h3>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">Milestones</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ios-tint" style="color:var(--ios-blue)">Milestones</span>
                 </div>
                 <p class="text-xs text-slate-500 mb-4">Financial milestones you've unlocked — keep building good habits</p>
                 <div id="insAchievements" class="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-3"></div>
@@ -846,7 +847,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
                 <div class="flex items-center gap-3 mb-1">
                     <h3 class="font-bold text-slate-800 dark:text-white">Subscription Manager</h3>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">Auto-detected</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ios-tint" style="color:var(--ios-blue)">Auto-detected</span>
                 </div>
                 <p class="text-xs text-slate-500 mb-3">Recurring charges detected across multiple months — including annual cost and dormant services</p>
                 <div id="insSubsTotal" class="hidden rounded-xl bg-slate-50 dark:bg-slate-800/60 border dark:border-slate-700 px-4 py-3 mb-4 text-sm"></div>
@@ -1037,7 +1038,7 @@
                         class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Save</button>
                 </div>
                 <p id="alphaKeyStatus" class="hidden text-[10px] text-emerald-600 dark:text-emerald-400 mb-1"><i class="fas fa-check mr-1"></i>Key saved — paste a new key to replace it.</p>
-                <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="text-blue-500 hover:underline">alphavantage.co</a>. Key stored locally and never transmitted except to Alpha Vantage.</p>
+                <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="hover:underline" style="color:var(--ios-blue)">alphavantage.co</a>. Key stored locally and never transmitted except to Alpha Vantage.</p>
             </div>
 
             <!-- Phase 5C: Weekly Digest -->

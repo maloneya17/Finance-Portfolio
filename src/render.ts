@@ -70,10 +70,10 @@ export function render(): void {
     // Highlight the filter button when advanced filters are active
     const filterBtn = document.getElementById('btnFilterToggle');
     if (filterBtn) {
-      filterBtn.classList.toggle('border-blue-500', hasAdvFilter);
-      filterBtn.classList.toggle('text-blue-500', hasAdvFilter);
-      filterBtn.classList.toggle('bg-blue-50', hasAdvFilter);
-      filterBtn.classList.toggle('dark:bg-blue-900/20', hasAdvFilter);
+      filterBtn.classList.toggle('ios-tint', hasAdvFilter);
+      filterBtn.classList.toggle('border', hasAdvFilter);
+      if (hasAdvFilter) filterBtn.style.color = 'var(--ios-blue)';
+      else filterBtn.style.color = '';
     }
 
     const filtered = data.filter(t => {
@@ -130,8 +130,8 @@ export function render(): void {
           </td>
           <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
           <td class="text-right pr-2">
-            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-300 hover:text-blue-500 transition px-2 py-1" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt" aria-hidden="true"></i></button>
-            <button type="button" data-del-tx="${esc(t.id)}" class="text-slate-300 hover:text-rose-500 transition px-2" aria-label="Delete ${esc(t.desc)}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
+            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition px-2 py-1" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt" aria-hidden="true"></i></button>
+            <button type="button" data-del-tx="${esc(t.id)}" class="text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition px-2" aria-label="Delete ${esc(t.desc)}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
           </td>`;
         frag.appendChild(tr);
       });
@@ -747,8 +747,8 @@ export function renderWealth(): void {
               <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span>${tickerBadge}${priceAge}</span>
               <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
                 <span class="text-emerald-600 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-asset="${item.id}" class="text-slate-400 hover:text-blue-500" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
-                <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-400 hover:text-rose-500" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-edit-asset="${item.id}" class="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
               </div>
             </div>`);
         });
@@ -767,8 +767,8 @@ export function renderWealth(): void {
               <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)}</span>
               <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
                 <span class="text-rose-500 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-debt="${item.id}" class="text-slate-400 hover:text-blue-500" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
-                <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-400 hover:text-rose-500" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-edit-debt="${item.id}" class="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
               </div>
             </div>`);
         });
@@ -912,8 +912,8 @@ export function renderGoals(): void {
                    title="Add contribution"
                    class="text-emerald-500 hover:text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-[10px] transition">+</button>`
               : ''}
-            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-blue-500" aria-label="Edit goal ${esc(g.name)}"><i class="fas fa-pencil-alt" style="font-size:10px" aria-hidden="true"></i></button>
-            <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500" aria-label="Delete goal ${esc(g.name)}"><i class="fas fa-times" style="font-size:10px" aria-hidden="true"></i></button>
+            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition" aria-label="Edit goal ${esc(g.name)}"><i class="fas fa-pencil-alt" style="font-size:10px" aria-hidden="true"></i></button>
+            <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition" aria-label="Delete goal ${esc(g.name)}"><i class="fas fa-times" style="font-size:10px" aria-hidden="true"></i></button>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -1231,11 +1231,13 @@ export function renderDebtPlanner(): void {
       <div class="flex flex-wrap items-center gap-2">
         <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
           <button type="button" data-debt-strategy="avalanche"
-            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${isAvalanche ? 'bg-white dark:bg-slate-700 text-blue-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${isAvalanche ? 'bg-white dark:bg-slate-700 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}"
+            ${isAvalanche ? 'style="color:var(--ios-blue)"' : ''}>
             ⛰ Avalanche
           </button>
           <button type="button" data-debt-strategy="snowball"
-            class="px-3 py-1.5 rounded-md text-xs font-bold transition ${!isAvalanche ? 'bg-white dark:bg-slate-700 text-blue-600 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}">
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${!isAvalanche ? 'bg-white dark:bg-slate-700 shadow' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}"
+            ${!isAvalanche ? 'style="color:var(--ios-blue)"' : ''}>
             ❄ Snowball
           </button>
         </div>
@@ -1243,7 +1245,7 @@ export function renderDebtPlanner(): void {
           <span class="curr-prefix text-xs text-slate-400 font-semibold">${sym()}</span>
           <input id="debtExtraInput" type="number" min="0" step="10" placeholder="Extra/mo"
             value="${_debtExtra > 0 ? _debtExtra : ''}"
-            class="w-24 p-1.5 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-2 focus:ring-blue-300 outline-none">
+            class="w-24 p-2 text-xs border rounded-lg bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-white outline-none">
         </div>
       </div>
     </div>
