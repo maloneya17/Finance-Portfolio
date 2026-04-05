@@ -547,6 +547,9 @@ textarea:focus {
 /* ─── iOS ACCENT (checkboxes, radios) ────────────────────────────────────────── */
 .accent-ios { accent-color: var(--ios-blue); }
 
+/* ─── iOS HOVER UTILITIES ────────────────────────────────────────────────────── */
+.hover-ios:hover { color: var(--ios-blue) !important; }
+
 /* ─── iOS-TINTED STATES ───────────────────────────────────────────────────────── */
 /* Row selected, filter active, month banner — iOS blue tint at 8% */
 .ios-tint {

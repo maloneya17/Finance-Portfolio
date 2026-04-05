@@ -183,6 +183,14 @@ export function editTx(id: string): void {
   const txNotesEl = inp('txNotes'); if (txNotesEl) txNotesEl.value = tx.notes ?? '';
   const txTagsEl  = inp('txTags');  if (txTagsEl)  txTagsEl.value  = (tx.tags ?? []).join(', ');
   setTxType(tx.type);
+  // Restore split rows if this was a split transaction
+  if (tx.splits && tx.splits.length > 0) {
+    resetSplitPanel(); // clear any leftover rows first
+    tx.splits.forEach(s => addSplitRow({ category: s.category, amount: s.amount }));
+    document.getElementById('btnToggleSplit')?.setAttribute('aria-expanded', 'true');
+  } else {
+    resetSplitPanel();
+  }
   setText('txFormTitle', 'Edit Transaction');
   const submitBtn = btn('btnSubmitTx'); if (submitBtn) submitBtn.innerHTML = 'Update Transaction';
   document.getElementById('btnCancelEdit')?.classList.remove('hidden');
@@ -230,16 +238,19 @@ export function resetSplitPanel(): void {
   if (panel) panel.classList.add('hidden');
   if (rows) rows.innerHTML = '';
   if (label) label.textContent = 'Add Split';
+  document.getElementById('btnToggleSplit')?.setAttribute('aria-expanded', 'false');
   updateSplitRemaining();
 }
 
-/** Adds a new split row to the split panel. */
-export function addSplitRow(): void {
+/** Adds a new split row to the split panel, optionally pre-filled with data. */
+export function addSplitRow(initial?: { category?: string; amount?: number }): void {
   const panel = document.getElementById('splitPanel');
   const rows  = document.getElementById('splitRows');
   if (!rows || !panel) return;
   panel.classList.remove('hidden');
-  document.getElementById('splitToggleLabel')!.textContent = 'Remove Split';
+  const label = document.getElementById('splitToggleLabel');
+  if (label) label.textContent = 'Remove Split';
+  document.getElementById('btnToggleSplit')?.setAttribute('aria-expanded', 'true');
 
   const rowDiv = document.createElement('div');
   rowDiv.setAttribute('data-split-row', '');
@@ -260,6 +271,7 @@ export function addSplitRow(): void {
         catSel.appendChild(opt);
       });
   }
+  if (initial?.category) catSel.value = initial.category;
   catSel.addEventListener('change', updateSplitRemaining);
 
   const amtInput = document.createElement('input');
@@ -269,11 +281,13 @@ export function addSplitRow(): void {
   amtInput.placeholder = '0.00';
   amtInput.setAttribute('data-split-amt', '');
   amtInput.className = 'w-24 p-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none transition';
+  if (initial?.amount) amtInput.value = String(initial.amount);
   amtInput.addEventListener('input', updateSplitRemaining);
 
   const removeBtn = document.createElement('button');
   removeBtn.type = 'button';
-  removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+  removeBtn.setAttribute('aria-label', 'Remove split row');
+  removeBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
   removeBtn.className = 'text-slate-400 hover:text-rose-500 transition text-xs px-1';
   removeBtn.addEventListener('click', () => {
     rowDiv.remove();
@@ -285,7 +299,7 @@ export function addSplitRow(): void {
   rowDiv.appendChild(amtInput);
   rowDiv.appendChild(removeBtn);
   rows.appendChild(rowDiv);
-  amtInput.focus();
+  if (!initial) amtInput.focus();
   updateSplitRemaining();
 }
 

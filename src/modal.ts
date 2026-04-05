@@ -97,6 +97,8 @@ export function showTextInputModal(opts: TextInputModalOpts): Promise<string | n
       </div>`;
 
     overlay.appendChild(card);
+    // Capture focus before moving it into the modal
+    const previousFocus = document.activeElement as HTMLElement | null;
     document.body.appendChild(overlay);
 
     const inputEl = card.querySelector<HTMLInputElement>('#_modalInput')!;
@@ -104,8 +106,6 @@ export function showTextInputModal(opts: TextInputModalOpts): Promise<string | n
     inputEl.focus();
     if (opts.inputType !== 'number') inputEl.select();
 
-    // Remember what had focus so we can restore it on close
-    const previousFocus = document.activeElement as HTMLElement | null;
     const removeTrap = trapFocus(card);
 
     let kbHandler: (e: KeyboardEvent) => void;
@@ -158,10 +158,11 @@ export function showConfirmModal(opts: ConfirmModalOpts): Promise<boolean> {
       </div>`;
 
     overlay.appendChild(card);
+    // Capture focus before moving it into the modal
+    const previousFocus = document.activeElement as HTMLElement | null;
     document.body.appendChild(overlay);
     (card.querySelector('#_modalConfirm') as HTMLButtonElement | null)?.focus();
 
-    const previousFocus = document.activeElement as HTMLElement | null;
     const removeTrap = trapFocus(card);
 
     let kbHandler: (e: KeyboardEvent) => void;

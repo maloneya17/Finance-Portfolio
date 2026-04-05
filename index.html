@@ -26,14 +26,14 @@
         aria-label="Open navigation menu"
         class="fixed top-3 left-3 z-[201] text-white w-11 h-11 rounded-2xl flex items-center justify-center"
         style="display:none;background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">
-        <i class="fas fa-bars text-base" aria-hidden="true"></i>
+        <i class="fas fa-bars text-base" aria-hidden="true" aria-hidden="true"></i>
     </button>
 
     <div id="sidebar" class="w-[260px] bg-slate-900 text-white flex flex-col p-6 shrink-0 relative flex justify-between z-50">
         <div>
             <div class="flex items-center gap-3 mb-10">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-ios-blue" style="background:var(--ios-blue)">
-                    <i class="fas fa-wallet text-white text-sm"></i>
+                    <i class="fas fa-wallet text-white text-sm" aria-hidden="true"></i>
                 </div>
                 <h1 class="font-bold text-lg leading-tight tracking-tight">Infinity<br><span style="color:var(--ios-blue)">Finance</span></h1>
             </div>
@@ -47,25 +47,25 @@
             <nav class="space-y-1" aria-label="Main navigation">
                 <div role="button" tabindex="0" data-nav="dashboard" id="nav-dashboard"
                     class="nav-item active flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer text-white"
-                    aria-current="page"><i class="fas fa-chart-pie w-5" aria-hidden="true"></i> <span class="nav-label">Dashboard</span></div>
+                    aria-current="page"><i class="fas fa-chart-pie w-5" aria-hidden="true" aria-hidden="true"></i> <span class="nav-label">Dashboard</span></div>
                 <div role="button" tabindex="0" data-nav="budget" id="nav-budget"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-coins w-5" aria-hidden="true"></i> <span class="nav-label">Budgets</span></div>
+                    <i class="fas fa-coins w-5" aria-hidden="true" aria-hidden="true"></i> <span class="nav-label">Budgets</span></div>
                 <div role="button" tabindex="0" data-nav="bills" id="nav-bills"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-calendar-alt w-5" aria-hidden="true"></i> <span class="nav-label">Bills</span></div>
+                    <i class="fas fa-calendar-alt w-5" aria-hidden="true" aria-hidden="true"></i> <span class="nav-label">Bills</span></div>
                 <div role="button" tabindex="0" data-nav="wealth" id="nav-wealth"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-landmark w-5" aria-hidden="true"></i> <span class="nav-label">Net Worth</span></div>
+                    <i class="fas fa-landmark w-5" aria-hidden="true" aria-hidden="true"></i> <span class="nav-label">Net Worth</span></div>
                 <div role="button" tabindex="0" data-nav="reports" id="nav-reports"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-chart-line w-5" aria-hidden="true"></i> <span class="nav-label">Reports</span></div>
+                    <i class="fas fa-chart-line w-5" aria-hidden="true" aria-hidden="true"></i> <span class="nav-label">Reports</span></div>
                 <div role="button" tabindex="0" data-nav="insights" id="nav-insights"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-brain w-5" aria-hidden="true"></i> <span class="nav-label">Insights</span></div>
+                    <i class="fas fa-brain w-5" aria-hidden="true" aria-hidden="true"></i> <span class="nav-label">Insights</span></div>
                 <div role="button" tabindex="0" data-nav="settings" id="nav-settings"
                     class="nav-item flex items-center gap-3 px-4 py-3 font-semibold text-slate-400 cursor-pointer">
-                    <i class="fas fa-sliders-h w-5" aria-hidden="true"></i> <span class="nav-label">Settings</span></div>
+                    <i class="fas fa-sliders-h w-5" aria-hidden="true" aria-hidden="true"></i> <span class="nav-label">Settings</span></div>
             </nav>
         </div>
 
@@ -73,26 +73,26 @@
             <button type="button" id="btnLock" data-action="lock"
                 class="w-full py-2.5 mb-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-2"
                 style="background:rgba(0,122,255,0.15);color:#5AC8FA">
-                <i class="fas fa-lock"></i> Lock
+                <i class="fas fa-lock" aria-hidden="true" aria-hidden="true"></i> Lock
             </button>
             <button type="button" data-action="toggle-privacy"
                 class="w-full py-2.5 mb-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-semibold transition flex items-center justify-center gap-2">
-                <i class="fas fa-eye-slash" id="privacyIcon"></i> <span id="privacyLabel">Hide Figures</span>
+                <i class="fas fa-eye-slash" id="privacyIcon" aria-hidden="true" aria-hidden="true"></i> <span id="privacyLabel">Hide Figures</span>
             </button>
             <button type="button" data-action="toggle-theme"
                 class="w-full py-2.5 mb-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-semibold transition flex items-center justify-center gap-2">
-                <i class="fas fa-moon"></i> <span id="themeLabel">Dark Mode</span>
+                <i class="fas fa-moon" aria-hidden="true" aria-hidden="true"></i> <span id="themeLabel">Dark Mode</span>
                 <span id="themeSystemIcon" class="hidden text-[9px] bg-slate-700/80 px-2 py-0.5 rounded-full text-slate-400">auto</span>
             </button>
 
             <div class="flex justify-between items-center mb-2 px-1">
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sync Status</span>
-                <span id="syncIndicator" class="hidden text-[10px] text-amber-500"><i class="fas fa-sync fa-spin"></i></span>
+                <span id="syncIndicator" class="hidden text-[10px] text-amber-500" aria-hidden="true"><i class="fas fa-sync fa-spin" aria-hidden="true"></i></span>
             </div>
             <button type="button" data-action="sync" id="btnSync"
                 class="w-full py-2.5 text-white rounded-xl font-bold text-xs transition mb-2"
                 style="background:var(--ios-blue);box-shadow:var(--shadow-ios-blue)">
-                <i class="fas fa-cloud-upload-alt mr-2"></i> Sync Now
+                <i class="fas fa-cloud-upload-alt mr-2" aria-hidden="true" aria-hidden="true"></i> Sync Now
             </button>
             <div class="text-[10px] text-center text-slate-500 font-medium mt-1 flex justify-center items-center gap-2"
                 title="Local Mode: data is stored only on this device. Cloud Linked: data is synced across devices via your Google Script URL.">
@@ -101,7 +101,7 @@
             </div>
             <!-- Offline indicator — shown when device loses network -->
             <div id="offlineBanner" class="hidden mt-2 text-[10px] text-center font-bold text-amber-400 bg-amber-900/20 border border-amber-800/40 rounded-lg py-1.5 px-2 flex items-center justify-center gap-1.5">
-                <i class="fas fa-wifi-slash"></i> Device Offline
+                <i class="fas fa-wifi-slash" aria-hidden="true"></i> Device Offline
             </div>
         </div>
     </div>
@@ -132,13 +132,13 @@
                 <div class="card bg-slate-900 text-white col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 relative overflow-hidden group cursor-pointer border-none rounded-2xl p-6 shadow-xl"
                     data-action="edit-annual-income">
                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition transform group-hover:scale-110">
-                        <i class="fas fa-edit text-6xl"></i>
+                        <i class="fas fa-edit text-6xl" aria-hidden="true"></i>
                     </div>
                     <p class="text-[10px] text-slate-300 font-bold uppercase tracking-widest mb-1">Annual Income Target</p>
                     <h2 class="text-3xl font-extrabold money-val" id="kpiSalary">£0.00</h2>
                     <div class="mt-4 flex gap-4 text-xs font-medium text-slate-300">
-                        <span><i class="fas fa-calendar-check text-emerald-400 mr-1"></i>YTD: <span id="kpiYTD" class="text-white money-val font-bold">£0</span></span>
-                        <span><i class="fas fa-clock text-blue-300 mr-1"></i>Avg: <span id="kpiAvg" class="text-white money-val font-bold">£0</span></span>
+                        <span><i class="fas fa-calendar-check text-emerald-400 mr-1" aria-hidden="true"></i>YTD: <span id="kpiYTD" class="text-white money-val font-bold">£0</span></span>
+                        <span><i class="fas fa-clock mr-1" aria-hidden="true" style="color:var(--ios-blue)" aria-hidden="true"></i>Avg: <span id="kpiAvg" class="text-white money-val font-bold">£0</span></span>
                     </div>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 border-l-4 border-l-emerald-500 rounded-2xl p-6 shadow-sm"
@@ -190,13 +190,13 @@
             </div>
 
             <div id="monthBanner" class="hidden flex items-center justify-between ios-tint border rounded-2xl px-5 py-3 mb-6 text-sm">
-                <span class="text-[var(--ios-blue)] dark:text-blue-400 font-medium"><i class="fas fa-calendar-alt mr-2"></i>Viewing <span id="monthBannerLabel"></span></span>
-                <button type="button" data-action="go-current-month" class="text-xs font-bold text-[var(--ios-blue)] dark:text-blue-400 hover:underline whitespace-nowrap ml-4">Go to today &rarr;</button>
+                <span class="font-medium" style="color:var(--ios-blue)"><i class="fas fa-calendar-alt mr-2" aria-hidden="true" aria-hidden="true"></i>Viewing <span id="monthBannerLabel"></span></span>
+                <button type="button" data-action="go-current-month" class="text-xs font-bold hover:underline whitespace-nowrap ml-4" style="color:var(--ios-blue)">Go to today &rarr;</button>
             </div>
 
             <div id="upcomingBillsWidget" class="hidden card bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-8">
                 <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-amber-700 dark:text-amber-400 text-sm"><i class="fas fa-bell mr-2"></i>Bills Due This Week</h3>
+                    <h3 class="font-bold text-amber-700 dark:text-amber-400 text-sm"><i class="fas fa-bell mr-2" aria-hidden="true"></i>Bills Due This Week</h3>
                 </div>
                 <div id="upcomingBillsList" class="flex flex-wrap gap-2"></div>
             </div>
@@ -276,7 +276,7 @@
                                 <button type="button" id="btnNlpParse" data-action="nlp-parse"
                                     aria-label="Parse natural language input"
                                     class="px-3 py-2 btn-ios text-white rounded-2xl font-bold text-xs transition whitespace-nowrap">
-                                    <i class="fas fa-magic" aria-hidden="true"></i>
+                                    <i class="fas fa-magic" aria-hidden="true" aria-hidden="true"></i>
                                 </button>
                             </div>
                             <p id="nlpHint" class="text-[10px] text-slate-400 mt-0.5 hidden"></p>
@@ -287,8 +287,8 @@
                                 <label class="text-[10px] font-bold text-slate-400 uppercase">Split Transaction</label>
                                 <button type="button" id="btnToggleSplit" data-action="toggle-split"
                                     aria-expanded="false" aria-controls="splitPanel"
-                                    class="text-[10px] font-bold text-blue-500 hover:text-blue-400 transition flex items-center gap-1">
-                                    <i class="fas fa-code-branch text-[9px]"></i> <span id="splitToggleLabel">Add Split</span>
+                                    class="text-[10px] font-bold transition flex items-center gap-1" style="color:var(--ios-blue)">
+                                    <i class="fas fa-code-branch text-[9px]" aria-hidden="true" aria-hidden="true"></i> <span id="splitToggleLabel">Add Split</span>
                                 </button>
                             </div>
                             <!-- Split rows — hidden until activated -->
@@ -299,8 +299,8 @@
                                 </div>
                                 <div id="splitRows" class="space-y-1.5"></div>
                                 <button type="button" data-action="add-split-row"
-                                    class="w-full text-[10px] font-bold text-blue-500 border border-dashed border-blue-300 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg py-1.5 transition">
-                                    <i class="fas fa-plus mr-1"></i> Add row
+                                    class="w-full text-[10px] font-bold rounded-lg py-1.5 transition ios-tint border border-dashed" style="color:var(--ios-blue)">
+                                    <i class="fas fa-plus mr-1" aria-hidden="true" aria-hidden="true"></i> Add row
                                 </button>
                             </div>
                         </div>
@@ -319,8 +319,8 @@
                             <h3 class="font-bold text-lg text-slate-800 dark:text-white">Transactions</h3>
                             <button type="button" data-action="apply-recurring"
                                 title="Apply recurring templates to this month"
-                                class="text-xs text-blue-500 hover:text-blue-600 font-bold flex items-center gap-1 border border-blue-200 dark:border-blue-800 px-2 py-1 rounded-lg transition hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                                <i class="fas fa-redo-alt"></i> Recurring
+                                class="text-xs font-bold flex items-center gap-1 ios-tint border px-2 py-1 rounded-lg transition" style="color:var(--ios-blue)">
+                                <i class="fas fa-redo-alt" aria-hidden="true"></i> Recurring
                             </button>
                         </div>
                         <div class="flex gap-2 w-full sm:w-auto flex-wrap">
@@ -335,12 +335,13 @@
                             <div class="relative">
                                 <input type="text" id="txSearch" placeholder="Search..." aria-label="Search transactions"
                                     class="pl-8 pr-3 py-1.5 text-xs font-medium rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none dark:text-white transition w-36">
-                                <i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs" aria-hidden="true"></i>
+                                <i class="fas fa-search absolute left-2.5 top-2 text-slate-400 text-xs" aria-hidden="true" aria-hidden="true"></i>
                             </div>
                             <button type="button" id="btnFilterToggle" data-action="toggle-filter"
                                 aria-expanded="false" aria-controls="advFilterPanel"
-                                class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-slate-300 hover:border-blue-400 hover:text-blue-500 transition flex items-center gap-1">
-                                <i class="fas fa-sliders-h text-[10px]"></i> Filter
+                                class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-slate-300 transition flex items-center gap-1"
+                                style="--tw-hover-color:var(--ios-blue)">
+                                <i class="fas fa-sliders-h text-[10px]" aria-hidden="true" aria-hidden="true"></i> Filter
                             </button>
                         </div>
                     </div>
@@ -371,12 +372,12 @@
                     <div class="sr-only" aria-live="polite" id="filterStatus"></div>
                     </div>
                     <!-- Bulk action bar — shown when ≥1 transaction is checked -->
-                    <div id="bulkBar" class="hidden mb-3 flex flex-wrap items-center gap-2 p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                        <span id="bulkCount" class="text-xs font-bold text-[var(--ios-blue)] dark:text-blue-400 min-w-[70px]">0 selected</span>
+                    <div id="bulkBar" class="hidden mb-3 flex flex-wrap items-center gap-2 p-2.5 ios-tint rounded-xl">
+                        <span id="bulkCount" class="text-xs font-bold min-w-[70px]" style="color:var(--ios-blue)">0 selected</span>
                         <select id="bulkCatSel" class="flex-1 min-w-[120px] p-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none">
                             <option value="">Pick category…</option>
                         </select>
-                        <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 btn-ios text-white rounded-2xl hover:bg-blue-500 transition whitespace-nowrap">Recategorise</button>
+                        <button type="button" data-action="bulk-recat" class="text-xs font-bold px-3 py-1.5 btn-ios text-white rounded-2xl transition whitespace-nowrap">Recategorise</button>
                         <button type="button" data-action="bulk-delete" class="text-xs font-bold px-3 py-1.5 bg-rose-600 text-white rounded-2xl hover:bg-rose-500 transition">Delete</button>
                         <button type="button" data-action="bulk-clear" class="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium px-2">✕ Clear</button>
                     </div>
@@ -395,7 +396,7 @@
                         <div id="emptyState" class="hidden py-12 text-center" aria-live="polite">
                             <div class="flex justify-center mb-4">
                                 <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                                    <i class="fas fa-receipt text-2xl text-slate-400 dark:text-slate-500" aria-hidden="true"></i>
+                                    <i class="fas fa-receipt text-2xl text-slate-400 dark:text-slate-500" aria-hidden="true" aria-hidden="true"></i>
                                 </div>
                             </div>
                             <p class="text-slate-600 dark:text-slate-300 font-bold text-base mb-1">No transactions yet</p>
@@ -403,11 +404,11 @@
                             <div id="emptyStateActions" class="flex flex-wrap justify-center gap-2">
                                 <button type="button" id="emptyStateAddIncome"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow">
-                                    <i class="fas fa-plus" aria-hidden="true"></i> Add Income
+                                    <i class="fas fa-plus" aria-hidden="true" aria-hidden="true"></i> Add Income
                                 </button>
                                 <button type="button" id="emptyStateAddExpense"
                                     class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow">
-                                    <i class="fas fa-minus" aria-hidden="true"></i> Add Expense
+                                    <i class="fas fa-minus" aria-hidden="true" aria-hidden="true"></i> Add Expense
                                 </button>
                             </div>
                         </div>
@@ -507,7 +508,7 @@
                 <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white tracking-tight">Net Worth</h2>
                 <button type="button" data-action="log-net-worth"
                     class="btn-ios text-white font-bold py-2 px-4 rounded-2xl text-xs shadow-lg transition">
-                    <i class="fas fa-camera mr-2"></i> Log Snapshot
+                    <i class="fas fa-camera mr-2" aria-hidden="true"></i> Log Snapshot
                 </button>
             </div>
 
@@ -522,7 +523,7 @@
                         <div class="text-right"><p class="text-[10px] text-slate-400 uppercase font-bold">Total Liabilities</p><p class="text-lg font-bold text-rose-400 money-val" id="wealthTotalDebts">£0.00</p></div>
                     </div>
                     <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center">
-                        <p class="text-[10px] text-blue-400 uppercase font-bold"><i class="fas fa-wallet mr-1"></i> Liquid Cash (Auto)</p>
+                        <p class="text-[10px] uppercase font-bold" style="color:var(--ios-blue)"><i class="fas fa-wallet mr-1" aria-hidden="true" aria-hidden="true"></i> Liquid Cash (Auto)</p>
                         <p class="text-sm font-bold text-white money-val" id="wealthLiquid">£0.00</p>
                     </div>
                 </div>
@@ -609,9 +610,9 @@
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[10px] text-slate-400 font-semibold uppercase">Assets</span>
                         <button type="button" id="btnRefreshPrices" data-action="refresh-prices"
-                            class="text-[10px] font-bold text-blue-500 hover:text-blue-400 flex items-center gap-1 transition"
+                            class="text-[10px] font-bold flex items-center gap-1 transition" style="color:var(--ios-blue)"
                             title="Refresh live prices for assets with ticker symbols">
-                            <i class="fas fa-sync-alt"></i> Refresh Prices
+                            <i class="fas fa-sync-alt" aria-hidden="true"></i> Refresh Prices
                         </button>
                     </div>
                     <div id="listAssets" class="space-y-2"></div>
@@ -782,12 +783,12 @@
             <!-- Top Movers -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <h3 class="font-bold text-rose-600 mb-3"><i class="fas fa-arrow-trend-up mr-2"></i>Biggest Increases</h3>
+                    <h3 class="font-bold text-rose-600 mb-3"><i class="fas fa-arrow-trend-up mr-2" aria-hidden="true"></i>Biggest Increases</h3>
                     <div id="insTopUp" class="space-y-2"></div>
                     <p id="insTopUpEmpty" class="hidden text-sm text-slate-400 text-center py-3">No increases this month.</p>
                 </div>
                 <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6">
-                    <h3 class="font-bold text-emerald-600 mb-3"><i class="fas fa-arrow-trend-down mr-2"></i>Biggest Decreases</h3>
+                    <h3 class="font-bold text-emerald-600 mb-3"><i class="fas fa-arrow-trend-down mr-2" aria-hidden="true"></i>Biggest Decreases</h3>
                     <div id="insTopDown" class="space-y-2"></div>
                     <p id="insTopDownEmpty" class="hidden text-sm text-slate-400 text-center py-3">No decreases this month.</p>
                 </div>
@@ -853,7 +854,7 @@
                 <div id="insSubsTotal" class="hidden rounded-xl bg-slate-50 dark:bg-slate-800/60 border dark:border-slate-700 px-4 py-3 mb-4 text-sm"></div>
                 <div id="insSubscriptions" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
                 <p id="insSubscriptionsEmpty" class="hidden text-sm text-slate-400 text-center py-6">
-                    <i class="fas fa-search text-2xl block mb-2 opacity-30"></i>
+                    <i class="fas fa-search text-2xl block mb-2 opacity-30" aria-hidden="true"></i>
                     No recurring patterns detected yet. Add a few months of transactions to enable this.
                 </p>
             </div>
@@ -866,7 +867,7 @@
             <!-- Account & Security -->
             <div id="authSettingsCard" class="hidden card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2">
-                    <i class="fas fa-shield-alt text-blue-500 text-sm"></i> Account &amp; Security
+                    <i class="fas fa-shield-alt text-sm" aria-hidden="true" style="color:var(--ios-blue)" aria-hidden="true"></i> Account &amp; Security
                 </h3>
                 <p class="text-xs text-slate-500 mb-5">Signed in as <strong id="authSettingsUsername" class="text-slate-700 dark:text-slate-300"></strong></p>
                 <div id="changePinForm" class="space-y-3">
@@ -889,7 +890,7 @@
                             class="w-full bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-2.5 text-sm focus:outline-none transition placeholder-slate-400 text-center tracking-widest">
                     </div>
                     <div id="changePinError" class="hidden text-rose-500 text-xs text-center py-1"></div>
-                    <div id="changePinSuccess" class="hidden text-emerald-600 text-xs text-center py-1"><i class="fas fa-check mr-1"></i>PIN updated successfully.</div>
+                    <div id="changePinSuccess" class="hidden text-emerald-600 text-xs text-center py-1"><i class="fas fa-check mr-1" aria-hidden="true"></i>PIN updated successfully.</div>
                     <button id="btnChangePin" type="button"
                         class="w-full btn-ios text-white font-bold py-2.5 rounded-xl text-xs transition">
                         Update PIN
@@ -923,12 +924,12 @@
                 <p class="text-xs text-slate-500 mb-4">Upload a .ofx, .qfx, or .qif file exported directly from your online banking portal. Transactions are automatically deduplicated.</p>
                 <label for="bankFile" class="sr-only">Upload bank statement file (OFX/QIF)</label>
                 <input type="file" id="bankFile" accept=".ofx,.qfx,.qif" class="w-full mb-3 p-2 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
-                <div id="bankImportPreview" class="hidden mb-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-3 py-2 text-xs text-[var(--ios-blue)] dark:text-blue-400 flex items-center gap-2">
-                    <i class="fas fa-check-circle text-blue-500"></i>
+                <div id="bankImportPreview" class="hidden mb-3 ios-tint rounded-xl px-3 py-2 text-xs flex items-center gap-2" style="color:var(--ios-blue)">
+                    <i class="fas fa-check-circle" aria-hidden="true" style="color:var(--ios-blue)" aria-hidden="true"></i>
                     <span id="bankImportCount"></span>
                 </div>
                 <button id="btnBankImportConfirm" type="button" data-action="bank-import-confirm"
-                    class="hidden w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs shadow-md hover:bg-blue-500 transition">
+                    class="hidden w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs shadow-md transition">
                     Import Bank Transactions
                 </button>
             </div>
@@ -954,7 +955,7 @@
                 <!-- Encryption passphrase -->
                 <div class="border-t border-slate-100 dark:border-slate-800 pt-4">
                     <div class="flex items-center gap-1.5 mb-1">
-                        <i class="fas fa-shield-alt text-blue-400 text-xs"></i>
+                        <i class="fas fa-shield-alt text-xs" aria-hidden="true" style="color:var(--ios-blue)" aria-hidden="true"></i>
                         <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">End-to-End Encryption</span>
                     </div>
                     <p class="text-xs text-slate-500 mb-3">
@@ -974,7 +975,7 @@
                             title="Remove passphrase — sync will be unencrypted">Clear</button>
                     </div>
                     <p class="text-xs text-amber-600 dark:text-amber-400 mt-3 flex items-start gap-1.5">
-                        <i class="fas fa-exclamation-triangle mt-0.5 shrink-0"></i>
+                        <i class="fas fa-exclamation-triangle mt-0.5 shrink-0" aria-hidden="true"></i>
                         Your passphrase is stored locally and never sent to the cloud. If you lose it, synced data cannot be recovered.
                     </p>
                 </div>
@@ -1037,7 +1038,7 @@
                     <button type="button" data-action="save-alpha-key"
                         class="btn-ios text-white px-4 rounded-2xl font-bold text-xs whitespace-nowrap transition">Save</button>
                 </div>
-                <p id="alphaKeyStatus" class="hidden text-[10px] text-emerald-600 dark:text-emerald-400 mb-1"><i class="fas fa-check mr-1"></i>Key saved — paste a new key to replace it.</p>
+                <p id="alphaKeyStatus" class="hidden text-[10px] text-emerald-600 dark:text-emerald-400 mb-1"><i class="fas fa-check mr-1" aria-hidden="true"></i>Key saved — paste a new key to replace it.</p>
                 <p class="text-[10px] text-slate-400">Free key at <a href="https://www.alphavantage.co/support/#api-key" target="_blank" rel="noopener" class="hover:underline" style="color:var(--ios-blue)">alphavantage.co</a>. Key stored locally and never transmitted except to Alpha Vantage.</p>
             </div>
 
@@ -1081,7 +1082,7 @@
                 <p class="text-xs text-slate-500 mb-3">Print or save as PDF a statement for the currently selected month.</p>
                 <button type="button" data-action="print-statement"
                     class="w-full py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 dark:hover:bg-slate-600 transition">
-                    <i class="fas fa-print mr-2"></i>Print / Save as PDF
+                    <i class="fas fa-print mr-2" aria-hidden="true"></i>Print / Save as PDF
                 </button>
             </div>
 
@@ -1096,11 +1097,11 @@
             </div>
 
             <div id="pwaInstallRow" class="hidden card ios-tint border rounded-2xl p-6 mb-6">
-                <h3 class="font-bold text-[var(--ios-blue)] dark:text-blue-400 mb-2"><i class="fas fa-mobile-alt mr-2"></i>Install App</h3>
+                <h3 class="font-bold mb-2" style="color:var(--ios-blue)"><i class="fas fa-mobile-alt mr-2" aria-hidden="true" aria-hidden="true"></i>Install App</h3>
                 <p class="text-xs text-slate-500 mb-3">Add Finance Portfolio to your home screen for offline access and a native-app experience.</p>
                 <button type="button" data-action="pwa-install"
                     class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs transition">
-                    <i class="fas fa-download mr-2"></i>Install on this device
+                    <i class="fas fa-download mr-2" aria-hidden="true"></i>Install on this device
                 </button>
             </div>
 
@@ -1125,7 +1126,7 @@
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
                 <h3 class="font-bold text-slate-800 dark:text-white mb-2">Manage Categories</h3>
                 <div id="settingsCatList" class="flex flex-wrap gap-2 mb-4"></div>
-                <button type="button" data-action="add-cat" class="text-blue-600 font-bold text-xs">+ Add Category</button>
+                <button type="button" data-action="add-cat" class="font-bold text-xs" style="color:var(--ios-blue)">+ Add Category</button>
             </div>
 
             <div class="card bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-2xl p-6 mb-6">
@@ -1146,7 +1147,7 @@
                         </div>
                         <select id="recCat" class="flex-1 p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-white outline-none transition cursor-pointer"></select>
                     </div>
-                    <button type="button" data-action="save-recurring" class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs hover:bg-blue-500 transition">+ Add Template</button>
+                    <button type="button" data-action="save-recurring" class="w-full py-2 btn-ios text-white rounded-2xl font-bold text-xs transition">+ Add Template</button>
                 </form>
                 <div id="recurringList" class="space-y-2"></div>
             </div>
@@ -1157,15 +1158,15 @@
                 <div class="flex gap-3 flex-wrap">
                     <button type="button" data-action="export-json"
                         class="flex-1 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-700 dark:hover:bg-slate-600 transition">
-                        <i class="fas fa-download mr-2"></i>JSON Backup
+                        <i class="fas fa-download mr-2" aria-hidden="true"></i>JSON Backup
                     </button>
                     <button type="button" data-action="import-json"
                         class="flex-1 py-2 bg-slate-600 dark:bg-slate-700 text-white rounded-lg font-bold text-xs hover:bg-slate-500 dark:hover:bg-slate-600 transition">
-                        <i class="fas fa-upload mr-2"></i>Restore JSON
+                        <i class="fas fa-upload mr-2" aria-hidden="true"></i>Restore JSON
                     </button>
                     <button type="button" data-action="export-csv"
                         class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-bold text-xs hover:bg-emerald-500 transition">
-                        <i class="fas fa-file-csv mr-2"></i>Export CSV
+                        <i class="fas fa-file-csv mr-2" aria-hidden="true"></i>Export CSV
                     </button>
                 </div>
             </div>
@@ -1190,10 +1191,10 @@
             <!-- Branding -->
             <div class="flex items-center gap-3 mb-8 justify-center">
                 <div class="w-12 h-12 bg-[var(--ios-blue)] rounded-xl flex items-center justify-center shadow-lg" style="transform:rotate(3deg)">
-                    <i class="fas fa-wallet text-white text-lg"></i>
+                    <i class="fas fa-wallet text-white text-lg" aria-hidden="true"></i>
                 </div>
                 <h1 class="font-bold text-2xl text-white leading-tight tracking-tight">
-                    Infinity<br><span class="text-blue-400">Finance</span>
+                    Infinity<br><span style="color:var(--ios-blue)">Finance</span>
                 </h1>
             </div>
 
@@ -1222,8 +1223,8 @@
                     </div>
                     <div id="authSetupError" class="hidden text-rose-400 text-sm text-center py-1 font-medium"></div>
                     <button id="btnCreateAccount" type="button"
-                        class="w-full btn-ios hover:bg-blue-500 active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg mt-2">
-                        <i class="fas fa-user-plus mr-2"></i>Create Account
+                        class="w-full btn-ios active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg mt-2">
+                        <i class="fas fa-user-plus mr-2" aria-hidden="true"></i>Create Account
                     </button>
                 </div>
             </div>
@@ -1241,8 +1242,8 @@
                     </div>
                     <div id="authLoginError" class="hidden text-rose-400 text-sm text-center py-1 font-medium"></div>
                     <button id="btnUnlock" type="button"
-                        class="w-full btn-ios hover:bg-blue-500 active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg">
-                        <i class="fas fa-unlock mr-2"></i>Unlock
+                        class="w-full btn-ios active:scale-95 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg">
+                        <i class="fas fa-unlock mr-2" aria-hidden="true"></i>Unlock
                     </button>
                     <button id="btnForgotPin" type="button"
                         class="w-full text-slate-500 hover:text-slate-300 text-xs py-1 transition">
@@ -1257,7 +1258,7 @@
     <!-- Mobile FAB: quick-add transaction (hidden on desktop via CSS) -->
     <button id="fabAddTx" type="button" aria-label="Add transaction"
         title="Add transaction">
-        <i class="fas fa-plus text-xl"></i>
+        <i class="fas fa-plus text-xl" aria-hidden="true"></i>
     </button>
 
 </body>

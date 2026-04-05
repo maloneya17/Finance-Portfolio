@@ -117,7 +117,7 @@ export function render(): void {
             ).join('')}</div>`
           : '';
         const tr = document.createElement('tr');
-        tr.className = `border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group${isChecked ? ' bg-blue-50 dark:bg-blue-900/10' : ''}`;
+        tr.className = `border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition group${isChecked ? ' ios-tint' : ''}`;
         tr.innerHTML = `
           <td class="pl-2 py-3 w-8">
             <input type="checkbox" data-tx-checkbox="${esc(t.id)}" ${isChecked ? 'checked' : ''} class="accent-ios rounded cursor-pointer">
@@ -130,7 +130,7 @@ export function render(): void {
           </td>
           <td class="text-right font-bold ${colorClass} money-val">${sign}${sym()}${fmt(val)}</td>
           <td class="text-right pr-2">
-            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-400 dark:text-slate-500 hover:text-blue-500 dark:hover:text-blue-400 transition px-2 py-1" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt" aria-hidden="true"></i></button>
+            <button type="button" data-edit-tx="${esc(t.id)}" class="text-slate-400 dark:text-slate-500 hover-ios transition px-2 py-1" aria-label="Edit ${esc(t.desc)}"><i class="fas fa-pencil-alt" aria-hidden="true"></i></button>
             <button type="button" data-del-tx="${esc(t.id)}" class="text-slate-400 dark:text-slate-500 hover:text-rose-500 dark:hover:text-rose-400 transition px-2" aria-label="Delete ${esc(t.desc)}"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
           </td>`;
         frag.appendChild(tr);
@@ -202,7 +202,8 @@ export function render(): void {
     const rateEl = document.getElementById('kpiSavingsRate');
     if (rateEl) {
       rateEl.innerText = `${savingsRate.toFixed(1)}%`;
-      rateEl.className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`;
+      rateEl.className = `text-2xl font-bold mt-1 ${isDeficit ? 'text-rose-600 dark:text-rose-400' : ''}`;
+      rateEl.style.color = isDeficit ? '' : 'var(--ios-blue)';
     }
     setText('kpiSavingsAmt', isDeficit ? `${sym()}${fmt(Math.abs(savedAmt))} deficit` : `${sym()}${fmt(savedAmt)} saved`);
 
@@ -472,7 +473,12 @@ export function renderSpendingHeatmap(): void {
 export function renderBudgets(): void {
   const inputsDiv = document.getElementById('budgetInputs');
   if (inputsDiv) {
-    inputsDiv.innerHTML = '';
+    // Use event delegation: one listener on the container, not one per input.
+    // Clone the node to remove any previously attached delegation listener.
+    const fresh = inputsDiv.cloneNode(false) as HTMLElement;
+    inputsDiv.replaceWith(fresh);
+    fresh.id = 'budgetInputs';
+
     db.categories.forEach(c => {
       if (c === 'Bills') return;
       const val = db.budgets[c] ?? 0;
@@ -483,14 +489,20 @@ export function renderBudgets(): void {
       input.type = 'number';
       input.value = val > 0 ? String(val) : '';
       input.placeholder = 'Not Set';
+      input.dataset.budgetCat = c;
       input.className = 'w-full p-2 text-xs rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 dark:text-white outline-none';
-      input.addEventListener('change', () => {
-        db.budgets[c] = math(input.value);
-        save();
-        renderBudgets();
-      });
       div.appendChild(input);
-      inputsDiv.appendChild(div);
+      fresh.appendChild(div);
+    });
+
+    // Single delegated listener — never duplicated across re-renders
+    fresh.addEventListener('change', (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const cat = target.dataset.budgetCat;
+      if (!cat) return;
+      db.budgets[cat] = math(target.value);
+      save();
+      renderBudgets();
     });
   }
 
@@ -648,7 +660,7 @@ export function renderCalendar(): void {
         const shiftTitle = b._shifted ? ` title="Scheduled day ${b.day} — moved to last day of this month"` : '';
         const shiftMark = b._shifted ? ' <span title="Date adjusted" style="font-size:9px">*</span>' : '';
         const statusLabel = isPaid ? 'Paid' : 'Unpaid';
-        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}" tabindex="0" role="button" aria-pressed="${isPaid}" aria-label="${esc(b.name)}: ${sym()}${fmt(b.amount)}, ${statusLabel}. Press to toggle."${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover:text-blue-500" data-edit-bill="${b.id}" tabindex="0" role="button" aria-label="Edit ${esc(b.name)}"><i class="fas fa-pencil-alt" style="font-size:9px" aria-hidden="true"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}" tabindex="0" role="button" aria-label="Delete ${esc(b.name)}"><i class="fas fa-times-circle" aria-hidden="true"></i></span></div></div>`;
+        billsHtml += `<div class="bill-chip ${cls}" data-toggle-bill="${b.id}" tabindex="0" role="button" aria-pressed="${isPaid}" aria-label="${esc(b.name)}: ${sym()}${fmt(b.amount)}, ${statusLabel}. Press to toggle."${shiftTitle}>${checkIcon}<span class="bill-name truncate font-bold">${esc(b.name)}${shiftMark}</span><div class="flex items-center ml-1"><span class="bill-amt money-val">${sym()}${fmt(b.amount)}</span><span class="btn-edit-bill ml-1 text-slate-400 hover-ios" data-edit-bill="${b.id}" tabindex="0" role="button" aria-label="Edit ${esc(b.name)}"><i class="fas fa-pencil-alt" style="font-size:9px" aria-hidden="true"></i></span><span class="btn-delete-bill ml-1 text-slate-400 hover:text-rose-500" data-del-bill="${b.id}" tabindex="0" role="button" aria-label="Delete ${esc(b.name)}"><i class="fas fa-times-circle" aria-hidden="true"></i></span></div></div>`;
       });
       if (overflow > 0) billsHtml += `<div class="text-[10px] text-slate-400 font-semibold pl-1 pt-0.5">+${overflow} more</div>`;
 
@@ -747,7 +759,7 @@ export function renderWealth(): void {
               <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)} <span class="text-[9px] text-slate-400 uppercase ml-1">${esc(item.type)}</span>${tickerBadge}${priceAge}</span>
               <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
                 <span class="text-emerald-600 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-asset="${item.id}" class="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-edit-asset="${item.id}" class="text-slate-400 hover-ios transition" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
                 <button type="button" data-del-wealth="assets:${item.id}" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
               </div>
             </div>`);
@@ -767,7 +779,7 @@ export function renderWealth(): void {
               <span class="font-semibold text-slate-700 dark:text-slate-300 text-xs min-w-0 mr-2 truncate">${esc(item.name)}</span>
               <div class="flex items-center gap-1 shrink-0 wealth-item-actions">
                 <span class="text-rose-500 text-xs font-bold money-val mr-1">${sym()}${fmt(item.value)}</span>
-                <button type="button" data-edit-debt="${item.id}" class="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
+                <button type="button" data-edit-debt="${item.id}" class="text-slate-400 hover-ios transition" aria-label="Edit ${esc(item.name)}"><i class="fas fa-pencil-alt text-xs" aria-hidden="true"></i></button>
                 <button type="button" data-del-wealth="debts:${item.id}" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition" aria-label="Delete ${esc(item.name)}"><i class="fas fa-trash-alt text-xs" aria-hidden="true"></i></button>
               </div>
             </div>`);
@@ -821,13 +833,14 @@ export function renderReports(): void {
       if (mInc > 0 || mExp > 0) {
         hasData = true;
         const net = mInc - mExp;
-        const netColor = net >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-rose-600 dark:text-rose-400';
+        const netColor = net >= 0 ? '' : 'text-rose-600 dark:text-rose-400';
+        const netStyle = net >= 0 ? `style="color:var(--ios-blue)"` : '';
         monthTable.insertAdjacentHTML('beforeend',
           `<tr class="border-b border-slate-50 dark:border-slate-800">
             <td class="py-3 pl-3 font-medium text-slate-700 dark:text-slate-300">${new Date(Number(targetYear), mo - 1).toLocaleString('default', { month: 'long' })}</td>
             <td class="text-right text-emerald-600 dark:text-emerald-400 money-val">${sym()}${fmt(mInc)}</td>
             <td class="text-right text-rose-600 dark:text-rose-400 money-val">${sym()}${fmt(mExp)}</td>
-            <td class="text-right pr-3 font-bold ${netColor} money-val">${symFmt(net)}</td>
+            <td class="text-right pr-3 font-bold ${netColor} money-val" ${netStyle}>${symFmt(net)}</td>
           </tr>`);
       }
     }
@@ -872,7 +885,7 @@ export function renderGoals(): void {
   db.goals.forEach(g => {
     const pct   = g.target > 0 ? Math.min(Math.max((g.current / g.target) * 100, 0), 100) : 0;
     const remaining = Math.max(0, g.target - g.current);
-    const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-blue-500' : 'bg-amber-500';
+    const color = pct >= 100 ? 'bg-emerald-500' : pct > 50 ? 'bg-[var(--ios-blue)]' : 'bg-amber-500';
     let deadlineHtml = '';
     if (g.deadline) {
       const dlDate  = new Date(g.deadline + 'T00:00:00');
@@ -912,7 +925,7 @@ export function renderGoals(): void {
                    title="Add contribution"
                    class="text-emerald-500 hover:text-emerald-400 font-bold px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-[10px] transition">+</button>`
               : ''}
-            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 transition" aria-label="Edit goal ${esc(g.name)}"><i class="fas fa-pencil-alt" style="font-size:10px" aria-hidden="true"></i></button>
+            <button type="button" data-edit-goal="${g.id}" class="text-slate-400 hover-ios transition" aria-label="Edit goal ${esc(g.name)}"><i class="fas fa-pencil-alt" style="font-size:10px" aria-hidden="true"></i></button>
             <button type="button" data-del-goal="${g.id}" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition" aria-label="Delete goal ${esc(g.name)}"><i class="fas fa-times" style="font-size:10px" aria-hidden="true"></i></button>
           </div>
         </div>
