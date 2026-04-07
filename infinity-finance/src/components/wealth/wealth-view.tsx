@@ -1,0 +1,427 @@
+'use client'
+
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import type { Asset, Debt, Goal, Settings } from '@/types/supabase'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { formatCurrency, formatCompact, pct, clamp } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target } from 'lucide-react'
+
+interface Props {
+  assets: Asset[]
+  debts: Debt[]
+  goals: Goal[]
+  settings: Settings | null
+  userId: string
+}
+
+type Tab = 'overview' | 'assets' | 'debts' | 'goals'
+
+export function WealthView({ assets: initAssets, debts: initDebts, goals: initGoals, settings, userId }: Props) {
+  const [tab, setTab]         = useState<Tab>('overview')
+  const [assets, setAssets]   = useState(initAssets)
+  const [debts, setDebts]     = useState(initDebts)
+  const [goals, setGoals]     = useState(initGoals)
+  const [dialog, setDialog]   = useState<{ type: 'asset' | 'debt' | 'goal'; item?: Asset | Debt | Goal } | null>(null)
+  const supabase               = createClient()
+  const sym                    = settings?.currency_symbol ?? '£'
+
+  const totalAssets = assets.reduce((s, a) => s + a.value, 0)
+  const totalDebts  = debts.reduce((s, d) => s + d.balance, 0)
+  const netWorth    = totalAssets - totalDebts
+
+  const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
+    { id: 'overview', label: 'Overview', icon: TrendingUp },
+    { id: 'assets',   label: `Assets (${assets.length})`,  icon: TrendingUp  },
+    { id: 'debts',    label: `Debts (${debts.length})`,    icon: TrendingDown },
+    { id: 'goals',    label: `Goals (${goals.length})`,    icon: Target       },
+  ]
+
+  async function deleteAsset(id: string) {
+    await supabase.from('assets').delete().eq('id', id)
+    setAssets(assets.filter(a => a.id !== id))
+  }
+
+  async function deleteDebt(id: string) {
+    await supabase.from('debts').delete().eq('id', id)
+    setDebts(debts.filter(d => d.id !== id))
+  }
+
+  async function deleteGoal(id: string) {
+    await supabase.from('goals').delete().eq('id', id)
+    setGoals(goals.filter(g => g.id !== id))
+  }
+
+  return (
+    <div className="p-6 lg:p-8 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Wealth</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Assets, debts, and goals</p>
+        </div>
+        <div className="flex gap-2">
+          {tab === 'assets' && <Button size="sm" onClick={() => setDialog({ type: 'asset' })}><Plus className="w-4 h-4" aria-hidden="true" /> Add Asset</Button>}
+          {tab === 'debts'  && <Button size="sm" onClick={() => setDialog({ type: 'debt' })}><Plus className="w-4 h-4" aria-hidden="true" /> Add Debt</Button>}
+          {tab === 'goals'  && <Button size="sm" onClick={() => setDialog({ type: 'goal' })}><Plus className="w-4 h-4" aria-hidden="true" /> Add Goal</Button>}
+        </div>
+      </div>
+
+      {/* Net worth hero */}
+      <Card className="p-6 mb-6 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 text-white border-0">
+        <p className="text-sm text-slate-400 mb-1">Net Worth</p>
+        <p className="text-4xl font-bold mb-4" style={{ color: netWorth >= 0 ? 'var(--ios-teal)' : 'var(--ios-red)' }}>
+          {formatCompact(netWorth, sym)}
+        </p>
+        <div className="flex gap-8">
+          <div>
+            <p className="text-xs text-slate-400">Assets</p>
+            <p className="text-lg font-bold" style={{ color: 'var(--ios-green)' }}>{formatCompact(totalAssets, sym)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400">Debts</p>
+            <p className="text-lg font-bold" style={{ color: 'var(--ios-red)' }}>-{formatCompact(totalDebts, sym)}</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 mb-5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'flex-1 py-2 text-xs font-semibold rounded-lg transition',
+              tab === t.id
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300',
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview */}
+      {tab === 'overview' && (
+        <div className="space-y-4">
+          {/* Asset breakdown */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Asset Breakdown</CardTitle></CardHeader>
+            <CardContent className="pt-0 space-y-3">
+              {assets.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">No assets added yet</p> : (
+                assets.map(a => (
+                  <div key={a.id} className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs font-semibold">{a.name}</span>
+                        <span className="text-xs" style={{ color: 'var(--ios-green)' }}>{formatCurrency(a.value, sym)}</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full">
+                        <div className="h-full rounded-full" style={{ width: `${pct(a.value, totalAssets)}%`, background: 'var(--ios-green)' }} />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Debt breakdown */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Debt Breakdown</CardTitle></CardHeader>
+            <CardContent className="pt-0 space-y-3">
+              {debts.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">Debt free! 🎉</p> : (
+                debts.map(d => (
+                  <div key={d.id} className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-xs font-semibold">{d.name}</span>
+                        <span className="text-xs" style={{ color: 'var(--ios-red)' }}>{formatCurrency(d.balance, sym)}</span>
+                      </div>
+                      <div className="flex gap-2 text-[10px] text-slate-400">
+                        <span>{d.apr}% APR</span>
+                        <span>·</span>
+                        <span>Min {formatCurrency(d.min_payment, sym)}/mo</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Assets list */}
+      {tab === 'assets' && (
+        <Card>
+          {assets.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <div className="text-4xl mb-3">🏦</div>
+              <p className="text-sm mb-3">No assets tracked yet</p>
+              <Button variant="tint" size="sm" onClick={() => setDialog({ type: 'asset' })}>Add your first asset</Button>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list">
+              {assets.map(a => (
+                <li key={a.id} className="flex items-center gap-4 px-5 py-4 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{a.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="outline" className="text-[10px]">{a.type}</Badge>
+                      {a.ticker && <span className="text-xs text-slate-400">{a.ticker}</span>}
+                    </div>
+                  </div>
+                  <p className="text-sm font-bold" style={{ color: 'var(--ios-green)' }}>{formatCurrency(a.value, sym)}</p>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'asset', item: a })} aria-label={`Edit ${a.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => deleteAsset(a.id)} aria-label={`Delete ${a.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+
+      {/* Debts list */}
+      {tab === 'debts' && (
+        <Card>
+          {debts.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <div className="text-4xl mb-3">🎉</div>
+              <p className="text-sm">Debt free! Add a debt to track payoff progress.</p>
+              <Button variant="tint" size="sm" className="mt-3" onClick={() => setDialog({ type: 'debt' })}>Add a debt</Button>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list">
+              {debts.map(d => (
+                <li key={d.id} className="flex items-center gap-4 px-5 py-4 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{d.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="destructive" className="text-[10px]">{d.type.replace('_', ' ')}</Badge>
+                      <span className="text-xs text-slate-400">{d.apr}% APR</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold" style={{ color: 'var(--ios-red)' }}>{formatCurrency(d.balance, sym)}</p>
+                    <p className="text-xs text-slate-400">Min {formatCurrency(d.min_payment, sym)}/mo</p>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'debt', item: d })} aria-label={`Edit ${d.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button variant="ghost" size="icon-sm" onClick={() => deleteDebt(d.id)} aria-label={`Delete ${d.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
+
+      {/* Goals list */}
+      {tab === 'goals' && (
+        <div className="space-y-4">
+          {goals.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <div className="text-4xl mb-3">🎯</div>
+              <p className="text-sm mb-3">Set a financial goal to track your progress</p>
+              <Button variant="tint" size="sm" onClick={() => setDialog({ type: 'goal' })}>Add first goal</Button>
+            </div>
+          ) : goals.map(g => {
+            const p = pct(g.current, g.target)
+            const color = p >= 100 ? 'var(--ios-green)' : p > 50 ? 'var(--ios-blue)' : 'var(--ios-orange)'
+            return (
+              <Card key={g.id} className="p-5">
+                <div className="flex items-start gap-3">
+                  {g.emoji && <span className="text-2xl" aria-hidden="true">{g.emoji}</span>}
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-semibold text-slate-800 dark:text-slate-100">{g.name}</p>
+                        {g.deadline && <p className="text-xs text-slate-400">By {g.deadline}</p>}
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'goal', item: g })} aria-label={`Edit ${g.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon-sm" onClick={() => deleteGoal(g.id)} aria-label={`Delete ${g.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
+                    </div>
+                    <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-2">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${clamp(p, 0, 100)}%`, background: color }} />
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>{formatCurrency(g.current, sym)} saved</span>
+                      <span style={{ color }}>{p.toFixed(0)}%</span>
+                      <span>{formatCurrency(g.target, sym)} goal</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Dialogs */}
+      <Dialog open={!!dialog} onOpenChange={v => { if (!v) setDialog(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {dialog?.type === 'asset' ? (dialog.item ? 'Edit Asset' : 'Add Asset') :
+               dialog?.type === 'debt'  ? (dialog.item ? 'Edit Debt'  : 'Add Debt')  :
+                                          (dialog?.item ? 'Edit Goal'  : 'Add Goal') }
+            </DialogTitle>
+          </DialogHeader>
+          {dialog?.type === 'asset' && (
+            <AssetForm asset={dialog.item as Asset} sym={sym} userId={userId}
+              onSuccess={a => { if (dialog.item) setAssets(assets.map(x => x.id === a.id ? a : x)); else setAssets([...assets, a]); setDialog(null) }} />
+          )}
+          {dialog?.type === 'debt' && (
+            <DebtForm debt={dialog.item as Debt} sym={sym} userId={userId}
+              onSuccess={d => { if (dialog.item) setDebts(debts.map(x => x.id === d.id ? d : x)); else setDebts([...debts, d]); setDialog(null) }} />
+          )}
+          {dialog?.type === 'goal' && (
+            <GoalForm goal={dialog.item as Goal} sym={sym} userId={userId}
+              onSuccess={g => { if (dialog.item) setGoals(goals.map(x => x.id === g.id ? g : x)); else setGoals([...goals, g]); setDialog(null) }} />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// ─── Mini forms ───────────────────────────────────────────────────────────────
+
+function AssetForm({ asset, sym, userId, onSuccess }: { asset?: Asset; sym: string; userId: string; onSuccess: (a: Asset) => void }) {
+  const supabase = createClient()
+  const [name, setName]       = useState(asset?.name ?? '')
+  const [type, setType]       = useState(asset?.type ?? 'cash')
+  const [value, setValue]     = useState(asset ? String(asset.value) : '')
+  const [ticker, setTicker]   = useState(asset?.ticker ?? '')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    const payload = { user_id: userId, name, type, value: parseFloat(value), ticker: ticker || null }
+    if (asset) {
+      const { data } = await supabase.from('assets').update(payload as never).eq('id', asset.id).select().single()
+      onSuccess(data as Asset)
+    } else {
+      const { data } = await supabase.from('assets').insert(payload as never).select().single()
+      onSuccess(data as Asset)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="ISA, House, etc." required /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Type</label>
+          <Select value={type} onValueChange={v => setType(v as typeof type)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {['cash','stocks','crypto','property','pension','other'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Value ({sym})</label><Input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)} placeholder="0.00" required /></div>
+      </div>
+      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ticker (optional)</label><Input value={ticker} onChange={e => setTicker(e.target.value)} placeholder="AAPL, ETH, etc." /></div>
+      <Button type="submit" className="w-full" loading={loading}>{asset ? 'Update' : 'Add Asset'}</Button>
+    </form>
+  )
+}
+
+function DebtForm({ debt, sym, userId, onSuccess }: { debt?: Debt; sym: string; userId: string; onSuccess: (d: Debt) => void }) {
+  const supabase = createClient()
+  const [name, setName]     = useState(debt?.name ?? '')
+  const [balance, setBalance] = useState(debt ? String(debt.balance) : '')
+  const [apr, setApr]       = useState(debt ? String(debt.apr) : '0')
+  const [minPayment, setMinPayment] = useState(debt ? String(debt.min_payment) : '')
+  const [debtType, setDebtType] = useState(debt?.type ?? 'other')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    const payload = { user_id: userId, name, balance: parseFloat(balance), apr: parseFloat(apr), min_payment: parseFloat(minPayment || '0'), type: debtType }
+    if (debt) {
+      const { data } = await supabase.from('debts').update(payload as never).eq('id', debt.id).select().single()
+      onSuccess(data as Debt)
+    } else {
+      const { data } = await supabase.from('debts').insert(payload as never).select().single()
+      onSuccess(data as Debt)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Credit card, mortgage, etc." required /></div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Balance ({sym})</label><Input type="number" step="0.01" min="0" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0.00" required /></div>
+        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">APR (%)</label><Input type="number" step="0.01" min="0" value={apr} onChange={e => setApr(e.target.value)} placeholder="0.00" /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Min payment/mo ({sym})</label><Input type="number" step="0.01" min="0" value={minPayment} onChange={e => setMinPayment(e.target.value)} placeholder="0.00" /></div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Type</label>
+          <Select value={debtType} onValueChange={v => setDebtType(v as typeof debtType)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {['credit_card','loan','mortgage','student','other'].map(t => <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <Button type="submit" className="w-full" loading={loading}>{debt ? 'Update' : 'Add Debt'}</Button>
+    </form>
+  )
+}
+
+function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; userId: string; onSuccess: (g: Goal) => void }) {
+  const supabase = createClient()
+  const [name, setName]         = useState(goal?.name ?? '')
+  const [target, setTarget]     = useState(goal ? String(goal.target) : '')
+  const [current, setCurrent]   = useState(goal ? String(goal.current) : '0')
+  const [emoji, setEmoji]       = useState(goal?.emoji ?? '')
+  const [deadline, setDeadline] = useState(goal?.deadline ?? '')
+  const [notes, setNotes]       = useState(goal?.notes ?? '')
+  const [loading, setLoading]   = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    const payload = { user_id: userId, name, target: parseFloat(target), current: parseFloat(current || '0'), emoji: emoji || null, deadline: deadline || null, notes: notes || null }
+    if (goal) {
+      const { data } = await supabase.from('goals').update(payload as never).eq('id', goal.id).select().single()
+      onSuccess(data as Goal)
+    } else {
+      const { data } = await supabase.from('goals').insert(payload as never).select().single()
+      onSuccess(data as Goal)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex gap-3">
+        <div className="w-16"><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Emoji</label><Input value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="🎯" className="text-center" /></div>
+        <div className="flex-1"><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Goal name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Emergency fund, holiday, etc." required /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Target ({sym})</label><Input type="number" step="0.01" min="0" value={target} onChange={e => setTarget(e.target.value)} placeholder="0.00" required /></div>
+        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Saved so far ({sym})</label><Input type="number" step="0.01" min="0" value={current} onChange={e => setCurrent(e.target.value)} placeholder="0.00" /></div>
+      </div>
+      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Target date</label><Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} /></div>
+      <Button type="submit" className="w-full" loading={loading}>{goal ? 'Update' : 'Add Goal'}</Button>
+    </form>
+  )
+}
