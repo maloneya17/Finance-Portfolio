@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import type { Transaction, Settings, Profile } from '@/types/supabase'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, getMonthKey } from '@/lib/utils'
-import { Crown, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react'
+import { useFinanceStore } from '@/store/finance'
+import { Crown, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Lightbulb, Target, Calendar, PiggyBank, type LucideIcon } from 'lucide-react'
 
 interface Props {
   profile: Profile | null
@@ -14,56 +15,290 @@ interface Props {
   settings: Settings | null
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getPrevMonthKey(current: string): string {
+  const [y, m] = current.split('-').map(Number)
+  const d = new Date(y, m - 2)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthsBetween(from: Date, to: Date): number {
+  return (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth())
+}
+
+function addMonths(date: Date, months: number): Date {
+  const d = new Date(date)
+  d.setMonth(d.getMonth() + Math.round(months))
+  return d
+}
+
+function formatMonthYear(date: Date): string {
+  return date.toLocaleString('default', { month: 'long', year: 'numeric' })
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function InsightsView({ profile, transactions, settings }: Props) {
-  const isPro = profile?.subscription === 'pro'
-  const sym   = settings?.currency_symbol ?? '£'
-  const currentMonth = getMonthKey()
-  const lastMonth    = (() => {
-    const [y, m] = currentMonth.split('-').map(Number)
-    const d = new Date(y, m - 2)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })()
+  const isPro   = profile?.subscription === 'pro'
+  const sym     = settings?.currency_symbol ?? '£'
+  const today   = new Date()
+
+  // Pull goals and budgets from the Zustand store
+  const goals   = useFinanceStore(s => s.goals)
+  const budgets = useFinanceStore(s => s.budgets)
+
+  const currentMonth = getMonthKey(today)
+  const prevMonth    = getPrevMonthKey(currentMonth)
 
   const thisTxs  = transactions.filter(t => t.date.startsWith(currentMonth))
-  const lastTxs  = transactions.filter(t => t.date.startsWith(lastMonth))
+  const lastTxs  = transactions.filter(t => t.date.startsWith(prevMonth))
 
-  const thisExp  = thisTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-  const lastExp  = lastTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-  const thisInc  = thisTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-  const lastInc  = lastTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  // ── FREE INSIGHT 1: Spending Trend ─────────────────────────────────────────
+  const thisExpenses = thisTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const lastExpenses = lastTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
-  const expDelta    = lastExp > 0 ? ((thisExp - lastExp) / lastExp) * 100 : 0
-  const incDelta    = lastInc > 0 ? ((thisInc - lastInc) / lastInc) * 100 : 0
-  const savingsRate = thisInc > 0 ? ((thisInc - thisExp) / thisInc) * 100 : 0
+  let spendingTrendIcon:  LucideIcon
+  let spendingTrendColor: string
+  let spendingTrendLabel: string
+  let spendingTrendText:  string
 
-  // Category breakdown this month
-  const cats: Record<string, number> = {}
+  if (lastExpenses === 0) {
+    spendingTrendIcon  = AlertCircle
+    spendingTrendColor = 'var(--ios-blue)'
+    spendingTrendLabel = 'Spending trend'
+    spendingTrendText  = 'Not enough data — add transactions from last month to see your trend.'
+  } else {
+    const pctChange = ((thisExpenses - lastExpenses) / lastExpenses) * 100
+    if (pctChange > 0) {
+      spendingTrendIcon  = TrendingUp
+      spendingTrendColor = 'var(--ios-red)'
+      spendingTrendLabel = 'Spending up'
+      spendingTrendText  = `Spending is up ${pctChange.toFixed(0)}% vs last month (${formatCurrency(thisExpenses, sym)} vs ${formatCurrency(lastExpenses, sym)}).`
+    } else if (pctChange < 0) {
+      spendingTrendIcon  = TrendingDown
+      spendingTrendColor = 'var(--ios-green)'
+      spendingTrendLabel = 'Spending down'
+      spendingTrendText  = `Spending is down ${Math.abs(pctChange).toFixed(0)}% vs last month. Great work!`
+    } else {
+      spendingTrendIcon  = TrendingDown
+      spendingTrendColor = 'var(--ios-blue)'
+      spendingTrendLabel = 'Spending stable'
+      spendingTrendText  = `Spending is the same as last month (${formatCurrency(thisExpenses, sym)}).`
+    }
+  }
+
+  // ── FREE INSIGHT 2: Savings Rate ──────────────────────────────────────────
+  const income      = thisTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const saved       = income - thisExpenses
+  const savingsRate = income > 0 ? (saved / income) * 100 : 0
+
+  let savingsIcon:  LucideIcon
+  let savingsColor: string
+  let savingsLabel: string
+  let savingsText:  string
+
+  if (income === 0) {
+    savingsIcon  = AlertCircle
+    savingsColor = 'var(--ios-blue)'
+    savingsLabel = 'Savings rate'
+    savingsText  = 'No income recorded this month. Add income transactions to track your savings rate.'
+  } else if (savingsRate >= 20) {
+    savingsIcon  = CheckCircle2
+    savingsColor = 'var(--ios-green)'
+    savingsLabel = 'Healthy savings'
+    savingsText  = `You saved ${savingsRate.toFixed(0)}% of income this month (${formatCurrency(saved, sym)} saved). Keep it up!`
+  } else if (savingsRate > 0) {
+    savingsIcon  = AlertCircle
+    savingsColor = 'var(--ios-orange)'
+    savingsLabel = 'Low savings rate'
+    savingsText  = `You saved ${savingsRate.toFixed(0)}% of income this month (${formatCurrency(saved, sym)}). Aim for 20%+ for financial health.`
+  } else {
+    savingsIcon  = AlertCircle
+    savingsColor = 'var(--ios-red)'
+    savingsLabel = 'Spending over income'
+    savingsText  = `Expenses exceed income by ${formatCurrency(Math.abs(saved), sym)} this month. Review your spending.`
+  }
+
+  // ── FREE INSIGHT 3: Top Spending Category ──────────────────────────────────
+  const catTotals: Record<string, number> = {}
   thisTxs.filter(t => t.type === 'expense').forEach(t => {
-    cats[t.category] = (cats[t.category] ?? 0) + t.amount
+    catTotals[t.category] = (catTotals[t.category] ?? 0) + t.amount
   })
-  const topCats = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 3)
+  const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1])
+  const topCat     = sortedCats[0]
 
-  // Free insights (available to all)
+  let topCatText: string
+  if (!topCat) {
+    topCatText = 'No expense data this month.'
+  } else {
+    const pctOfSpending = thisExpenses > 0 ? (topCat[1] / thisExpenses) * 100 : 0
+    topCatText = `"${topCat[0]}" was your biggest expense at ${formatCurrency(topCat[1], sym)} (${pctOfSpending.toFixed(0)}% of spending).`
+  }
+
+  // ── PRO INSIGHT 1: Recurring Charge Detection ──────────────────────────────
+  // Group all expense transactions by normalised description
+  const expenseTxs = transactions.filter(t => t.type === 'expense')
+
+  interface RecurringCandidate {
+    description: string
+    avgAmount:   number
+    monthCount:  number
+  }
+
+  const descGroups: Record<string, { amounts: number[]; months: Set<string> }> = {}
+  expenseTxs.forEach(t => {
+    const key = t.description.trim().toLowerCase()
+    if (!descGroups[key]) descGroups[key] = { amounts: [], months: new Set() }
+    descGroups[key].amounts.push(t.amount)
+    // Extract YYYY-MM from date string
+    descGroups[key].months.add(t.date.slice(0, 7))
+  })
+
+  const recurringCandidates: RecurringCandidate[] = []
+  for (const [desc, data] of Object.entries(descGroups)) {
+    if (data.months.size < 2) continue
+    const mean = data.amounts.reduce((s, a) => s + a, 0) / data.amounts.length
+    const allConsistent = data.amounts.every(a => Math.abs(a - mean) / mean <= 0.1)
+    if (!allConsistent) continue
+    // Find a representative display name (original casing of first occurrence)
+    const original = expenseTxs.find(t => t.description.trim().toLowerCase() === desc)?.description ?? desc
+    recurringCandidates.push({ description: original, avgAmount: mean, monthCount: data.months.size })
+  }
+
+  // Sort by avg amount descending
+  recurringCandidates.sort((a, b) => b.avgAmount - a.avgAmount)
+
+  const totalRecurring = recurringCandidates.reduce((s, c) => s + c.avgAmount, 0)
+  const top3Recurring  = recurringCandidates.slice(0, 3)
+
+  let recurringLabel: string
+  let recurringText:  string
+  if (recurringCandidates.length < 2) {
+    recurringLabel = 'Recurring charges'
+    recurringText  = 'No recurring patterns detected yet. Add more transactions to improve detection.'
+  } else {
+    const listStr = top3Recurring
+      .map(c => `${c.description} ${formatCurrency(c.avgAmount, sym)}`)
+      .join(', ')
+    recurringLabel = 'Recurring charges detected'
+    recurringText  = `Found ${recurringCandidates.length} potential recurring charge${recurringCandidates.length !== 1 ? 's' : ''} totalling ${formatCurrency(totalRecurring, sym)}/month. Top: ${listStr}.`
+  }
+
+  // ── PRO INSIGHT 2: Goal Savings Velocity ──────────────────────────────────
+  let velocityLabel: string
+  let velocityText:  string
+
+  if (goals.length === 0) {
+    velocityLabel = 'Goal savings velocity'
+    velocityText  = 'Add a savings goal to track your velocity.'
+  } else {
+    // Find the first goal with progress
+    const activeGoals = goals.filter(g => g.target > 0)
+    const goalWithProgress = activeGoals.find(g => g.current > 0) ?? activeGoals[0]
+
+    if (!goalWithProgress) {
+      velocityLabel = 'Goal savings velocity'
+      velocityText  = 'Add a savings goal to track your velocity.'
+    } else {
+      const startDate   = goalWithProgress.created_at
+        ? new Date(goalWithProgress.created_at)
+        : new Date(today.getFullYear(), today.getMonth() - 3)
+      const monthsElapsed = Math.max(monthsBetween(startDate, today), 1)
+      const monthlyRate   = goalWithProgress.current / monthsElapsed
+
+      if (monthlyRate === 0) {
+        velocityLabel = 'Goal savings velocity'
+        velocityText  = `Start saving towards "${goalWithProgress.name}" — no contributions yet.`
+      } else {
+        const remaining       = goalWithProgress.target - goalWithProgress.current
+        const monthsRemaining = remaining / monthlyRate
+        const projectedDate   = addMonths(today, monthsRemaining)
+
+        velocityLabel = 'Goal savings velocity'
+        velocityText  = `At current pace, you'll reach "${goalWithProgress.name}" by ${formatMonthYear(projectedDate)}.`
+      }
+    }
+  }
+
+  // ── PRO INSIGHT 3: Monthly Budget Adherence ───────────────────────────────
+  let budgetLabel: string
+  let budgetText:  string
+
+  if (budgets.length === 0) {
+    budgetLabel = 'Budget adherence'
+    budgetText  = 'No budgets set. Add budgets in settings to track adherence.'
+  } else {
+    let withinCount = 0
+    const overCategories: string[] = []
+
+    budgets.forEach(budget => {
+      const spent = thisTxs
+        .filter(t => t.type === 'expense' && t.category === budget.category)
+        .reduce((s, t) => s + t.amount, 0)
+      if (spent <= budget.amount) {
+        withinCount++
+      } else {
+        overCategories.push(budget.category)
+      }
+    })
+
+    const adherencePct = Math.round((withinCount / budgets.length) * 100)
+    budgetLabel = 'Monthly budget adherence'
+
+    if (overCategories.length === 0) {
+      budgetText = `You stayed within budget in all ${budgets.length} categor${budgets.length !== 1 ? 'ies' : 'y'} this month (${adherencePct}%). Excellent!`
+    } else {
+      const overList = overCategories.slice(0, 3).join(', ')
+      const moreStr  = overCategories.length > 3 ? ` +${overCategories.length - 3} more` : ''
+      budgetText = `You stayed within budget in ${withinCount} of ${budgets.length} categories (${adherencePct}%). Over budget: ${overList}${moreStr}.`
+    }
+  }
+
+  // ── Build insight arrays ───────────────────────────────────────────────────
+  const SpendingTrendIcon = spendingTrendIcon
+  const SavingsIcon       = savingsIcon
+
   const freeInsights = [
-    thisExp > lastExp
-      ? { icon: TrendingUp, color: 'var(--ios-red)',    label: 'Spending up',   text: `You've spent ${Math.abs(expDelta).toFixed(0)}% more this month vs last month.` }
-      : { icon: TrendingDown, color: 'var(--ios-green)', label: 'Spending down', text: `Great work! Spending is down ${Math.abs(expDelta).toFixed(0)}% vs last month.` },
-    savingsRate >= 20
-      ? { icon: CheckCircle2, color: 'var(--ios-green)', label: 'Healthy savings', text: `You're saving ${savingsRate.toFixed(0)}% of income this month. Keep it up!` }
-      : savingsRate > 0
-        ? { icon: AlertCircle, color: 'var(--ios-orange)', label: 'Low savings rate', text: `Savings rate is ${savingsRate.toFixed(0)}%. Aim for 20%+ for financial health.` }
-        : { icon: AlertCircle, color: 'var(--ios-red)', label: 'Spending over income', text: 'Expenses exceed income this month. Review your spending.' },
-    topCats[0]
-      ? { icon: Lightbulb, color: 'var(--ios-blue)', label: 'Top category', text: `"${topCats[0][0]}" is your biggest expense at ${formatCurrency(topCats[0][1], sym)}.` }
-      : null,
-  ].filter(Boolean)
+    {
+      icon:  SpendingTrendIcon,
+      color: spendingTrendColor,
+      label: spendingTrendLabel,
+      text:  spendingTrendText,
+    },
+    {
+      icon:  SavingsIcon,
+      color: savingsColor,
+      label: savingsLabel,
+      text:  savingsText,
+    },
+    {
+      icon:  Lightbulb,
+      color: 'var(--ios-blue)',
+      label: 'Top spending category',
+      text:  topCatText,
+    },
+  ]
 
-  // Pro insights (Pro only)
   const proInsights = [
-    { label: 'Recurring charges detected', text: 'We found 3 potential recurring subscriptions totalling £45/month. Review in Bills.' },
-    { label: 'Savings velocity', text: `At this rate you'll hit your goals 2.4 months ahead of schedule.` },
-    { label: 'Category anomaly', text: `"Dining" spending is 3× your monthly average. Unusual activity?` },
-    { label: 'FIRE projection', text: `Based on your savings rate and net worth, financial independence in approx. 22 years.` },
+    {
+      icon:  PiggyBank,
+      color: 'var(--ios-blue)',
+      label: recurringLabel,
+      text:  recurringText,
+    },
+    {
+      icon:  Target,
+      color: 'var(--ios-green)',
+      label: velocityLabel,
+      text:  velocityText,
+    },
+    {
+      icon:  Calendar,
+      color: 'var(--ios-orange)',
+      label: budgetLabel,
+      text:  budgetText,
+    },
   ]
 
   return (
@@ -77,7 +312,6 @@ export function InsightsView({ profile, transactions, settings }: Props) {
       <div className="space-y-3 mb-8">
         <h2 className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide">This Month</h2>
         {freeInsights.map((ins, i) => {
-          if (!ins) return null
           const Icon = ins.icon
           return (
             <Card key={i} className="p-4">
@@ -105,19 +339,22 @@ export function InsightsView({ profile, transactions, settings }: Props) {
         </div>
 
         <div className={`space-y-3 ${!isPro ? 'opacity-50 pointer-events-none select-none' : ''}`}>
-          {proInsights.map((ins, i) => (
-            <Card key={i} className="p-4">
-              <div className="flex items-start gap-4">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(0,122,255,0.08)' }}>
-                  <Lightbulb className="w-4.5 h-4.5" style={{ color: 'var(--ios-blue)' }} aria-hidden="true" />
+          {proInsights.map((ins, i) => {
+            const Icon = ins.icon
+            return (
+              <Card key={i} className="p-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${ins.color}18` }}>
+                    <Icon className="w-4.5 h-4.5" style={{ color: ins.color }} aria-hidden="true" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{ins.label}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{ins.text}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{ins.label}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{ins.text}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
 
         {/* Upgrade prompt overlay */}
@@ -127,7 +364,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
               <Crown className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--ios-orange)' }} aria-hidden="true" />
               <h3 className="font-bold text-slate-900 dark:text-white mb-2">Unlock Advanced Insights</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Recurring charge detection, FIRE projections, anomaly alerts and more.
+                Recurring charge detection, goal velocity, budget adherence and more.
               </p>
               <Button asChild className="w-full">
                 <Link href="/settings?tab=billing">Upgrade to Pro — £4.99/mo</Link>

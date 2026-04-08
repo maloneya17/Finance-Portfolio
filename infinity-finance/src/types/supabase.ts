@@ -62,6 +62,12 @@ export interface BillPaymentInsert {
   transaction_id?: string | null
 }
 
+export interface BillPaymentUpdate {
+  paid?: boolean
+  updated_at?: string
+  transaction_id?: string | null
+}
+
 export interface AssetInsert {
   user_id: string
   name: string
@@ -165,6 +171,7 @@ export interface Database {
           category: string
           is_active: boolean
           created_at: string
+          updated_at: string
         }
         Insert: BillInsert
         Update: Partial<BillInsert>
@@ -181,7 +188,7 @@ export interface Database {
           updated_at: string
         }
         Insert: BillPaymentInsert
-        Update: Partial<BillPaymentInsert>
+        Update: BillPaymentUpdate
         Relationships: []
       }
       recurring_templates: {

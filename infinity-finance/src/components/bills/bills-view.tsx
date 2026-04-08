@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Bill, BillPayment, Settings } from '@/types/supabase'
+import type { Bill, BillInsert, BillPayment, BillPaymentInsert, BillPaymentUpdate, Settings, TransactionInsert } from '@/types/supabase'
 import { useFinanceStore } from '@/store/finance'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,20 +40,43 @@ export function BillsView({ bills: initBills, payments: initPayments, settings, 
   const totalUnpaid = totalDue - totalPaid
 
   async function togglePaid(bill: Bill) {
-    const isPaid  = paidIds.has(bill.id)
+    const isPaid   = paidIds.has(bill.id)
     const existing = payments.find(p => p.bill_id === bill.id && p.month_key === month)
+    const becomingPaid = !isPaid
 
     if (existing) {
-      const { data } = await supabase.from('bill_payments').update({ paid: !isPaid, updated_at: new Date().toISOString() } as never).eq('id', existing.id).select().single()
+      const updatePayload: BillPaymentUpdate = { paid: !isPaid, updated_at: new Date().toISOString() }
+      const { data } = await supabase.from('bill_payments').update(updatePayload).eq('id', existing.id).select().single()
       if (data) setPayments(payments.map(p => p.id === existing.id ? data as BillPayment : p))
     } else {
-      const { data } = await supabase.from('bill_payments').insert({ bill_id: bill.id, user_id: userId, month_key: month, paid: true } as never).select().single()
+      const insertPayload: BillPaymentInsert = { bill_id: bill.id, user_id: userId, month_key: month, paid: true }
+      const { data } = await supabase.from('bill_payments').insert(insertPayload).select().single()
       if (data) setPayments([...payments, data as BillPayment])
     }
+
+    if (becomingPaid) {
+      const txPayload: TransactionInsert = {
+        user_id:      userId,
+        type:         'expense',
+        amount:       bill.amount,
+        category:     bill.category || 'Bills',
+        description:  `${bill.name} - bill payment`,
+        date:         new Date().toISOString().split('T')[0],
+        notes:        'Auto-created from bill payment',
+        is_recurring: false,
+        splits:       null,
+        tags:         ['bill'],
+      }
+      const { error: txError } = await supabase.from('transactions').insert(txPayload).select().single()
+      if (txError) console.error('Failed to create bill payment transaction:', txError.message)
+    }
+
+    router.refresh()
   }
 
   async function deleteBill(id: string) {
-    await supabase.from('bills').update({ is_active: false } as never).eq('id', id)
+    const deactivate: Partial<BillInsert> = { is_active: false }
+    await supabase.from('bills').update(deactivate).eq('id', id)
     setBills(bills.filter(b => b.id !== id))
   }
 
@@ -198,13 +221,13 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const payload = { user_id: userId, name: name.trim(), amount: parseFloat(amount), day: parseInt(day), category }
+    const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parseFloat(amount), day: parseInt(day), category }
     if (bill) {
-      const { data, error } = await supabase.from('bills').update(payload as never).eq('id', bill.id).select().single()
+      const { data, error } = await supabase.from('bills').update(payload).eq('id', bill.id).select().single()
       if (error) { setError(error.message); setLoading(false); return }
       onSuccess(data as Bill)
     } else {
-      const { data, error } = await supabase.from('bills').insert(payload as never).select().single()
+      const { data, error } = await supabase.from('bills').insert(payload).select().single()
       if (error) { setError(error.message); setLoading(false); return }
       onSuccess(data as Bill)
     }

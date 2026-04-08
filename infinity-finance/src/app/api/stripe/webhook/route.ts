@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { logger } from '@/lib/logger'
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-03-31.basil' })
@@ -30,6 +31,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
+  logger.info('stripe-webhook', `Received event: ${event.type}`)
+
   const supabase = getAdminClient()
 
   switch (event.type) {
@@ -41,12 +44,23 @@ export async function POST(req: NextRequest) {
       // Retrieve subscription to get period end
       if (session.subscription) {
         const sub = await stripe.subscriptions.retrieve(session.subscription as string)
-        await supabase.from('profiles').update({
+
+        logger.info('stripe-webhook', `Upgrading user to pro: ${supabaseId}`)
+
+        const periodEnd = sub.items.data[0]?.current_period_end
+        const { error } = await supabase.from('profiles').update({
           subscription: 'pro',
           stripe_customer_id: session.customer as string,
           stripe_subscription_id: sub.id,
-          subscription_ends_at: new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
-        } as never).eq('id', supabaseId)
+          subscription_ends_at: periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null,
+        }).eq('id', supabaseId)
+
+        if (error) {
+          logger.error('stripe-webhook', `DB update failed for user ${supabaseId}`, { error: error.message })
+          return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+        }
+
+        logger.info('stripe-webhook', `Successfully upgraded user to pro: ${supabaseId}`)
       }
       break
     }
@@ -62,11 +76,23 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (profile) {
+        const userId = (profile as { id: string }).id
         const active = ['active', 'trialing'].includes(sub.status)
-        await supabase.from('profiles').update({
+
+        logger.info('stripe-webhook', `Updating subscription for user ${userId}: status=${sub.status}, active=${active}`)
+
+        const periodEnd = sub.items.data[0]?.current_period_end
+        const { error } = await supabase.from('profiles').update({
           subscription: active ? 'pro' : 'free',
-          subscription_ends_at: new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
-        } as never).eq('id', (profile as { id: string }).id)
+          subscription_ends_at: periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null,
+        }).eq('id', userId)
+
+        if (error) {
+          logger.error('stripe-webhook', `DB update failed for user ${userId}`, { error: error.message })
+          return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+        }
+
+        logger.info('stripe-webhook', `Successfully updated subscription for user ${userId}`)
       }
       break
     }
@@ -82,11 +108,22 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (profile) {
-        await supabase.from('profiles').update({
+        const userId = (profile as { id: string }).id
+
+        logger.info('stripe-webhook', `Downgrading user to free: ${userId}`)
+
+        const { error } = await supabase.from('profiles').update({
           subscription: 'free',
           stripe_subscription_id: null,
           subscription_ends_at: null,
-        } as never).eq('id', (profile as { id: string }).id)
+        }).eq('id', userId)
+
+        if (error) {
+          logger.error('stripe-webhook', `DB update failed for user ${userId}`, { error: error.message })
+          return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+        }
+
+        logger.info('stripe-webhook', `Successfully downgraded user to free: ${userId}`)
       }
       break
     }

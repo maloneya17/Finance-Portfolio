@@ -14,6 +14,23 @@ export default async function DashboardPage() {
   const monthKey = getMonthKey(now)
   const yearStart = `${now.getFullYear()}-01-01`
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('subscription')
+    .eq('id', user.id)
+    .single()
+
+  const isPro = (profile as { subscription: string } | null)?.subscription === 'pro'
+
+  let transactionDateFilter: string
+  if (isPro) {
+    transactionDateFilter = yearStart
+  } else {
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    transactionDateFilter = threeMonthsAgo.toISOString().slice(0, 10)
+  }
+
   // Fetch all dashboard data in parallel
   const [
     { data: transactions },
@@ -25,7 +42,7 @@ export default async function DashboardPage() {
     { data: budgets },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', yearStart).order('date', { ascending: false }),
+    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', transactionDateFilter).order('date', { ascending: false }),
     supabase.from('bills').select('*').eq('user_id', user.id).eq('is_active', true).order('day'),
     supabase.from('bill_payments').select('*').eq('user_id', user.id).eq('month_key', monthKey),
     supabase.from('assets').select('*').eq('user_id', user.id).order('value', { ascending: false }),

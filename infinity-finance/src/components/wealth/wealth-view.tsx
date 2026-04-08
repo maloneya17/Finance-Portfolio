@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatCompact, pct, clamp } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target } from 'lucide-react'
+import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
 
 interface Props {
   assets: Asset[]
@@ -310,12 +311,12 @@ function AssetForm({ asset, sym, userId, onSuccess }: { asset?: Asset; sym: stri
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const payload = { user_id: userId, name, type, value: parseFloat(value), ticker: ticker || null }
+    const assetPayload: AssetInsert = { user_id: userId, name, type: type as AssetInsert['type'], value: parseFloat(value), ticker: ticker || null }
     if (asset) {
-      const { data } = await supabase.from('assets').update(payload as never).eq('id', asset.id).select().single()
+      const { data } = await supabase.from('assets').update(assetPayload as unknown as Record<string, unknown>).eq('id', asset.id).select().single()
       onSuccess(data as Asset)
     } else {
-      const { data } = await supabase.from('assets').insert(payload as never).select().single()
+      const { data } = await supabase.from('assets').insert(assetPayload as unknown as Record<string, unknown>).select().single()
       onSuccess(data as Asset)
     }
   }
@@ -353,12 +354,12 @@ function DebtForm({ debt, sym, userId, onSuccess }: { debt?: Debt; sym: string; 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const payload = { user_id: userId, name, balance: parseFloat(balance), apr: parseFloat(apr), min_payment: parseFloat(minPayment || '0'), type: debtType }
+    const debtPayload: DebtInsert = { user_id: userId, name, balance: parseFloat(balance), apr: parseFloat(apr), min_payment: parseFloat(minPayment || '0'), type: debtType as DebtInsert['type'] }
     if (debt) {
-      const { data } = await supabase.from('debts').update(payload as never).eq('id', debt.id).select().single()
+      const { data } = await supabase.from('debts').update(debtPayload as unknown as Record<string, unknown>).eq('id', debt.id).select().single()
       onSuccess(data as Debt)
     } else {
-      const { data } = await supabase.from('debts').insert(payload as never).select().single()
+      const { data } = await supabase.from('debts').insert(debtPayload as unknown as Record<string, unknown>).select().single()
       onSuccess(data as Debt)
     }
   }
@@ -400,12 +401,12 @@ function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const payload = { user_id: userId, name, target: parseFloat(target), current: parseFloat(current || '0'), emoji: emoji || null, deadline: deadline || null, notes: notes || null }
+    const goalPayload: GoalInsert = { user_id: userId, name, target: parseFloat(target), current: parseFloat(current || '0'), emoji: emoji || null, deadline: deadline || null, notes: notes || null }
     if (goal) {
-      const { data } = await supabase.from('goals').update(payload as never).eq('id', goal.id).select().single()
+      const { data } = await supabase.from('goals').update(goalPayload as unknown as Record<string, unknown>).eq('id', goal.id).select().single()
       onSuccess(data as Goal)
     } else {
-      const { data } = await supabase.from('goals').insert(payload as never).select().single()
+      const { data } = await supabase.from('goals').insert(goalPayload as unknown as Record<string, unknown>).select().single()
       onSuccess(data as Goal)
     }
   }

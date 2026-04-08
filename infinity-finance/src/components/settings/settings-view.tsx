@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile, Settings } from '@/types/supabase'
+import type { Profile, Settings, SettingsInsert } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,6 +39,8 @@ export function SettingsView({ user, profile, settings }: Props) {
   const [newCat, setNewCat]         = useState('')
   const [saving, setSaving]         = useState(false)
   const [saved, setSaved]           = useState(false)
+  const [deleting, setDeleting]     = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const router  = useRouter()
   const supabase = createClient()
   const isPro    = profile?.subscription === 'pro'
@@ -47,14 +49,14 @@ export function SettingsView({ user, profile, settings }: Props) {
 
   async function saveSettings() {
     setSaving(true)
-    const payload = {
+    const settingsPayload: SettingsInsert = {
       user_id: user.id,
       annual_income: parseFloat(income) || 0,
       currency,
       currency_symbol: currencyObj.symbol,
       categories,
     }
-    await supabase.from('settings').upsert(payload as never, { onConflict: 'user_id' })
+    await supabase.from('settings').upsert(settingsPayload as unknown as Record<string, unknown>, { onConflict: 'user_id' })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -67,10 +69,23 @@ export function SettingsView({ user, profile, settings }: Props) {
   }
 
   async function handleDeleteAccount() {
-    if (!confirm('Are you sure? This will permanently delete your account and all data. This cannot be undone.')) return
-    // In production: call a server action to delete via service role key
-    await supabase.auth.signOut()
-    router.push('/login')
+    if (!confirm('Are you sure? This will permanently delete all your financial data and cannot be undone.')) return
+    setDeleteError(null)
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST' })
+      const body = await res.json() as { success?: boolean; error?: string }
+      if (!res.ok || body.error) {
+        setDeleteError(body.error ?? 'Failed to delete account. Please try again.')
+        setDeleting(false)
+        return
+      }
+      await supabase.auth.signOut()
+      router.push('/login')
+    } catch {
+      setDeleteError('An unexpected error occurred. Please try again.')
+      setDeleting(false)
+    }
   }
 
   const tabs = [
@@ -252,7 +267,12 @@ export function SettingsView({ user, profile, settings }: Props) {
             Sign Out
           </Button>
 
-          <Button variant="destructive" className="w-full" onClick={handleDeleteAccount}>
+          {deleteError && (
+            <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">
+              {deleteError}
+            </div>
+          )}
+          <Button variant="destructive" className="w-full" onClick={handleDeleteAccount} loading={deleting}>
             <Trash2 className="w-4 h-4" aria-hidden="true" />
             Delete Account
           </Button>

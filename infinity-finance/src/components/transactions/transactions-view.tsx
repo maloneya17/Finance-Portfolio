@@ -5,6 +5,7 @@ import type { Transaction, Settings } from '@/types/supabase'
 import { MonthPicker } from '@/components/dashboard/month-picker'
 import { TransactionList } from './transaction-list'
 import { TransactionForm } from './transaction-form'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -16,9 +17,10 @@ interface Props {
   transactions: Transaction[]
   settings: Settings | null
   userId: string
+  isPro?: boolean
 }
 
-export function TransactionsView({ transactions, settings, userId }: Props) {
+export function TransactionsView({ transactions, settings, userId, isPro }: Props) {
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
 
@@ -57,6 +59,14 @@ export function TransactionsView({ transactions, settings, userId }: Props) {
           </Button>
         </div>
       </div>
+
+      {!isPro && (
+        <div className="mb-4">
+          <Badge variant="warning">
+            Showing 3 months of history. Upgrade to Pro for full history.
+          </Badge>
+        </div>
+      )}
 
       <TransactionList sym={sym} onEdit={handleEdit} userId={userId} />
 

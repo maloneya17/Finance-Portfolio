@@ -60,6 +60,22 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
       ? splits.filter(r => r.category && parseFloat(r.amount) > 0).map(r => ({ category: r.category, amount: parseFloat(r.amount) }))
       : null
 
+    if (hasSplits && parsedSplits !== null) {
+      if (parsedSplits.length < 2) {
+        setError('Please add at least 2 valid split rows (each needs a category and amount).')
+        setLoading(false)
+        return
+      }
+      const splitSum = parsedSplits.reduce((s, r) => s + r.amount, 0)
+      if (Math.abs(splitSum - parsedAmount) > 0.01) {
+        setError(
+          `Split amounts (${sym}${splitSum.toFixed(2)}) must add up to the total (${sym}${parsedAmount.toFixed(2)})`
+        )
+        setLoading(false)
+        return
+      }
+    }
+
     const payload = {
       user_id:     userId,
       type,
@@ -187,6 +203,13 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
             </div>
           ))}
         </div>
+      )}
+
+      {/* Split total indicator */}
+      {hasSplits && (
+        <p className={cn('text-xs font-semibold', Math.abs(splitTotal - (parseFloat(amount) || 0)) <= 0.01 ? 'text-[var(--ios-green)]' : 'text-[var(--ios-red)]')}>
+          Split total: {sym}{splitTotal.toFixed(2)} / {sym}{(parseFloat(amount) || 0).toFixed(2)}
+        </p>
       )}
 
       {/* Split / Notes row */}
