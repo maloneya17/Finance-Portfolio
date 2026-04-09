@@ -2,13 +2,29 @@ import { createClient as createAnonClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-export async function POST() {
+export async function POST(request: Request) {
   // 1. Verify the requesting user is authenticated via anon client
   const anonClient = await createAnonClient()
   const { data: { user }, error: authError } = await anonClient.auth.getUser()
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // 2. Require password confirmation to prevent CSRF
+  const body = await request.json() as { password?: string }
+  const { password } = body
+  if (!password) {
+    return NextResponse.json({ error: 'Password is required' }, { status: 400 })
+  }
+
+  // 3. Re-authenticate to confirm the request is intentional
+  const { error: reAuthError } = await anonClient.auth.signInWithPassword({
+    email: user.email!,
+    password,
+  })
+  if (reAuthError) {
+    return NextResponse.json({ error: 'Incorrect password' }, { status: 403 })
   }
 
   const userId = user.id

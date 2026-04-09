@@ -4,6 +4,7 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>()
+let writeCount = 0
 
 /**
  * Simple in-memory rate limiter (per-instance, best-effort).
@@ -20,6 +21,26 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
   if (!entry || now - entry.windowStart >= windowMs) {
     // No existing entry or the window has expired — start a fresh window
     store.set(key, { count: 1, windowStart: now })
+
+    // Prune expired entries after every write
+    for (const [k, v] of store) {
+      if (v.windowStart + windowMs < now) {
+        store.delete(k)
+      }
+    }
+
+    // Every 100 writes, do a full sweep of all keys using their own windowMs
+    writeCount += 1
+    if (writeCount % 100 === 0) {
+      for (const [k, v] of store) {
+        // Use the same windowMs from the current call as a conservative bound;
+        // entries that are stale relative to any reasonable window are removed.
+        if (v.windowStart + windowMs < now) {
+          store.delete(k)
+        }
+      }
+    }
+
     return true
   }
 

@@ -20,7 +20,7 @@ export default async function BillsPage() {
   return (
     <BillsView
       bills={(bills ?? []) as import('@/types/supabase').Bill[]}
-      payments={(payments ?? []) as import('@/types/supabase').BillPayment[]}
+      initialPayments={(payments ?? []) as import('@/types/supabase').BillPayment[]}
       settings={settings as import('@/types/supabase').Settings | null}
       userId={user.id}
       currentMonth={monthKey}

@@ -4,28 +4,29 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Bill, BillInsert, BillPayment, BillPaymentInsert, BillPaymentUpdate, Settings, TransactionInsert } from '@/types/supabase'
-import { useFinanceStore } from '@/store/finance'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, getMonthKey, monthKeyToLabel } from '@/lib/utils'
+import { formatCurrency, monthKeyToLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Plus, CheckCircle2, Circle, Pencil, Trash2 } from 'lucide-react'
 
 interface Props {
   bills: Bill[]
-  payments: BillPayment[]
+  initialPayments: BillPayment[]
   settings: Settings | null
   userId: string
   currentMonth: string
 }
 
-export function BillsView({ bills: initBills, payments: initPayments, settings, userId, currentMonth }: Props) {
+export function BillsView({ bills: initBills, initialPayments, settings, userId, currentMonth }: Props) {
   const [bills, setBills]       = useState<Bill[]>(initBills)
-  const [payments, setPayments] = useState<BillPayment[]>(initPayments)
+  const [payments, setPayments] = useState<Record<string, BillPayment>>(
+    Object.fromEntries(initialPayments.map(p => [p.bill_id, p]))
+  )
   const [open, setOpen]         = useState(false)
   const [editing, setEditing]   = useState<Bill | null>(null)
   const [month, setMonth]       = useState(currentMonth)
@@ -34,24 +35,54 @@ export function BillsView({ bills: initBills, payments: initPayments, settings, 
   const sym                     = settings?.currency_symbol ?? '£'
   const categories              = settings?.categories ?? []
 
-  const paidIds    = new Set(payments.filter(p => p.paid).map(p => p.bill_id))
+  // Re-fetch payment records whenever the selected month changes
+  useEffect(() => {
+    async function fetchPayments() {
+      const client = createClient()
+      const { data } = await client
+        .from('bill_payments')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('month_key', month)
+      if (data) {
+        setPayments(Object.fromEntries((data as BillPayment[]).map(p => [p.bill_id, p])))
+      }
+    }
+    fetchPayments()
+  }, [month, userId])
+
+  const paidIds    = new Set(Object.values(payments).filter(p => p.paid).map(p => p.bill_id))
   const totalDue   = bills.reduce((s, b) => s + b.amount, 0)
   const totalPaid  = bills.filter(b => paidIds.has(b.id)).reduce((s, b) => s + b.amount, 0)
   const totalUnpaid = totalDue - totalPaid
 
   async function togglePaid(bill: Bill) {
     const isPaid   = paidIds.has(bill.id)
-    const existing = payments.find(p => p.bill_id === bill.id && p.month_key === month)
+    const existing = payments[bill.id]
     const becomingPaid = !isPaid
 
     if (existing) {
-      const updatePayload: BillPaymentUpdate = { paid: !isPaid, updated_at: new Date().toISOString() }
+      const updatePayload: BillPaymentUpdate = {
+        paid: !isPaid,
+        updated_at: new Date().toISOString(),
+        transaction_id: becomingPaid ? existing.transaction_id : null,
+      }
       const { data } = await supabase.from('bill_payments').update(updatePayload).eq('id', existing.id).select().single()
-      if (data) setPayments(payments.map(p => p.id === existing.id ? data as BillPayment : p))
+      if (data) setPayments({ ...payments, [bill.id]: data as BillPayment })
+
+      // When un-toggling paid, delete the linked transaction
+      if (!becomingPaid && existing.transaction_id) {
+        const { error: delError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', existing.transaction_id)
+          .eq('user_id', userId)
+        if (delError) console.warn('Failed to delete bill payment transaction:', delError.message)
+      }
     } else {
       const insertPayload: BillPaymentInsert = { bill_id: bill.id, user_id: userId, month_key: month, paid: true }
       const { data } = await supabase.from('bill_payments').insert(insertPayload).select().single()
-      if (data) setPayments([...payments, data as BillPayment])
+      if (data) setPayments({ ...payments, [bill.id]: data as BillPayment })
     }
 
     if (becomingPaid) {
@@ -67,8 +98,20 @@ export function BillsView({ bills: initBills, payments: initPayments, settings, 
         splits:       null,
         tags:         ['bill'],
       }
-      const { error: txError } = await supabase.from('transactions').insert(txPayload).select().single()
-      if (txError) console.error('Failed to create bill payment transaction:', txError.message)
+      const { data: txData, error: txError } = await supabase.from('transactions').insert(txPayload).select().single()
+      if (txError) {
+        console.error('Failed to create bill payment transaction:', txError.message)
+      } else if (txData && payments[bill.id]) {
+        // Store the transaction_id back on the bill_payment record
+        const linkPayload: BillPaymentUpdate = { transaction_id: (txData as { id: string }).id }
+        const { data: linked } = await supabase
+          .from('bill_payments')
+          .update(linkPayload)
+          .eq('id', payments[bill.id].id)
+          .select()
+          .single()
+        if (linked) setPayments({ ...payments, [bill.id]: linked as BillPayment })
+      }
     }
 
     router.refresh()

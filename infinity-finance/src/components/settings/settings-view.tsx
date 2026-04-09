@@ -39,8 +39,10 @@ export function SettingsView({ user, profile, settings }: Props) {
   const [newCat, setNewCat]         = useState('')
   const [saving, setSaving]         = useState(false)
   const [saved, setSaved]           = useState(false)
-  const [deleting, setDeleting]     = useState(false)
+  const [deleting, setDeleting]       = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [showDeleteForm, setShowDeleteForm] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
   const router  = useRouter()
   const supabase = createClient()
   const isPro    = profile?.subscription === 'pro'
@@ -49,14 +51,17 @@ export function SettingsView({ user, profile, settings }: Props) {
 
   async function saveSettings() {
     setSaving(true)
-    const settingsPayload: SettingsInsert = {
-      user_id: user.id,
-      annual_income: parseFloat(income) || 0,
-      currency,
+    // Include ALL settings fields on every upsert so no field is ever reset to
+    // its database default when only a subset of fields was changed.
+    const settingsPayload: Required<SettingsInsert> = {
+      user_id:         user.id,
+      annual_income:   parseFloat(income) || 0,
+      currency:        currency,
       currency_symbol: currencyObj.symbol,
-      categories,
+      categories:      categories,
     }
-    await supabase.from('settings').upsert(settingsPayload as unknown as Record<string, unknown>, { onConflict: 'user_id' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await supabase.from('settings').upsert(settingsPayload as any, { onConflict: 'user_id' })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -69,14 +74,17 @@ export function SettingsView({ user, profile, settings }: Props) {
   }
 
   async function handleDeleteAccount() {
-    if (!confirm('Are you sure? This will permanently delete all your financial data and cannot be undone.')) return
     setDeleteError(null)
     setDeleting(true)
     try {
-      const res = await fetch('/api/account/delete', { method: 'POST' })
-      const body = await res.json() as { success?: boolean; error?: string }
-      if (!res.ok || body.error) {
-        setDeleteError(body.error ?? 'Failed to delete account. Please try again.')
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword }),
+      })
+      const data = await res.json() as { success?: boolean; error?: string }
+      if (!res.ok || data.error) {
+        setDeleteError(data.error ?? 'Failed to delete account. Please try again.')
         setDeleting(false)
         return
       }
@@ -267,15 +275,56 @@ export function SettingsView({ user, profile, settings }: Props) {
             Sign Out
           </Button>
 
-          {deleteError && (
-            <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">
-              {deleteError}
+          {!showDeleteForm ? (
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => { setShowDeleteForm(true); setDeleteError(null) }}
+            >
+              <Trash2 className="w-4 h-4" aria-hidden="true" />
+              Delete Account
+            </Button>
+          ) : (
+            <div className="rounded-xl border border-[rgba(255,59,48,0.3)] bg-[rgba(255,59,48,0.04)] p-4 space-y-3">
+              <p className="text-sm font-semibold text-[var(--ios-red)]">Confirm account deletion</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                This will permanently delete all your financial data and cannot be undone. Enter your password to confirm.
+              </p>
+              <Input
+                type="password"
+                placeholder="Enter your password"
+                value={deletePassword}
+                onChange={e => setDeletePassword(e.target.value)}
+                aria-label="Password confirmation"
+                autoComplete="current-password"
+              />
+              {deleteError && (
+                <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">
+                  {deleteError}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => { setShowDeleteForm(false); setDeletePassword(''); setDeleteError(null) }}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleDeleteAccount}
+                  loading={deleting}
+                  disabled={deletePassword.length === 0 || deleting}
+                >
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
+                  Delete
+                </Button>
+              </div>
             </div>
           )}
-          <Button variant="destructive" className="w-full" onClick={handleDeleteAccount} loading={deleting}>
-            <Trash2 className="w-4 h-4" aria-hidden="true" />
-            Delete Account
-          </Button>
           <p className="text-xs text-slate-400 text-center">This action is permanent and cannot be undone.</p>
         </div>
       )}

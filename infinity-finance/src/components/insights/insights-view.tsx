@@ -5,7 +5,7 @@ import type { Transaction, Settings, Profile } from '@/types/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, getMonthKey } from '@/lib/utils'
+import { formatCurrency, getMonthKey, monthKeyToLabel } from '@/lib/utils'
 import { useFinanceStore } from '@/store/finance'
 import { Crown, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Lightbulb, Target, Calendar, PiggyBank, type LucideIcon } from 'lucide-react'
 
@@ -34,7 +34,8 @@ function addMonths(date: Date, months: number): Date {
 }
 
 function formatMonthYear(date: Date): string {
-  return date.toLocaleString('default', { month: 'long', year: 'numeric' })
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  return monthKeyToLabel(key)
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -201,6 +202,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
       velocityLabel = 'Goal savings velocity'
       velocityText  = 'Add a savings goal to track your velocity.'
     } else {
+      const usedFallback = !goalWithProgress.created_at
       const startDate   = goalWithProgress.created_at
         ? new Date(goalWithProgress.created_at)
         : new Date(today.getFullYear(), today.getMonth() - 3)
@@ -217,6 +219,9 @@ export function InsightsView({ profile, transactions, settings }: Props) {
 
         velocityLabel = 'Goal savings velocity'
         velocityText  = `At current pace, you'll reach "${goalWithProgress.name}" by ${formatMonthYear(projectedDate)}.`
+        if (usedFallback) {
+          velocityText += ' (estimate based on current balance only)'
+        }
       }
     }
   }

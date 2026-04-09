@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { rateLimit } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-03-31.basil' })
@@ -11,7 +12,7 @@ export async function GET() {
   const stripe = getStripe()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.redirect('/login')
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   if (!rateLimit(user.id, 5, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
@@ -24,10 +25,15 @@ export async function GET() {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=billing`)
   }
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer:   customerId,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=billing`,
-  })
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer:   customerId,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=billing`,
+    })
 
-  return NextResponse.redirect(session.url)
+    return NextResponse.redirect(session.url)
+  } catch (err) {
+    logger.error('stripe-portal', 'Stripe API call failed', { error: String(err) })
+    return NextResponse.json({ error: 'Payment service unavailable' }, { status: 503 })
+  }
 }

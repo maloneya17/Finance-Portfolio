@@ -28,7 +28,7 @@ export function TransactionsView({ transactions, settings, userId, isPro }: Prop
 
   useEffect(() => {
     setTransactions(transactions)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transactions, setTransactions])
 
   const sym        = settings?.currency_symbol ?? '£'
   const categories = settings?.categories ?? []

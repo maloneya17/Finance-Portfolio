@@ -75,7 +75,12 @@ export async function POST(req: NextRequest) {
         .eq('stripe_customer_id', customerId)
         .single()
 
-      if (profile) {
+      if (!profile) {
+        logger.warn('stripe-webhook', `No profile found for customer ${customerId} on subscription.updated`)
+        break
+      }
+
+      {
         const userId = (profile as { id: string }).id
         const active = ['active', 'trialing'].includes(sub.status)
 
@@ -107,7 +112,12 @@ export async function POST(req: NextRequest) {
         .eq('stripe_customer_id', customerId)
         .single()
 
-      if (profile) {
+      if (!profile) {
+        logger.warn('stripe-webhook', `No profile found for customer ${customerId} on subscription.deleted`)
+        break
+      }
+
+      {
         const userId = (profile as { id: string }).id
 
         logger.info('stripe-webhook', `Downgrading user to free: ${userId}`)

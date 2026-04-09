@@ -37,7 +37,26 @@ export function DashboardView(props: DashboardViewProps) {
     setBudgets(props.budgets)
     setSettings(props.settings)
     setCurrentMonth(props.currentMonth)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    props.transactions,
+    props.bills,
+    props.billPayments,
+    props.assets,
+    props.debts,
+    props.goals,
+    props.budgets,
+    props.settings,
+    props.currentMonth,
+    setTransactions,
+    setBills,
+    setBillPayments,
+    setAssets,
+    setDebts,
+    setGoals,
+    setBudgets,
+    setSettings,
+    setCurrentMonth,
+  ])
 
   const sym = props.settings?.currency_symbol ?? '£'
 
