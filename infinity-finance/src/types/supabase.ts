@@ -43,6 +43,7 @@ export interface TransactionInsert {
   splits?: Json
   is_recurring?: boolean
   recurring_template_id?: string | null
+  deleted_at?: string | null
 }
 
 export interface BillInsert {
@@ -154,6 +155,7 @@ export interface Database {
           splits: Json
           is_recurring: boolean
           recurring_template_id: string | null
+          deleted_at: string | null
           created_at: string
           updated_at: string
         }

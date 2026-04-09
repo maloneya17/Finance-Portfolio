@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Crown, LogOut, Trash2, Plus, X } from 'lucide-react'
+import { Crown, LogOut, Trash2, Plus, X, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Props {
@@ -231,16 +231,15 @@ export function SettingsView({ user, profile, settings }: Props) {
                 <h3 className="font-bold text-slate-900 dark:text-white mb-4">What you get with Pro</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   {[
-                    ['Unlimited transaction history', true],
-                    ['Multi-device sync', true],
-                    ['Advanced reports & charts', true],
-                    ['AI-powered insights', true],
-                    ['CSV / JSON export', true],
-                    ['Priority support', true],
-                  ].map(([feature, pro]) => (
-                    <div key={feature as string} className="flex items-center gap-2">
+                    'Unlimited transaction history',
+                    'Advanced AI insights',
+                    'Data export (CSV & JSON)',
+                    'Real-time multi-device sync',
+                    'Priority support',
+                  ].map(feature => (
+                    <div key={feature} className="flex items-center gap-2">
                       <span style={{ color: 'var(--ios-green)' }}>✓</span>
-                      <span className="text-slate-600 dark:text-slate-400">{feature as string}</span>
+                      <span className="text-slate-600 dark:text-slate-400">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -248,6 +247,64 @@ export function SettingsView({ user, profile, settings }: Props) {
               </CardContent>
             </Card>
           )}
+
+          {/* Data export */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Export Your Data</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                Download all your financial data in CSV or JSON format.
+                {!isPro && <span className="ml-1">Available on Pro.</span>}
+              </p>
+              <div className="flex gap-3">
+                {isPro ? (
+                  <>
+                    <a
+                      href="/api/export?format=csv"
+                      download
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                    >
+                      <Download className="w-4 h-4" aria-hidden="true" />
+                      Export as CSV
+                    </a>
+                    <a
+                      href="/api/export?format=json"
+                      download
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                    >
+                      <Download className="w-4 h-4" aria-hidden="true" />
+                      Export as JSON
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <div className="relative group">
+                      <button
+                        disabled
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-semibold text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                        aria-disabled="true"
+                      >
+                        <Download className="w-4 h-4" aria-hidden="true" />
+                        Export as CSV
+                        <Badge variant="pro" className="text-[10px] px-1.5 py-0 ml-1">Pro</Badge>
+                      </button>
+                    </div>
+                    <div className="relative group">
+                      <button
+                        disabled
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-semibold text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                        aria-disabled="true"
+                      >
+                        <Download className="w-4 h-4" aria-hidden="true" />
+                        Export as JSON
+                        <Badge variant="pro" className="text-[10px] px-1.5 py-0 ml-1">Pro</Badge>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 

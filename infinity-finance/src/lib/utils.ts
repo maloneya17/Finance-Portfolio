@@ -5,11 +5,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, symbol = '£'): string {
-  const abs = Math.abs(amount)
-  if (abs >= 1_000_000) return `${symbol}${(amount / 1_000_000).toFixed(2)}M`
-  if (abs >= 1_000)     return `${symbol}${amount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  return `${symbol}${amount.toFixed(2)}`
+export function formatCurrency(amount: number, symbol = '£', locale = 'en-GB'): string {
+  // Map common currency symbols to their locale for correct formatting
+  const localeMap: Record<string, string> = {
+    '£': 'en-GB',
+    '$': 'en-US',
+    '€': 'de-DE',
+    '¥': 'ja-JP',
+    '₹': 'en-IN',
+    'kr': 'sv-SE',
+    'Fr': 'fr-CH',
+    'R': 'en-ZA',
+    'A$': 'en-AU',
+    'C$': 'en-CA',
+  }
+  const resolvedLocale = localeMap[symbol] ?? locale
+  return symbol + new Intl.NumberFormat(resolvedLocale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(amount))
 }
 
 export function formatCompact(amount: number, symbol = '£'): string {

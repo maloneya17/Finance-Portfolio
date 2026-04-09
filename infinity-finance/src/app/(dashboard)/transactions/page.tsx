@@ -15,7 +15,10 @@ export default async function TransactionsPage() {
     .eq('id', user.id)
     .single()
 
-  const isPro = (profile as { subscription: string } | null)?.subscription === 'pro'
+  // Subscription tier verified server-side — cannot be overridden by client
+  // Re-derive the date filter server-side, never trust client state
+  const subscription = (profile as { subscription: string } | null)?.subscription ?? 'free'
+  const isPro = subscription === 'pro'
 
   let dateFilter: string
   if (isPro) {
@@ -27,7 +30,7 @@ export default async function TransactionsPage() {
   }
 
   const [{ data: transactions }, { data: settings }] = await Promise.all([
-    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', dateFilter).order('date', { ascending: false }).order('created_at', { ascending: false }),
+    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', dateFilter).is('deleted_at', null).order('date', { ascending: false }).order('created_at', { ascending: false }),
     supabase.from('settings').select('*').eq('user_id', user.id).single(),
   ])
 

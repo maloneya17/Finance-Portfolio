@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     { data: budgets },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', transactionDateFilter).order('date', { ascending: false }),
+    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', transactionDateFilter).is('deleted_at', null).order('date', { ascending: false }),
     supabase.from('bills').select('*').eq('user_id', user.id).eq('is_active', true).order('day'),
     supabase.from('bill_payments').select('*').eq('user_id', user.id).eq('month_key', monthKey),
     supabase.from('assets').select('*').eq('user_id', user.id).order('value', { ascending: false }),

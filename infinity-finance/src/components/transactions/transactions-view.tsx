@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { Transaction, Settings } from '@/types/supabase'
+import { createClient } from '@/lib/supabase/client'
 import { MonthPicker } from '@/components/dashboard/month-picker'
 import { TransactionList } from './transaction-list'
 import { TransactionForm } from './transaction-form'
@@ -11,7 +12,6 @@ import { Plus } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getMonthKey } from '@/lib/utils'
 import { useFinanceStore } from '@/store/finance'
-import { useEffect } from 'react'
 
 interface Props {
   transactions: Transaction[]
@@ -25,10 +25,54 @@ export function TransactionsView({ transactions, settings, userId, isPro }: Prop
   const [editing, setEditing] = useState<Transaction | null>(null)
 
   const { setTransactions, currentMonth } = useFinanceStore()
+  const allTransactions = useFinanceStore(s => s.transactions)
 
   useEffect(() => {
     setTransactions(transactions)
   }, [transactions, setTransactions])
+
+  // Real-time sync: updates UI when transactions change on any device
+  useEffect(() => {
+    const supabase = createClient()
+
+    const channel = supabase
+      .channel(`transactions:${userId}`)
+      .on(
+        'postgres_changes' as const,
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const { eventType, new: newRow, old: oldRow } = payload
+
+          if (eventType === 'INSERT') {
+            // Only add if not soft-deleted
+            const newTx = newRow as Transaction
+            if (!newTx.deleted_at) {
+              setTransactions([newTx, ...allTransactions.filter(t => t.id !== newTx.id)])
+            }
+          } else if (eventType === 'UPDATE') {
+            const updated = newRow as Transaction
+            if (updated.deleted_at) {
+              // Soft-deleted — remove from view
+              setTransactions(allTransactions.filter(t => t.id !== updated.id))
+            } else {
+              setTransactions(allTransactions.map(t => t.id === updated.id ? updated : t))
+            }
+          } else if (eventType === 'DELETE') {
+            setTransactions(allTransactions.filter(t => t.id !== (oldRow as { id: string }).id))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, allTransactions, setTransactions])
 
   const sym        = settings?.currency_symbol ?? '£'
   const categories = settings?.categories ?? []

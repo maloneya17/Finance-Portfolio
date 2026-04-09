@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Asset, Debt, Goal, Settings } from '@/types/supabase'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import { formatCurrency, formatCompact, pct, clamp } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target } from 'lucide-react'
 import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
+import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
 
 interface Props {
   assets: Asset[]
@@ -30,12 +31,46 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   const [debts, setDebts]     = useState(initDebts)
   const [goals, setGoals]     = useState(initGoals)
   const [dialog, setDialog]   = useState<{ type: 'asset' | 'debt' | 'goal'; item?: Asset | Debt | Goal } | null>(null)
+  const [snapshots, setSnapshots] = useState<Array<{ date: string; net_worth: number }>>([])
   const supabase               = createClient()
   const sym                    = settings?.currency_symbol ?? '£'
 
   const totalAssets = assets.reduce((s, a) => s + a.value, 0)
   const totalDebts  = debts.reduce((s, d) => s + d.balance, 0)
   const netWorth    = totalAssets - totalDebts
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('wealth_snapshots')
+      .select('date, net_worth')
+      .eq('user_id', userId)
+      .order('date', { ascending: true })
+      .limit(30)
+      .then(({ data }) => {
+        if (data) setSnapshots(data as Array<{ date: string; net_worth: number }>)
+      })
+  }, [userId])
+
+  async function recordSnapshot() {
+    const supabase = createClient()
+    // Fetch current totals fresh from DB
+    const [{ data: assetRows }, { data: debtRows }] = await Promise.all([
+      supabase.from('assets').select('value').eq('user_id', userId),
+      supabase.from('debts').select('balance').eq('user_id', userId),
+    ])
+    const totalAssets = (assetRows ?? []).reduce((s: number, a: { value: number }) => s + a.value, 0)
+    const totalDebts  = (debtRows  ?? []).reduce((s: number, d: { balance: number }) => s + d.balance, 0)
+    const today = new Date().toISOString().split('T')[0]
+
+    await supabase.from('wealth_snapshots').upsert({
+      user_id:      userId,
+      date:         today,
+      net_worth:    totalAssets - totalDebts,
+      assets_total: totalAssets,
+      debts_total:  totalDebts,
+    } as unknown as Record<string, unknown>, { onConflict: 'user_id,date' })
+  }
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: TrendingUp },
@@ -47,11 +82,13 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   async function deleteAsset(id: string) {
     await supabase.from('assets').delete().eq('id', id)
     setAssets(assets.filter(a => a.id !== id))
+    recordSnapshot()
   }
 
   async function deleteDebt(id: string) {
     await supabase.from('debts').delete().eq('id', id)
     setDebts(debts.filter(d => d.id !== id))
+    recordSnapshot()
   }
 
   async function deleteGoal(id: string) {
@@ -89,6 +126,27 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
             <p className="text-lg font-bold" style={{ color: 'var(--ios-red)' }}>-{formatCompact(totalDebts, sym)}</p>
           </div>
         </div>
+        {snapshots.length >= 2 && (
+          <div className="mt-4">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Net Worth History</p>
+            <ResponsiveContainer width="100%" height={80}>
+              <LineChart data={snapshots}>
+                <Line
+                  type="monotone"
+                  dataKey="net_worth"
+                  stroke="var(--ios-blue)"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Tooltip
+                  formatter={(v) => formatCurrency(Number(v), sym)}
+                  labelFormatter={(label) => label}
+                  contentStyle={{ fontSize: 12 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </Card>
 
       {/* Tab bar */}
@@ -282,11 +340,11 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
           </DialogHeader>
           {dialog?.type === 'asset' && (
             <AssetForm asset={dialog.item as Asset} sym={sym} userId={userId}
-              onSuccess={a => { if (dialog.item) setAssets(assets.map(x => x.id === a.id ? a : x)); else setAssets([...assets, a]); setDialog(null) }} />
+              onSuccess={a => { if (dialog.item) setAssets(assets.map(x => x.id === a.id ? a : x)); else setAssets([...assets, a]); setDialog(null); recordSnapshot() }} />
           )}
           {dialog?.type === 'debt' && (
             <DebtForm debt={dialog.item as Debt} sym={sym} userId={userId}
-              onSuccess={d => { if (dialog.item) setDebts(debts.map(x => x.id === d.id ? d : x)); else setDebts([...debts, d]); setDialog(null) }} />
+              onSuccess={d => { if (dialog.item) setDebts(debts.map(x => x.id === d.id ? d : x)); else setDebts([...debts, d]); setDialog(null); recordSnapshot() }} />
           )}
           {dialog?.type === 'goal' && (
             <GoalForm goal={dialog.item as Goal} sym={sym} userId={userId}

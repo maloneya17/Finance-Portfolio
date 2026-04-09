@@ -65,6 +65,8 @@ create table public.transactions (
   splits      jsonb,          -- [{category, amount}]
   is_recurring boolean not null default false,
   recurring_template_id uuid,
+  -- Soft-delete: set to NOW() instead of hard-deleting. Permanent deletion via scheduled job.
+  deleted_at TIMESTAMPTZ DEFAULT NULL,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -77,6 +79,11 @@ create index if not exists idx_transactions_user_category on transactions(user_i
 
 -- Type filtering (income vs expense vs transfer)
 create index if not exists idx_transactions_user_type on transactions(user_id, type);
+
+-- Active transactions only (soft-delete support)
+CREATE INDEX IF NOT EXISTS idx_transactions_active
+  ON transactions(user_id, date)
+  WHERE deleted_at IS NULL;
 
 -- Bills by user and due date
 create index if not exists idx_bills_user_due on bills(user_id, day);
@@ -205,6 +212,8 @@ create table public.wealth_snapshots (
   debts_total  numeric(15,2) not null,
   unique(user_id, date)
 );
+
+ALTER TABLE wealth_snapshots ADD CONSTRAINT IF NOT EXISTS wealth_snapshots_user_date_unique UNIQUE (user_id, date);
 
 alter table public.wealth_snapshots enable row level security;
 create policy "Users own their snapshots" on wealth_snapshots for all using (auth.uid() = user_id);

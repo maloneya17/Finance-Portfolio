@@ -29,6 +29,11 @@ interface FinanceState {
   setCurrentMonth: (m: string) => void
   togglePrivacy:   () => void
 
+  // Real-time helpers
+  addTransaction:    (tx: Transaction) => void
+  removeTransaction: (id: string) => void
+  updateTransaction: (tx: Transaction) => void
+
   // Helpers
   getMonthTransactions: () => Transaction[]
   getIncome:  () => number
@@ -49,6 +54,15 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   privacyMode: false,
 
   setTransactions: t => set({ transactions: t }),
+  addTransaction:    tx => set(state => ({
+    transactions: [tx, ...state.transactions.filter(t => t.id !== tx.id)]
+  })),
+  removeTransaction: id => set(state => ({
+    transactions: state.transactions.filter(t => t.id !== id)
+  })),
+  updateTransaction: tx => set(state => ({
+    transactions: state.transactions.map(t => t.id === tx.id ? tx : t)
+  })),
   setBills:        b => set({ bills: b }),
   setBillPayments: b => set({ billPayments: b }),
   setAssets:       a => set({ assets: a }),
