@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { Plus, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface SplitRow { category: string; amount: string }
 
@@ -43,6 +44,18 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
   const hasSplits           = splits.length > 0
   const splitTotal          = splits.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0)
   const remaining           = (parseFloat(amount) || 0) - splitTotal
+
+  function resetForm() {
+    setType('expense')
+    setDesc('')
+    setAmount('')
+    setCategory('')
+    setDate(new Date().toISOString().slice(0, 10))
+    setNotes('')
+    setTags('')
+    setSplits([])
+    setError(null)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -99,17 +112,31 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
 
       if (editing) {
         const { data, error } = await supabase.from('transactions').update(txPayload).eq('id', editing.id).select().single()
-        if (error) { setError(error.message); setLoading(false); return }
+        if (error) {
+          toast.error('Failed to update transaction')
+          setError(error.message)
+          setLoading(false)
+          return
+        }
         if (data) setTransactions(allTransactions.map(t => t.id === editing.id ? data : t))
+        toast.success('Transaction updated')
       } else {
         const { data, error } = await supabase.from('transactions').insert(txPayload).select().single()
-        if (error) { setError(error.message); setLoading(false); return }
+        if (error) {
+          toast.error('Failed to add transaction')
+          setError(error.message)
+          setLoading(false)
+          return
+        }
         if (data) setTransactions([data, ...allTransactions])
+        toast.success('Transaction added')
+        resetForm()
       }
 
       router.refresh()
       onSuccess()
     } catch (err) {
+      toast.error('Failed to add transaction')
       setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
       setLoading(false)
     }

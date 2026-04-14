@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Settings, SettingsInsert } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,7 +32,9 @@ const CURRENCIES = [
 ]
 
 export function SettingsView({ user, profile, settings }: Props) {
-  const [tab, setTab]               = useState<Tab>('general')
+  const searchParams                = useSearchParams()
+  const initialTab                  = (searchParams.get('tab') as Tab | null) ?? 'general'
+  const [tab, setTab]               = useState<Tab>(initialTab)
   const [income, setIncome]         = useState(settings?.annual_income ? String(settings.annual_income) : '')
   const [currency, setCurrency]     = useState(settings?.currency ?? 'GBP')
   const [categories, setCategories] = useState<string[]>(settings?.categories ?? [])
@@ -43,8 +45,13 @@ export function SettingsView({ user, profile, settings }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showDeleteForm, setShowDeleteForm] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
-  const router  = useRouter()
+  const router   = useRouter()
   const supabase = createClient()
+
+  function handleTabChange(newTab: Tab) {
+    setTab(newTab)
+    router.push(`?tab=${newTab}`, { scroll: false })
+  }
   const isPro    = profile?.subscription === 'pro'
 
   const currencyObj = CURRENCIES.find(c => c.code === currency) ?? CURRENCIES[0]
@@ -114,7 +121,7 @@ export function SettingsView({ user, profile, settings }: Props) {
         {tabs.map(t => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => handleTabChange(t.id)}
             className={cn(
               'px-4 py-2 text-xs font-semibold rounded-lg transition',
               tab === t.id

@@ -240,7 +240,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     </div>
                   </div>
                   <p className="text-sm font-bold" style={{ color: 'var(--ios-green)' }}>{formatCurrency(a.value, sym)}</p>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                     <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'asset', item: a })} aria-label={`Edit ${a.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon-sm" onClick={() => deleteAsset(a.id)} aria-label={`Delete ${a.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
@@ -275,7 +275,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     <p className="text-sm font-bold" style={{ color: 'var(--ios-red)' }}>{formatCurrency(d.balance, sym)}</p>
                     <p className="text-xs text-slate-400">Min {formatCurrency(d.min_payment, sym)}/mo</p>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                     <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'debt', item: d })} aria-label={`Edit ${d.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon-sm" onClick={() => deleteDebt(d.id)} aria-label={`Delete ${d.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
