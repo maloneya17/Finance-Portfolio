@@ -10,8 +10,9 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Pencil, Trash2, Search, Download } from 'lucide-react'
+import { Pencil, Trash2, Search, Download, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Props {
   sym: string
@@ -216,10 +217,19 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
       {/* List */}
       <Card>
         {filtered.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 dark:text-slate-500">
-            <Search className="w-10 h-10 mx-auto mb-3 opacity-30" aria-hidden="true" />
-            <p className="text-sm">{search ? 'No results found' : 'No transactions this month'}</p>
-          </div>
+          search ? (
+            <EmptyState
+              icon={Search}
+              title="No results found"
+              description="Try adjusting your search term to find what you're looking for."
+            />
+          ) : (
+            <EmptyState
+              icon={Receipt}
+              title="No transactions yet"
+              description="Add your first transaction to start tracking your spending."
+            />
+          )
         ) : (
           <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list" aria-label="Transactions">
             {filtered.map(tx => (
@@ -253,7 +263,7 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
                 </span>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                   <Button
                     variant="ghost"
                     size="icon-sm"

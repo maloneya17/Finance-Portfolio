@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AppShell } from '@/components/layout/app-shell'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -16,7 +17,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AppShell user={user} profile={profile} settings={settings}>
-      {children}
+      <ErrorBoundary>
+        {children}
+      </ErrorBoundary>
     </AppShell>
   )
 }

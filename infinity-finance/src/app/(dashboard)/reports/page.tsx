@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ReportsView } from '@/components/reports/reports-view'
-import type { Transaction, Settings } from '@/types/supabase'
+import type { Transaction, Settings, Profile } from '@/types/supabase'
 
 export const metadata = { title: 'Reports — Infinity Finance' }
 
@@ -10,11 +10,27 @@ export default async function ReportsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const yearStart = `${new Date().getFullYear()}-01-01`
-  const [{ data: transactions }, { data: settings }] = await Promise.all([
-    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', yearStart).order('date'),
+  const [{ data: profile }, { data: settings }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('settings').select('*').eq('user_id', user.id).single(),
   ])
+
+  // Subscription tier verified server-side — cannot be overridden by client
+  const isPro = (profile as Profile | null)?.subscription === 'pro'
+
+  // Build query dynamically: free users are limited to last 3 months
+  let query = supabase
+    .from('transactions')
+    .select('*')
+    .eq('user_id', user.id)
+    .is('deleted_at', null)
+  if (!isPro) {
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    query = query.gte('date', threeMonthsAgo.toISOString().split('T')[0])
+  }
+  // TODO: implement cursor-based pagination when > 500 transactions
+  const { data: transactions } = await query.order('date', { ascending: false }).limit(500)
 
   return (
     <ReportsView

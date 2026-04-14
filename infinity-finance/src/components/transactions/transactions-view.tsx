@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import type { Transaction, Settings } from '@/types/supabase'
 import { createClient } from '@/lib/supabase/client'
 import { MonthPicker } from '@/components/dashboard/month-picker'
@@ -27,11 +27,20 @@ export function TransactionsView({ transactions, settings, userId, isPro }: Prop
   const { setTransactions, currentMonth } = useFinanceStore()
   const allTransactions = useFinanceStore(s => s.transactions)
 
+  // Keep a ref in sync with allTransactions so the realtime handler can read
+  // the current list without closing over stale state. This prevents the
+  // realtime useEffect from re-running (and leaking a new WebSocket channel)
+  // every time allTransactions changes.
+  const transactionsRef = useRef(allTransactions)
+  useEffect(() => { transactionsRef.current = allTransactions }, [allTransactions])
+
   useEffect(() => {
     setTransactions(transactions)
   }, [transactions, setTransactions])
 
-  // Real-time sync: updates UI when transactions change on any device
+  // Real-time sync: updates UI when transactions change on any device.
+  // Dependency array is [userId] only — the handler reads current transactions
+  // via transactionsRef to avoid recreating the channel on every state change.
   useEffect(() => {
     const supabase = createClient()
 
@@ -47,23 +56,24 @@ export function TransactionsView({ transactions, settings, userId, isPro }: Prop
         },
         (payload) => {
           const { eventType, new: newRow, old: oldRow } = payload
+          const current = transactionsRef.current
 
           if (eventType === 'INSERT') {
             // Only add if not soft-deleted
             const newTx = newRow as Transaction
             if (!newTx.deleted_at) {
-              setTransactions([newTx, ...allTransactions.filter(t => t.id !== newTx.id)])
+              setTransactions([newTx, ...current.filter(t => t.id !== newTx.id)])
             }
           } else if (eventType === 'UPDATE') {
             const updated = newRow as Transaction
             if (updated.deleted_at) {
               // Soft-deleted — remove from view
-              setTransactions(allTransactions.filter(t => t.id !== updated.id))
+              setTransactions(current.filter(t => t.id !== updated.id))
             } else {
-              setTransactions(allTransactions.map(t => t.id === updated.id ? updated : t))
+              setTransactions(current.map(t => t.id === updated.id ? updated : t))
             }
           } else if (eventType === 'DELETE') {
-            setTransactions(allTransactions.filter(t => t.id !== (oldRow as { id: string }).id))
+            setTransactions(current.filter(t => t.id !== (oldRow as { id: string }).id))
           }
         }
       )
@@ -72,7 +82,7 @@ export function TransactionsView({ transactions, settings, userId, isPro }: Prop
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId, allTransactions, setTransactions])
+  }, [userId, setTransactions])
 
   const sym        = settings?.currency_symbol ?? '£'
   const categories = settings?.categories ?? []

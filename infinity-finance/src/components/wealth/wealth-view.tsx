@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatCompact, pct, clamp } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target } from 'lucide-react'
+import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target, Landmark } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
 
@@ -289,11 +290,12 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       {tab === 'goals' && (
         <div className="space-y-4">
           {goals.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <div className="text-4xl mb-3">🎯</div>
-              <p className="text-sm mb-3">Set a financial goal to track your progress</p>
-              <Button variant="tint" size="sm" onClick={() => setDialog({ type: 'goal' })}>Add first goal</Button>
-            </div>
+            <EmptyState
+              icon={Target}
+              title="No goals yet"
+              description="Set a savings goal to start working towards your financial future."
+              action={<Button variant="tint" size="sm" onClick={() => setDialog({ type: 'goal' })}>Add first goal</Button>}
+            />
           ) : goals.map(g => {
             const p = pct(g.current, g.target)
             const color = p >= 100 ? 'var(--ios-green)' : p > 50 ? 'var(--ios-blue)' : 'var(--ios-orange)'

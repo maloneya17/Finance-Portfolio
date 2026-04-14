@@ -1,5 +1,6 @@
 import { createClient as createAnonClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit } from '@/lib/rate-limit'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -9,6 +10,12 @@ export async function POST(request: Request) {
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // 1b. Rate-limit account deletion to 3 attempts per 5 minutes
+  const allowed = rateLimit(`account-delete:${user.id}`, 3, 300_000)
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }
 
   // 2. Require password confirmation to prevent CSRF

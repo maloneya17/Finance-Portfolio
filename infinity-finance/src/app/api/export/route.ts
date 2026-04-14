@@ -13,17 +13,28 @@ function escapeCSVValue(value: string | number | boolean | null | undefined): st
   return `"${str.replace(/"/g, '""')}"`
 }
 
+/**
+ * Prevent CSV formula injection by prefixing dangerous leading characters with a single quote.
+ * Affected chars: = + - @ \t \r
+ */
+function sanitizeCsvField(value: string): string {
+  if (value.length > 0 && ['=', '+', '-', '@', '\t', '\r'].includes(value[0])) {
+    return `'${value}`
+  }
+  return value
+}
+
 function buildTransactionCSV(transactions: Transaction[]): string {
   const header = 'Date,Type,Category,Description,Amount,Notes,Tags'
   const rows = transactions.map(tx => {
-    const tags = tx.tags ? tx.tags.join(';') : ''
+    const tags = tx.tags ? sanitizeCsvField(tx.tags.join(';')) : ''
     return [
       escapeCSVValue(tx.date),
       escapeCSVValue(tx.type),
-      escapeCSVValue(tx.category),
-      escapeCSVValue(tx.description),
+      escapeCSVValue(tx.category ? sanitizeCsvField(tx.category) : tx.category),
+      escapeCSVValue(tx.description ? sanitizeCsvField(tx.description) : tx.description),
       escapeCSVValue(tx.amount),
-      escapeCSVValue(tx.notes),
+      escapeCSVValue(tx.notes ? sanitizeCsvField(tx.notes) : tx.notes),
       escapeCSVValue(tags),
     ].join(',')
   })

@@ -30,7 +30,8 @@ export default async function TransactionsPage() {
   }
 
   const [{ data: transactions }, { data: settings }] = await Promise.all([
-    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', dateFilter).is('deleted_at', null).order('date', { ascending: false }).order('created_at', { ascending: false }),
+    // TODO: implement cursor-based pagination when > 500 transactions
+    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', dateFilter).is('deleted_at', null).order('date', { ascending: false }).order('created_at', { ascending: false }).limit(500),
     supabase.from('settings').select('*').eq('user_id', user.id).single(),
   ])
 

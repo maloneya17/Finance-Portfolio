@@ -49,58 +49,70 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
     setError(null)
     setLoading(true)
 
-    const parsedAmount = parseFloat(amount)
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('Please enter a valid amount.')
+    try {
+      const parsedAmount = parseFloat(amount)
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        setError('Please enter a valid amount.')
+        setLoading(false)
+        return
+      }
+
+      const parsedSplits = hasSplits
+        ? splits.filter(r => r.category && parseFloat(r.amount) > 0).map(r => ({ category: r.category, amount: parseFloat(r.amount) }))
+        : null
+
+      if (hasSplits && parsedSplits !== null) {
+        if (parsedSplits.length < 2) {
+          setError('Please add at least 2 valid split rows (each needs a category and amount).')
+          setLoading(false)
+          return
+        }
+        const splitSum = parsedSplits.reduce((s, r) => s + r.amount, 0)
+        if (Math.abs(splitSum - parsedAmount) > 0.01) {
+          setError(
+            `Split amounts (${sym}${splitSum.toFixed(2)}) must add up to the total (${sym}${parsedAmount.toFixed(2)})`
+          )
+          setLoading(false)
+          return
+        }
+      }
+
+      // Atomicity note: split rows are stored as a JSONB array in the `splits`
+      // column of the parent transaction row — NOT as separate DB rows. This means
+      // the entire split is written in a single INSERT/UPDATE, so it is inherently
+      // atomic: either all split data is saved or none of it is. No manual rollback
+      // is required. If Supabase ever moves splits to a child table, each insert
+      // would need to be wrapped in a DB transaction (RPC) or rolled back manually
+      // by deleting any successfully inserted rows on failure.
+      const txPayload = {
+        user_id:     userId,
+        type,
+        description: desc.trim(),
+        amount:      parsedAmount,
+        category:    hasSplits ? 'Split' : category,
+        date,
+        notes:       notes.trim() || null,
+        tags:        tags.split(',').map(t => t.trim()).filter(Boolean),
+        splits:      parsedSplits,
+        is_recurring: false,
+      }
+
+      if (editing) {
+        const { data, error } = await supabase.from('transactions').update(txPayload).eq('id', editing.id).select().single()
+        if (error) { setError(error.message); setLoading(false); return }
+        if (data) setTransactions(allTransactions.map(t => t.id === editing.id ? data : t))
+      } else {
+        const { data, error } = await supabase.from('transactions').insert(txPayload).select().single()
+        if (error) { setError(error.message); setLoading(false); return }
+        if (data) setTransactions([data, ...allTransactions])
+      }
+
+      router.refresh()
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
       setLoading(false)
-      return
     }
-
-    const parsedSplits = hasSplits
-      ? splits.filter(r => r.category && parseFloat(r.amount) > 0).map(r => ({ category: r.category, amount: parseFloat(r.amount) }))
-      : null
-
-    if (hasSplits && parsedSplits !== null) {
-      if (parsedSplits.length < 2) {
-        setError('Please add at least 2 valid split rows (each needs a category and amount).')
-        setLoading(false)
-        return
-      }
-      const splitSum = parsedSplits.reduce((s, r) => s + r.amount, 0)
-      if (Math.abs(splitSum - parsedAmount) > 0.01) {
-        setError(
-          `Split amounts (${sym}${splitSum.toFixed(2)}) must add up to the total (${sym}${parsedAmount.toFixed(2)})`
-        )
-        setLoading(false)
-        return
-      }
-    }
-
-    const payload = {
-      user_id:     userId,
-      type,
-      description: desc.trim(),
-      amount:      parsedAmount,
-      category:    hasSplits ? 'Split' : category,
-      date,
-      notes:       notes.trim() || null,
-      tags:        tags.split(',').map(t => t.trim()).filter(Boolean),
-      splits:      parsedSplits,
-      is_recurring: false,
-    }
-
-    if (editing) {
-      const { data, error } = await supabase.from('transactions').update(payload).eq('id', editing.id).select().single()
-      if (error) { setError(error.message); setLoading(false); return }
-      if (data) setTransactions(allTransactions.map(t => t.id === editing.id ? data : t))
-    } else {
-      const { data, error } = await supabase.from('transactions').insert(payload).select().single()
-      if (error) { setError(error.message); setLoading(false); return }
-      if (data) setTransactions([data, ...allTransactions])
-    }
-
-    router.refresh()
-    onSuccess()
   }
 
   return (

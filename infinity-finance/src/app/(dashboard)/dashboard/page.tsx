@@ -42,7 +42,8 @@ export default async function DashboardPage() {
     { data: budgets },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', transactionDateFilter).is('deleted_at', null).order('date', { ascending: false }),
+    // TODO: implement cursor-based pagination when > 500 transactions
+    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', transactionDateFilter).is('deleted_at', null).order('date', { ascending: false }).limit(500),
     supabase.from('bills').select('*').eq('user_id', user.id).eq('is_active', true).order('day'),
     supabase.from('bill_payments').select('*').eq('user_id', user.id).eq('month_key', monthKey),
     supabase.from('assets').select('*').eq('user_id', user.id).order('value', { ascending: false }),

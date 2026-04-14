@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, monthKeyToLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Plus, CheckCircle2, Circle, Pencil, Trash2 } from 'lucide-react'
+import { Plus, CheckCircle2, Circle, Pencil, Trash2, CalendarDays } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Props {
   bills: Bill[]
@@ -168,11 +169,12 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
       {/* Bill list */}
       <Card>
         {bills.length === 0 ? (
-          <div className="text-center py-16 text-slate-400">
-            <div className="text-4xl mb-3">📄</div>
-            <p className="text-sm mb-3">No bills set up yet</p>
-            <Button variant="tint" size="sm" onClick={() => setOpen(true)}>Add your first bill</Button>
-          </div>
+          <EmptyState
+            icon={CalendarDays}
+            title="No bills yet"
+            description="Add recurring bills to track your monthly obligations."
+            action={<Button variant="tint" size="sm" onClick={() => setOpen(true)}>Add your first bill</Button>}
+          />
         ) : (
           <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list" aria-label="Bills">
             {bills.map(bill => {
@@ -206,7 +208,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                     {formatCurrency(bill.amount, sym)}
                   </span>
 
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                     <Button variant="ghost" size="icon-sm" onClick={() => { setEditing(bill); setOpen(true) }} aria-label={`Edit ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]">
                       <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
@@ -264,7 +266,8 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parseFloat(amount), day: parseInt(day), category }
+    // Clamp day to 28 — the safe maximum that works for all months including February
+    const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parseFloat(amount), day: Math.min(Number(day), 28), category }
     if (bill) {
       const { data, error } = await supabase.from('bills').update(payload).eq('id', bill.id).select().single()
       if (error) { setError(error.message); setLoading(false); return }
@@ -290,7 +293,7 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
         </div>
         <div>
           <label htmlFor="bill-day" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Day of month</label>
-          <Input id="bill-day" type="number" min="1" max="31" value={day} onChange={e => setDay(e.target.value)} required />
+          <Input id="bill-day" type="number" min="1" max="28" value={day} onChange={e => setDay(e.target.value)} required />
         </div>
       </div>
       <div>

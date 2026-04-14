@@ -45,6 +45,18 @@ export async function POST(req: NextRequest) {
       if (session.subscription) {
         const sub = await stripe.subscriptions.retrieve(session.subscription as string)
 
+        // Idempotency guard: skip if this subscription has already been applied
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('stripe_subscription_id')
+          .eq('id', supabaseId)
+          .single()
+
+        if (existingProfile && (existingProfile as { stripe_subscription_id: string | null }).stripe_subscription_id === sub.id) {
+          logger.warn('stripe-webhook', `Duplicate checkout.session.completed for subscription ${sub.id} — skipping`)
+          break
+        }
+
         logger.info('stripe-webhook', `Upgrading user to pro: ${supabaseId}`)
 
         const periodEnd = sub.items.data[0]?.current_period_end
@@ -82,7 +94,8 @@ export async function POST(req: NextRequest) {
 
       {
         const userId = (profile as { id: string }).id
-        const active = ['active', 'trialing'].includes(sub.status)
+        // Keep users as Pro during past_due (grace period); only downgrade on canceled/unpaid/incomplete_expired
+        const active = ['active', 'trialing', 'past_due'].includes(sub.status)
 
         logger.info('stripe-webhook', `Updating subscription for user ${userId}: status=${sub.status}, active=${active}`)
 
@@ -99,6 +112,20 @@ export async function POST(req: NextRequest) {
 
         logger.info('stripe-webhook', `Successfully updated subscription for user ${userId}`)
       }
+      break
+    }
+
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice
+      const customerId = invoice.customer as string
+      logger.warn('stripe-webhook', `Payment failed for customer ${customerId}`)
+      break
+    }
+
+    case 'customer.subscription.trial_ending': {
+      const sub = event.data.object as Stripe.Subscription
+      logger.info('stripe-webhook', `Trial ending for subscription ${sub.id} (customer: ${sub.customer as string})`)
+      // TODO: send trial-ending notification email
       break
     }
 

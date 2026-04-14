@@ -97,7 +97,8 @@ create table public.bills (
   user_id     uuid references public.profiles on delete cascade not null,
   name        text not null,
   amount      numeric(15,2) not null constraint amount_positive check (amount > 0),
-  day         integer not null check (day between 1 and 31),
+  -- Day 28 is the safe maximum that works for all months including February
+  day         integer not null check (day >= 1 and day <= 28),
   category    text not null default 'Bills',
   is_active   boolean not null default true,
   created_at  timestamptz not null default now(),
@@ -113,7 +114,9 @@ create table public.bill_payments (
   user_id     uuid references public.profiles on delete cascade not null,
   month_key   text not null,   -- 'YYYY-MM'
   paid        boolean not null default false,
-  transaction_id uuid,         -- linked auto-created transaction
+  -- Migration note: ON DELETE SET NULL ensures deleting a transaction nullifies
+  -- the reference here instead of erroring or leaving a dangling FK pointer.
+  transaction_id uuid references public.transactions(id) on delete set null, -- linked auto-created transaction
   updated_at  timestamptz not null default now(),
   unique(bill_id, month_key)
 );
@@ -203,6 +206,11 @@ alter table public.budgets enable row level security;
 create policy "Users own their budgets" on budgets for all using (auth.uid() = user_id);
 
 -- ─── NET WORTH SNAPSHOTS ──────────────────────────────────────────────────────
+-- Upsert pattern: conflict target is (user_id, date) — enforced by the unique
+-- constraint below. Use ON CONFLICT (user_id, date) DO UPDATE to overwrite an
+-- existing snapshot for the same user+day without inserting a duplicate row.
+-- Example: INSERT INTO wealth_snapshots (...) VALUES (...)
+--          ON CONFLICT (user_id, date) DO UPDATE SET net_worth = EXCLUDED.net_worth, ...
 create table public.wealth_snapshots (
   id          uuid primary key default uuid_generate_v4(),
   user_id     uuid references public.profiles on delete cascade not null,
@@ -231,3 +239,20 @@ create trigger set_updated_at before update on public.assets          for each r
 create trigger set_updated_at before update on public.debts           for each row execute function set_updated_at();
 create trigger set_updated_at before update on public.goals           for each row execute function set_updated_at();
 create trigger update_bills_updated_at before update on public.bills  for each row execute function set_updated_at();
+
+-- ─── GDPR: SCHEDULED HARD-DELETE OF SOFT-DELETED RECORDS ─────────────────────
+-- GDPR: Hard-delete soft-deleted records older than 90 days
+CREATE OR REPLACE FUNCTION purge_soft_deleted_transactions()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  DELETE FROM transactions
+  WHERE deleted_at IS NOT NULL
+    AND deleted_at < NOW() - INTERVAL '90 days';
+END;
+$$;
+
+-- Note: Schedule this via pg_cron in Supabase dashboard:
+-- SELECT cron.schedule('purge-deleted-transactions', '0 3 * * *', 'SELECT purge_soft_deleted_transactions()');
