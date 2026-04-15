@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Transaction } from '@/types/supabase'
@@ -24,7 +24,7 @@ interface Props {
 
 export function TransactionForm({ categories, sym, userId, editing, onSuccess }: Props) {
   const router   = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const [type, setType]         = useState<'income'|'expense'|'transfer'>(editing?.type ?? 'expense')
   const [desc, setDesc]         = useState(editing?.description ?? '')
@@ -104,7 +104,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
         type,
         description: desc.trim(),
         amount:      Math.round(parsedAmount * 100) / 100,
-        category:    hasSplits ? 'Split' : category,
+        category:    category,
         date,
         notes:       notes.trim() || null,
         tags:        tags.split(',').map(t => t.trim()).filter(Boolean),
