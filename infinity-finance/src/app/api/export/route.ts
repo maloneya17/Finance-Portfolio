@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
 import { NextResponse } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 import type { Transaction, Bill, Asset, Debt, Goal } from '@/types/supabase'
 
 // GET /api/export?format=csv|json&type=transactions|bills|assets|debts|goals|all
@@ -54,21 +55,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // 2. Check Pro subscription
+  // 2. Rate limit per user
+  if (!rateLimit(user.id, 10, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
+  // 3. Check subscription
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription')
     .eq('id', user.id)
     .single()
 
-  if (!profile || (profile as { subscription: string }).subscription !== 'pro') {
-    return NextResponse.json({ error: 'Pro subscription required' }, { status: 403 })
-  }
+  const isPro = (profile as { subscription: string } | null)?.subscription === 'pro'
 
-  // 3. Parse query params
+  // 4. Parse query params
   const url = new URL(request.url)
-  const format = url.searchParams.get('format') ?? 'csv'
-  const type   = url.searchParams.get('type') ?? 'all'
+  const searchParams = url.searchParams
+  const format = searchParams.get('format') ?? 'json'
+  const type   = searchParams.get('type') ?? 'transactions'
+
+  // Free users: only allow JSON transactions export
+  if (!isPro && (format === 'csv' || type === 'all')) {
+    return NextResponse.json({
+      error: 'Upgrade to Pro for CSV export and full data export. Basic JSON export of your transactions is always free.',
+    }, { status: 403 })
+  }
 
   const validFormats = ['csv', 'json']
   const validTypes   = ['transactions', 'bills', 'assets', 'debts', 'goals', 'all']
@@ -97,6 +109,7 @@ export async function GET(request: Request) {
         .eq('user_id', user.id)
         .is('deleted_at', null)
         .order('date', { ascending: false })
+        .limit(10000)
       if (error) throw new Error(`transactions: ${error.message}`)
       transactions = (data ?? []) as Transaction[]
     }
@@ -106,6 +119,7 @@ export async function GET(request: Request) {
         .from('bills')
         .select('*')
         .eq('user_id', user.id)
+        .limit(10000)
       if (error) throw new Error(`bills: ${error.message}`)
       bills = (data ?? []) as Bill[]
     }
@@ -115,6 +129,7 @@ export async function GET(request: Request) {
         .from('assets')
         .select('*')
         .eq('user_id', user.id)
+        .limit(10000)
       if (error) throw new Error(`assets: ${error.message}`)
       assets = (data ?? []) as Asset[]
     }
@@ -124,6 +139,7 @@ export async function GET(request: Request) {
         .from('debts')
         .select('*')
         .eq('user_id', user.id)
+        .limit(10000)
       if (error) throw new Error(`debts: ${error.message}`)
       debts = (data ?? []) as Debt[]
     }
@@ -133,6 +149,7 @@ export async function GET(request: Request) {
         .from('goals')
         .select('*')
         .eq('user_id', user.id)
+        .limit(10000)
       if (error) throw new Error(`goals: ${error.message}`)
       goals = (data ?? []) as Goal[]
     }
@@ -152,6 +169,7 @@ export async function GET(request: Request) {
         headers: {
           'Content-Type': 'application/json',
           'Content-Disposition': `attachment; filename="infinity-finance-export-${today}.json"`,
+          'Cache-Control': 'no-store, private',
         },
       })
     }
@@ -163,6 +181,7 @@ export async function GET(request: Request) {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': `attachment; filename="transactions-${today}.csv"`,
+        'Cache-Control': 'no-store, private',
       },
     })
   } catch (err) {

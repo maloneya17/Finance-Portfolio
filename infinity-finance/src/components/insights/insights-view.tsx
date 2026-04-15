@@ -56,8 +56,8 @@ export function InsightsView({ profile, transactions, settings }: Props) {
   const lastTxs  = transactions.filter(t => t.date.startsWith(prevMonth))
 
   // ── FREE INSIGHT 1: Spending Trend ─────────────────────────────────────────
-  const thisExpenses = thisTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-  const lastExpenses = lastTxs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const thisExpenses = thisTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
+  const lastExpenses = lastTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
 
   let spendingTrendIcon:  LucideIcon
   let spendingTrendColor: string
@@ -90,7 +90,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
   }
 
   // ── FREE INSIGHT 2: Savings Rate ──────────────────────────────────────────
-  const income      = thisTxs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const income      = thisTxs.filter(t => t.type === 'income').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
   const saved       = income - thisExpenses
   const savingsRate = income > 0 ? (saved / income) * 100 : 0
 
@@ -124,7 +124,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
   // ── FREE INSIGHT 3: Top Spending Category ──────────────────────────────────
   const catTotals: Record<string, number> = {}
   thisTxs.filter(t => t.type === 'expense').forEach(t => {
-    catTotals[t.category] = (catTotals[t.category] ?? 0) + t.amount
+    catTotals[t.category] = Math.round(((catTotals[t.category] ?? 0) * 100 + Math.round(t.amount * 100))) / 100
   })
   const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1])
   const topCat     = sortedCats[0]
@@ -159,7 +159,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
   const recurringCandidates: RecurringCandidate[] = []
   for (const [desc, data] of Object.entries(descGroups)) {
     if (data.months.size < 2) continue
-    const mean = data.amounts.reduce((s, a) => s + a, 0) / data.amounts.length
+    const mean = data.amounts.reduce((s, a) => s + Math.round(a * 100), 0) / (data.amounts.length * 100)
     const allConsistent = data.amounts.every(a => Math.abs(a - mean) / mean <= 0.1)
     if (!allConsistent) continue
     // Find a representative display name (original casing of first occurrence)
@@ -170,7 +170,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
   // Sort by avg amount descending
   recurringCandidates.sort((a, b) => b.avgAmount - a.avgAmount)
 
-  const totalRecurring = recurringCandidates.reduce((s, c) => s + c.avgAmount, 0)
+  const totalRecurring = recurringCandidates.reduce((s, c) => s + Math.round(c.avgAmount * 100), 0) / 100
   const top3Recurring  = recurringCandidates.slice(0, 3)
 
   let recurringLabel: string
@@ -240,7 +240,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
     budgets.forEach(budget => {
       const spent = thisTxs
         .filter(t => t.type === 'expense' && t.category === budget.category)
-        .reduce((s, t) => s + t.amount, 0)
+        .reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
       if (spent <= budget.amount) {
         withinCount++
       } else {

@@ -23,6 +23,12 @@ interface Props {
   currentMonth: string
 }
 
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
 export function BillsView({ bills: initBills, initialPayments, settings, userId, currentMonth }: Props) {
   const [bills, setBills]       = useState<Bill[]>(initBills)
   const [payments, setPayments] = useState<Record<string, BillPayment>>(
@@ -58,11 +64,22 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const totalUnpaid = totalDue - totalPaid
 
   async function togglePaid(bill: Bill) {
-    const isPaid   = paidIds.has(bill.id)
-    const existing = payments[bill.id]
+    const isPaid       = paidIds.has(bill.id)
+    const existing     = payments[bill.id]
     const becomingPaid = !isPaid
 
     if (existing) {
+      // Toggling an existing payment record
+      if (!becomingPaid && existing.transaction_id) {
+        // Soft-delete the linked transaction instead of hard-deleting
+        const { error: softDelErr } = await supabase
+          .from('transactions')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', existing.transaction_id)
+          .eq('user_id', userId)
+        if (softDelErr) console.warn('Failed to soft-delete bill payment transaction:', softDelErr.message)
+      }
+
       const updatePayload: BillPaymentUpdate = {
         paid: !isPaid,
         updated_at: new Date().toISOString(),
@@ -70,49 +87,59 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
       }
       const { data } = await supabase.from('bill_payments').update(updatePayload).eq('id', existing.id).select().single()
       if (data) setPayments({ ...payments, [bill.id]: data as BillPayment })
-
-      // When un-toggling paid, delete the linked transaction
-      if (!becomingPaid && existing.transaction_id) {
-        const { error: delError } = await supabase
-          .from('transactions')
-          .delete()
-          .eq('id', existing.transaction_id)
-          .eq('user_id', userId)
-        if (delError) console.warn('Failed to delete bill payment transaction:', delError.message)
-      }
     } else {
+      // Step 1: Insert bill_payment and capture returned id
       const insertPayload: BillPaymentInsert = { bill_id: bill.id, user_id: userId, month_key: month, paid: true }
-      const { data } = await supabase.from('bill_payments').insert(insertPayload).select().single()
-      if (data) setPayments({ ...payments, [bill.id]: data as BillPayment })
-    }
+      const { data: newPayment, error: paymentErr } = await supabase
+        .from('bill_payments')
+        .insert(insertPayload)
+        .select('id')
+        .single()
+      if (paymentErr || !newPayment) {
+        console.error('Failed to create bill payment record:', paymentErr?.message)
+        return
+      }
 
-    if (becomingPaid) {
+      // Step 2: Create linked transaction with correct date for this month
+      const txDate = (() => {
+        const [year, mon] = month.split('-').map(Number)
+        const lastDay = new Date(year, mon, 0).getDate()
+        const day = Math.min(bill.day, lastDay)
+        return `${month}-${String(day).padStart(2, '0')}`
+      })()
+
       const txPayload: TransactionInsert = {
         user_id:      userId,
         type:         'expense',
         amount:       bill.amount,
         category:     bill.category || 'Bills',
-        description:  `${bill.name} - bill payment`,
-        date:         new Date().toISOString().split('T')[0],
-        notes:        'Auto-created from bill payment',
+        description:  bill.name,
+        date:         txDate,
+        notes:        `Auto-created for bill: ${bill.name}`,
         is_recurring: false,
         splits:       null,
         tags:         ['bill'],
       }
-      const { data: txData, error: txError } = await supabase.from('transactions').insert(txPayload).select().single()
-      if (txError) {
-        console.error('Failed to create bill payment transaction:', txError.message)
-      } else if (txData && payments[bill.id]) {
-        // Store the transaction_id back on the bill_payment record
-        const linkPayload: BillPaymentUpdate = { transaction_id: (txData as { id: string }).id }
-        const { data: linked } = await supabase
-          .from('bill_payments')
-          .update(linkPayload)
-          .eq('id', payments[bill.id].id)
-          .select()
-          .single()
-        if (linked) setPayments({ ...payments, [bill.id]: linked as BillPayment })
+      const { data: newTx, error: txErr } = await supabase
+        .from('transactions')
+        .insert(txPayload)
+        .select('id')
+        .single()
+      if (txErr || !newTx) {
+        console.error('Failed to create bill payment transaction:', txErr?.message)
+        // Roll back the bill_payment we just inserted
+        await supabase.from('bill_payments').delete().eq('id', (newPayment as { id: string }).id)
+        return
       }
+
+      // Step 3: Link transaction_id back to bill_payment using the returned id (NOT state)
+      const { data: linked } = await supabase
+        .from('bill_payments')
+        .update({ transaction_id: (newTx as { id: string }).id })
+        .eq('id', (newPayment as { id: string }).id)
+        .select()
+        .single()
+      if (linked) setPayments({ ...payments, [bill.id]: linked as BillPayment })
     }
 
     router.refresh()
@@ -166,6 +193,33 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
         </div>
       )}
 
+      {/* Month navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => {
+            const [y, m] = month.split('-').map(Number)
+            const prev = new Date(y, m - 2, 1)
+            setMonth(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`)
+          }}
+          className="p-2 rounded hover:bg-muted"
+          aria-label="Previous month"
+        >
+          ←
+        </button>
+        <span className="font-medium text-sm">{monthKeyToLabel(month)}</span>
+        <button
+          onClick={() => {
+            const [y, m] = month.split('-').map(Number)
+            const next = new Date(y, m, 1)
+            setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`)
+          }}
+          className="p-2 rounded hover:bg-muted"
+          aria-label="Next month"
+        >
+          →
+        </button>
+      </div>
+
       {/* Bill list */}
       <Card>
         {bills.length === 0 ? (
@@ -200,7 +254,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                     <p className={cn('text-sm font-semibold text-slate-800 dark:text-slate-100', paid && 'line-through')}>{bill.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant="outline" className="text-[10px]">{bill.category}</Badge>
-                      <span className="text-xs text-slate-400">Due {bill.day}th</span>
+                      <span className="text-xs text-slate-400">Due {ordinal(bill.day)}</span>
                     </div>
                   </div>
 

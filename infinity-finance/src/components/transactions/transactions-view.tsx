@@ -18,9 +18,10 @@ interface Props {
   settings: Settings | null
   userId: string
   isPro?: boolean
+  hitLimit?: boolean
 }
 
-export function TransactionsView({ transactions, settings, userId, isPro }: Props) {
+export function TransactionsView({ transactions, settings, userId, isPro, hitLimit }: Props) {
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
 
@@ -119,6 +120,12 @@ export function TransactionsView({ transactions, settings, userId, isPro }: Prop
           <Badge variant="warning">
             Showing 3 months of history. Upgrade to Pro for full history.
           </Badge>
+        </div>
+      )}
+
+      {hitLimit && (
+        <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 mb-4">
+          Showing your most recent 500 transactions. Older transactions are stored but not displayed here.
         </div>
       )}
 

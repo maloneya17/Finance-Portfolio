@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile, Settings, SettingsInsert } from '@/types/supabase'
+import type { Profile, Settings, SettingsInsert, Budget } from '@/types/supabase'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,14 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Crown, LogOut, Trash2, Plus, X, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFinanceStore } from '@/store/finance'
 
 interface Props {
   user: { id: string; email: string }
   profile: Profile | null
   settings: Settings | null
+  initialBudgets?: Budget[]
 }
 
-type Tab = 'general' | 'billing' | 'account'
+type Tab = 'general' | 'billing' | 'account' | 'budgets'
 
 const CURRENCIES = [
   { code: 'GBP', symbol: '£', label: 'British Pound (£)' },
@@ -31,7 +33,7 @@ const CURRENCIES = [
   { code: 'CHF', symbol: 'CHF', label: 'Swiss Franc' },
 ]
 
-export function SettingsView({ user, profile, settings }: Props) {
+export function SettingsView({ user, profile, settings, initialBudgets = [] }: Props) {
   const searchParams                = useSearchParams()
   const initialTab                  = (searchParams.get('tab') as Tab | null) ?? 'general'
   const [tab, setTab]               = useState<Tab>(initialTab)
@@ -45,8 +47,16 @@ export function SettingsView({ user, profile, settings }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showDeleteForm, setShowDeleteForm] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
+  // Budget state
+  const [budgets, setBudgets]           = useState<Budget[]>(initialBudgets)
+  const [newBudgetCat, setNewBudgetCat] = useState('')
+  const [newBudgetAmt, setNewBudgetAmt] = useState('')
+  const [budgetSaving, setBudgetSaving] = useState(false)
   const router   = useRouter()
   const supabase = createClient()
+
+  const privacyMode   = useFinanceStore(s => s.privacyMode)
+  const togglePrivacy = useFinanceStore(s => s.togglePrivacy)
 
   function handleTabChange(newTab: Tab) {
     setTab(newTab)
@@ -103,9 +113,39 @@ export function SettingsView({ user, profile, settings }: Props) {
     }
   }
 
+  async function addBudget() {
+    if (!newBudgetCat || !newBudgetAmt) return
+    const amount = parseFloat(newBudgetAmt)
+    if (isNaN(amount) || amount <= 0) return
+    setBudgetSaving(true)
+    const { data } = await supabase
+      .from('budgets')
+      .upsert({ user_id: user.id, category: newBudgetCat, amount }, { onConflict: 'user_id,category' })
+      .select()
+      .single()
+    if (data) {
+      setBudgets(prev => {
+        const existing = prev.findIndex(b => b.category === newBudgetCat)
+        if (existing >= 0) {
+          return prev.map(b => b.category === newBudgetCat ? (data as Budget) : b)
+        }
+        return [...prev, data as Budget]
+      })
+    }
+    setNewBudgetCat('')
+    setNewBudgetAmt('')
+    setBudgetSaving(false)
+  }
+
+  async function deleteBudget(id: string) {
+    setBudgets(prev => prev.filter(b => b.id !== id))
+    await supabase.from('budgets').delete().eq('id', id).eq('user_id', user.id)
+  }
+
   const tabs = [
     { id: 'general' as Tab, label: 'General' },
     { id: 'billing' as Tab, label: 'Billing' },
+    { id: 'budgets' as Tab, label: 'Budgets' },
     { id: 'account' as Tab, label: 'Account' },
   ]
 
@@ -152,6 +192,26 @@ export function SettingsView({ user, profile, settings }: Props) {
                     {CURRENCIES.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center justify-between py-3 border-b">
+                <div>
+                  <p className="text-sm font-medium">Privacy mode</p>
+                  <p className="text-xs text-muted-foreground">Blur financial amounts throughout the app</p>
+                </div>
+                <button
+                  role="switch"
+                  aria-checked={privacyMode}
+                  onClick={togglePrivacy}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    privacyMode ? 'bg-primary' : 'bg-input',
+                  )}
+                >
+                  <span className={cn(
+                    'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                    privacyMode ? 'translate-x-6' : 'translate-x-1',
+                  )} />
+                </button>
               </div>
             </CardContent>
           </Card>
@@ -218,12 +278,20 @@ export function SettingsView({ user, profile, settings }: Props) {
                     <span className="text-slate-500">Next billing</span>
                     <span className="font-medium">{profile?.subscription_ends_at ? new Date(profile.subscription_ends_at).toLocaleDateString() : '—'}</span>
                   </div>
-                  <Button variant="outline" className="w-full mt-4" onClick={() => window.location.href = '/api/stripe/portal'}>
+                  <Button variant="outline" className="w-full mt-4" onClick={async () => {
+                    const res = await fetch('/api/stripe/portal', { method: 'POST' })
+                    if (res.redirected) window.location.href = res.url
+                    else if (res.ok) { const { url } = await res.json(); window.location.href = url }
+                  }}>
                     Manage Subscription
                   </Button>
                 </div>
               ) : (
-                <Button className="w-full mt-2" onClick={() => window.location.href = '/api/stripe/checkout'}>
+                <Button className="w-full mt-2" onClick={async () => {
+                  const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                  if (res.redirected) window.location.href = res.url
+                  else if (res.ok) { const { url } = await res.json(); window.location.href = url }
+                }}>
                   <Crown className="w-4 h-4" aria-hidden="true" />
                   Upgrade to Pro — £4.99/mo
                 </Button>
@@ -309,6 +377,75 @@ export function SettingsView({ user, profile, settings }: Props) {
                     </div>
                   </>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Budgets */}
+      {tab === 'budgets' && (
+        <div className="space-y-5">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Monthly Budgets</CardTitle></CardHeader>
+            <CardContent className="pt-0">
+              {budgets.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-4">No budgets set yet.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 dark:divide-slate-800 mb-4">
+                  {budgets.map(budget => (
+                    <li key={budget.id} className="flex items-center justify-between py-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{budget.category}</p>
+                        <p className="text-xs text-slate-400">{currencyObj.symbol}{budget.amount.toFixed(2)}/month</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => deleteBudget(budget.id)}
+                        aria-label={`Delete budget for ${budget.category}`}
+                        className="text-slate-400 hover:text-[var(--ios-red)]"
+                      >
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="border-t pt-4 space-y-3">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Add a budget</p>
+                <div className="flex gap-2">
+                  <Select value={newBudgetCat} onValueChange={setNewBudgetCat}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newBudgetAmt}
+                    onChange={e => setNewBudgetAmt(e.target.value)}
+                    placeholder={`Amount (${currencyObj.symbol})`}
+                    className="w-36"
+                    aria-label="Budget amount"
+                  />
+                  <Button
+                    onClick={addBudget}
+                    disabled={budgetSaving || !newBudgetCat || !newBudgetAmt}
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" aria-hidden="true" />
+                    {budgetSaving ? 'Saving…' : 'Add'}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-400">If a budget for that category already exists, it will be updated.</p>
               </div>
             </CardContent>
           </Card>

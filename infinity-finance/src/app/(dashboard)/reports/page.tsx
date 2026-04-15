@@ -24,6 +24,7 @@ export default async function ReportsPage() {
     .select('*')
     .eq('user_id', user.id)
     .is('deleted_at', null)
+    .neq('type', 'transfer')
   if (!isPro) {
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)

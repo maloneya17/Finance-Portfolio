@@ -8,7 +8,7 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-03-31.basil' })
 }
 
-export async function GET() {
+export async function POST() {
   const stripe = getStripe()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -40,7 +40,7 @@ export async function GET() {
       metadata:    { supabase_id: user.id },
     })
 
-    return NextResponse.redirect(session.url!)
+    return NextResponse.json({ url: session.url! })
   } catch (err) {
     logger.error('stripe-checkout', 'Stripe API call failed', { error: String(err) })
     return NextResponse.json({ error: 'Payment service unavailable' }, { status: 503 })

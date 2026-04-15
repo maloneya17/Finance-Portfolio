@@ -129,13 +129,51 @@ export async function POST(req: NextRequest) {
       break
     }
 
+    case 'invoice.payment_succeeded':
+    case 'invoice.paid': {
+      const invoice = event.data.object as Stripe.Invoice
+      const customerId = invoice.customer as string
+      if (!customerId) break
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('stripe_customer_id', customerId)
+        .single()
+
+      if (!profile) {
+        logger.warn('stripe-webhook', `No profile found for customer ${customerId} on invoice.paid`)
+        break
+      }
+
+      // Retrieve the subscription to get the latest period end
+      if (invoice.subscription) {
+        const sub = await stripe.subscriptions.retrieve(invoice.subscription as string)
+        const periodEnd = sub.items.data[0]?.current_period_end
+        const userId = (profile as { id: string }).id
+
+        const { error } = await supabase.from('profiles').update({
+          subscription: 'pro',
+          subscription_ends_at: periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null,
+        }).eq('id', userId)
+
+        if (error) {
+          logger.error('stripe-webhook', `DB update failed for invoice.paid user ${userId}`, { error: error.message })
+          return NextResponse.json({ error: 'DB update failed' }, { status: 500 })
+        }
+
+        logger.info('stripe-webhook', `Renewed Pro access for user ${userId} via invoice.paid`)
+      }
+      break
+    }
+
     case 'customer.subscription.deleted': {
       const sub = event.data.object as Stripe.Subscription
       const customerId = sub.customer as string
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, stripe_subscription_id')
         .eq('stripe_customer_id', customerId)
         .single()
 
@@ -145,14 +183,27 @@ export async function POST(req: NextRequest) {
       }
 
       {
-        const userId = (profile as { id: string }).id
+        // Idempotency guard: skip if user has re-subscribed with a different subscription
+        const typedProfile = profile as { id: string; stripe_subscription_id: string | null }
+        if (typedProfile.stripe_subscription_id !== sub.id) {
+          logger.warn('stripe-webhook', `Skipping subscription.deleted for ${customerId} — subscription ID mismatch (user may have re-subscribed)`)
+          break
+        }
+
+        const userId = typedProfile.id
 
         logger.info('stripe-webhook', `Downgrading user to free: ${userId}`)
+
+        const periodEnd = sub.items.data[0]?.current_period_end
+        const periodEndDate = periodEnd ? new Date(periodEnd * 1000) : null
+        const now = new Date()
 
         const { error } = await supabase.from('profiles').update({
           subscription: 'free',
           stripe_subscription_id: null,
-          subscription_ends_at: null,
+          subscription_ends_at: periodEndDate && periodEndDate > now
+            ? periodEndDate.toISOString()
+            : null,
         }).eq('id', userId)
 
         if (error) {

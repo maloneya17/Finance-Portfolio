@@ -5,6 +5,26 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Convert a display amount string/number to integer pence (multiply by 100, round) */
+export function toPence(value: number | string): number {
+  return Math.round(parseFloat(String(value)) * 100)
+}
+
+/** Add two financial amounts safely via integer pence arithmetic */
+export function addAmounts(...values: (number | string)[]): number {
+  return values.reduce((sum: number, v) => sum + toPence(v), 0) / 100
+}
+
+/** Subtract b from a safely */
+export function subtractAmounts(a: number | string, b: number | string): number {
+  return (toPence(a) - toPence(b)) / 100
+}
+
+/** Sum an array of numbers safely */
+export function sumAmounts(values: (number | string)[]): number {
+  return values.reduce((sum: number, v) => sum + toPence(v), 0) / 100
+}
+
 export function formatCurrency(amount: number, symbol = '£', locale = 'en-GB'): string {
   // Map common currency symbols to their locale for correct formatting
   const localeMap: Record<string, string> = {

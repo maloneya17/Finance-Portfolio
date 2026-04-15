@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AppShell } from '@/components/layout/app-shell'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { OnboardingModal } from '@/components/onboarding/onboarding-modal'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -20,6 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <ErrorBoundary>
         {children}
       </ErrorBoundary>
+      {!settings && <OnboardingModal userId={user.id} />}
     </AppShell>
   )
 }

@@ -41,6 +41,7 @@ export default async function TransactionsPage() {
       settings={settings}
       userId={user.id}
       isPro={isPro}
+      hitLimit={transactions?.length === 500}
     />
   )
 }

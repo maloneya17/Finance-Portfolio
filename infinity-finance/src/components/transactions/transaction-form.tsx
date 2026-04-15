@@ -26,7 +26,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
   const router   = useRouter()
   const supabase = createClient()
 
-  const [type, setType]         = useState<'income'|'expense'>(editing?.type ?? 'expense')
+  const [type, setType]         = useState<'income'|'expense'|'transfer'>(editing?.type ?? 'expense')
   const [desc, setDesc]         = useState(editing?.description ?? '')
   const [amount, setAmount]     = useState(editing ? String(editing.amount) : '')
   const [category, setCategory] = useState(editing?.category ?? '')
@@ -80,8 +80,10 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
           setLoading(false)
           return
         }
-        const splitSum = parsedSplits.reduce((s, r) => s + r.amount, 0)
-        if (Math.abs(splitSum - parsedAmount) > 0.01) {
+        const splitSumPence = splits.reduce((s, r) => s + Math.round(parseFloat(r.amount || '0') * 100), 0)
+        const totalPence = Math.round(parsedAmount * 100)
+        if (splitSumPence !== totalPence) {
+          const splitSum = splitSumPence / 100
           setError(
             `Split amounts (${sym}${splitSum.toFixed(2)}) must add up to the total (${sym}${parsedAmount.toFixed(2)})`
           )
@@ -101,7 +103,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
         user_id:     userId,
         type,
         description: desc.trim(),
-        amount:      parsedAmount,
+        amount:      Math.round(parsedAmount * 100) / 100,
         category:    hasSplits ? 'Split' : category,
         date,
         notes:       notes.trim() || null,
@@ -152,7 +154,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
 
       {/* Type toggle */}
       <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-50 dark:bg-slate-800">
-        {(['expense', 'income'] as const).map(t => (
+        {(['expense', 'income', 'transfer'] as const).map(t => (
           <button
             key={t}
             type="button"
@@ -160,7 +162,11 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
             className={cn(
               'flex-1 py-2 text-sm font-semibold rounded-lg transition capitalize',
               type === t
-                ? t === 'expense' ? 'bg-white dark:bg-slate-900 text-[var(--ios-red)] shadow-sm' : 'bg-white dark:bg-slate-900 text-[var(--ios-green)] shadow-sm'
+                ? t === 'expense'
+                  ? 'bg-white dark:bg-slate-900 text-[var(--ios-red)] shadow-sm'
+                  : t === 'income'
+                    ? 'bg-white dark:bg-slate-900 text-[var(--ios-green)] shadow-sm'
+                    : 'bg-white dark:bg-slate-900 text-[var(--ios-blue)] shadow-sm'
                 : 'text-slate-400',
             )}
           >
@@ -246,7 +252,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
 
       {/* Split total indicator */}
       {hasSplits && (
-        <p className={cn('text-xs font-semibold', Math.abs(splitTotal - (parseFloat(amount) || 0)) <= 0.01 ? 'text-[var(--ios-green)]' : 'text-[var(--ios-red)]')}>
+        <p className={cn('text-xs font-semibold', splits.reduce((s, r) => s + Math.round(parseFloat(r.amount || '0') * 100), 0) === Math.round((parseFloat(amount) || 0) * 100) ? 'text-[var(--ios-green)]' : 'text-[var(--ios-red)]')}>
           Split total: {sym}{splitTotal.toFixed(2)} / {sym}{(parseFloat(amount) || 0).toFixed(2)}
         </p>
       )}

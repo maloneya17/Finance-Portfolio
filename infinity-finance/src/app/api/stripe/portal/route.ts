@@ -8,7 +8,7 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-03-31.basil' })
 }
 
-export async function GET() {
+export async function POST() {
   const stripe = getStripe()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -22,7 +22,7 @@ export async function GET() {
   const customerId = (profile as { stripe_customer_id: string | null } | null)?.stripe_customer_id
 
   if (!customerId) {
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=billing`)
+    return NextResponse.json({ url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=billing` })
   }
 
   try {
@@ -31,7 +31,7 @@ export async function GET() {
       return_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?tab=billing`,
     })
 
-    return NextResponse.redirect(session.url)
+    return NextResponse.json({ url: session.url })
   } catch (err) {
     logger.error('stripe-portal', 'Stripe API call failed', { error: String(err) })
     return NextResponse.json({ error: 'Payment service unavailable' }, { status: 503 })

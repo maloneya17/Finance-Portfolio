@@ -56,7 +56,7 @@ create table public.transactions (
   id          uuid primary key default uuid_generate_v4(),
   user_id     uuid references public.profiles on delete cascade not null,
   amount      numeric(15,2) not null constraint amount_positive check (amount > 0),
-  type        text not null check (type in ('income','expense')),
+  type        text not null check (type in ('income','expense','transfer')),
   category    text not null,
   description text not null default '',
   date        date not null,
@@ -72,8 +72,6 @@ create table public.transactions (
 );
 
 create index transactions_user_id_date on transactions(user_id, date desc);
-create index transactions_user_id_category on transactions(user_id, category);
-
 -- Category filtering (used in budget tracking and reports)
 create index if not exists idx_transactions_user_category on transactions(user_id, category);
 
@@ -89,7 +87,23 @@ CREATE INDEX IF NOT EXISTS idx_transactions_active
 create index if not exists idx_bills_user_due on bills(user_id, day);
 
 alter table public.transactions enable row level security;
-create policy "Users own their transactions" on transactions for all using (auth.uid() = user_id);
+drop policy if exists "Users own their transactions" on transactions;
+
+create policy "Users can read own active transactions"
+  on transactions for select
+  using (auth.uid() = user_id and deleted_at is null);
+
+create policy "Users can insert own transactions"
+  on transactions for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update own transactions"
+  on transactions for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own transactions"
+  on transactions for delete
+  using (auth.uid() = user_id);
 
 -- ─── BILLS ────────────────────────────────────────────────────────────────────
 create table public.bills (
@@ -130,7 +144,7 @@ create table public.recurring_templates (
   user_id     uuid references public.profiles on delete cascade not null,
   description text not null,
   amount      numeric(15,2) not null,
-  type        text not null check (type in ('income','expense')),
+  type        text not null check (type in ('income','expense','transfer')),
   category    text not null,
   day_of_month integer check (day_of_month between 1 and 28),
   is_active   boolean not null default true,
@@ -256,3 +270,14 @@ $$;
 
 -- Note: Schedule this via pg_cron in Supabase dashboard:
 -- SELECT cron.schedule('purge-deleted-transactions', '0 3 * * *', 'SELECT purge_soft_deleted_transactions()');
+
+-- ─── PERFORMANCE INDEXES ──────────────────────────────────────────────────────
+
+-- Missing index: bill_payments lookup by user + month (used on every dashboard/bills page load)
+CREATE INDEX IF NOT EXISTS idx_bill_payments_user_month ON bill_payments(user_id, month_key);
+
+-- Missing index: wealth_snapshots by user + date (used in net worth chart)
+CREATE INDEX IF NOT EXISTS idx_wealth_snapshots_user_date ON wealth_snapshots(user_id, date);
+
+-- Missing index: partial index for GDPR purge query performance
+CREATE INDEX IF NOT EXISTS idx_transactions_deleted ON transactions(deleted_at) WHERE deleted_at IS NOT NULL;
