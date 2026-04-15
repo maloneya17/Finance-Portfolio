@@ -56,7 +56,7 @@ export async function GET(request: Request) {
   }
 
   // 2. Rate limit per user
-  if (!rateLimit(user.id, 10, 60_000)) {
+  if (!rateLimit(`export:${user.id}`, 10, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
@@ -119,6 +119,7 @@ export async function GET(request: Request) {
         .from('bills')
         .select('*')
         .eq('user_id', user.id)
+        .eq('is_active', true)
         .limit(10000)
       if (error) throw new Error(`bills: ${error.message}`)
       bills = (data ?? []) as Bill[]

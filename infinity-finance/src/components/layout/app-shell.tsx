@@ -104,7 +104,7 @@ export function AppShell({ user, profile, settings, children }: AppShellProps) {
                 )}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="w-4.5 h-4.5 shrink-0" aria-hidden="true" />
+                <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
                 {item.label}
                 {item.href === '/insights' && !isPro && (
                   <Crown className="w-3 h-3 ml-auto" style={{ color: 'var(--ios-orange)' }} aria-label="Pro feature" />

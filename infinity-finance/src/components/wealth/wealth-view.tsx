@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target, Landmark } from
 import { EmptyState } from '@/components/ui/empty-state'
 import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
+import { toast } from 'sonner'
 
 interface Props {
   assets: Asset[]
@@ -53,7 +54,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       })
   }, [userId])
 
-  async function recordSnapshot() {
+  async function recordSnapshot(): Promise<void> {
     const supabase = createClient()
     // Fetch current totals fresh from DB
     const [{ data: assetRows }, { data: debtRows }] = await Promise.all([
@@ -84,14 +85,14 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
     if (!confirm('Delete this asset? This cannot be undone.')) return
     await supabase.from('assets').delete().eq('id', id)
     setAssets(assets.filter(a => a.id !== id))
-    recordSnapshot()
+    await recordSnapshot()
   }
 
   async function deleteDebt(id: string) {
     if (!confirm('Delete this debt entry? This cannot be undone.')) return
     await supabase.from('debts').delete().eq('id', id)
     setDebts(debts.filter(d => d.id !== id))
-    recordSnapshot()
+    await recordSnapshot()
   }
 
   async function deleteGoal(id: string) {
@@ -345,11 +346,11 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
           </DialogHeader>
           {dialog?.type === 'asset' && (
             <AssetForm asset={dialog.item as Asset} sym={sym} userId={userId}
-              onSuccess={a => { if (dialog.item) setAssets(assets.map(x => x.id === a.id ? a : x)); else setAssets([...assets, a]); setDialog(null); recordSnapshot() }} />
+              onSuccess={async (a) => { if (dialog.item) setAssets(assets.map(x => x.id === a.id ? a : x)); else setAssets([...assets, a]); setDialog(null); await recordSnapshot() }} />
           )}
           {dialog?.type === 'debt' && (
             <DebtForm debt={dialog.item as Debt} sym={sym} userId={userId}
-              onSuccess={d => { if (dialog.item) setDebts(debts.map(x => x.id === d.id ? d : x)); else setDebts([...debts, d]); setDialog(null); recordSnapshot() }} />
+              onSuccess={async (d) => { if (dialog.item) setDebts(debts.map(x => x.id === d.id ? d : x)); else setDebts([...debts, d]); setDialog(null); await recordSnapshot() }} />
           )}
           {dialog?.type === 'goal' && (
             <GoalForm goal={dialog.item as Goal} sym={sym} userId={userId}
@@ -374,13 +375,27 @@ function AssetForm({ asset, sym, userId, onSuccess }: { asset?: Asset; sym: stri
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const assetPayload: AssetInsert = { user_id: userId, name, type: type as AssetInsert['type'], value: parseFloat(value), ticker: ticker || null }
-    if (asset) {
-      const { data } = await supabase.from('assets').update(assetPayload as unknown as Record<string, unknown>).eq('id', asset.id).select().single()
-      onSuccess(data as Asset)
-    } else {
-      const { data } = await supabase.from('assets').insert(assetPayload as unknown as Record<string, unknown>).select().single()
-      onSuccess(data as Asset)
+    try {
+      const assetPayload: AssetInsert = { user_id: userId, name, type: type as AssetInsert['type'], value: parseFloat(value), ticker: ticker || null }
+      if (asset) {
+        const { data, error } = await supabase.from('assets').update(assetPayload as unknown as Record<string, unknown>).eq('id', asset.id).select().single()
+        if (error || !data) {
+          toast.error('Failed to save asset. Please try again.')
+          return
+        }
+        onSuccess(data as Asset)
+      } else {
+        const { data, error } = await supabase.from('assets').insert(assetPayload as unknown as Record<string, unknown>).select().single()
+        if (error || !data) {
+          toast.error('Failed to save asset. Please try again.')
+          return
+        }
+        onSuccess(data as Asset)
+      }
+    } catch {
+      toast.error('Something went wrong')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -417,13 +432,27 @@ function DebtForm({ debt, sym, userId, onSuccess }: { debt?: Debt; sym: string; 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const debtPayload: DebtInsert = { user_id: userId, name, balance: parseFloat(balance), apr: parseFloat(apr), min_payment: parseFloat(minPayment || '0'), type: debtType as DebtInsert['type'] }
-    if (debt) {
-      const { data } = await supabase.from('debts').update(debtPayload as unknown as Record<string, unknown>).eq('id', debt.id).select().single()
-      onSuccess(data as Debt)
-    } else {
-      const { data } = await supabase.from('debts').insert(debtPayload as unknown as Record<string, unknown>).select().single()
-      onSuccess(data as Debt)
+    try {
+      const debtPayload: DebtInsert = { user_id: userId, name, balance: parseFloat(balance), apr: parseFloat(apr), min_payment: parseFloat(minPayment || '0'), type: debtType as DebtInsert['type'] }
+      if (debt) {
+        const { data, error } = await supabase.from('debts').update(debtPayload as unknown as Record<string, unknown>).eq('id', debt.id).select().single()
+        if (error || !data) {
+          toast.error('Failed to save debt. Please try again.')
+          return
+        }
+        onSuccess(data as Debt)
+      } else {
+        const { data, error } = await supabase.from('debts').insert(debtPayload as unknown as Record<string, unknown>).select().single()
+        if (error || !data) {
+          toast.error('Failed to save debt. Please try again.')
+          return
+        }
+        onSuccess(data as Debt)
+      }
+    } catch {
+      toast.error('Something went wrong')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -464,13 +493,27 @@ function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const goalPayload: GoalInsert = { user_id: userId, name, target: parseFloat(target), current: parseFloat(current || '0'), emoji: emoji || null, deadline: deadline || null, notes: notes || null }
-    if (goal) {
-      const { data } = await supabase.from('goals').update(goalPayload as unknown as Record<string, unknown>).eq('id', goal.id).select().single()
-      onSuccess(data as Goal)
-    } else {
-      const { data } = await supabase.from('goals').insert(goalPayload as unknown as Record<string, unknown>).select().single()
-      onSuccess(data as Goal)
+    try {
+      const goalPayload: GoalInsert = { user_id: userId, name, target: parseFloat(target), current: parseFloat(current || '0'), emoji: emoji || null, deadline: deadline || null, notes: notes || null }
+      if (goal) {
+        const { data, error } = await supabase.from('goals').update(goalPayload as unknown as Record<string, unknown>).eq('id', goal.id).select().single()
+        if (error || !data) {
+          toast.error('Failed to save goal. Please try again.')
+          return
+        }
+        onSuccess(data as Goal)
+      } else {
+        const { data, error } = await supabase.from('goals').insert(goalPayload as unknown as Record<string, unknown>).select().single()
+        if (error || !data) {
+          toast.error('Failed to save goal. Please try again.')
+          return
+        }
+        onSuccess(data as Goal)
+      }
+    } catch {
+      toast.error('Something went wrong')
+    } finally {
+      setLoading(false)
     }
   }
 

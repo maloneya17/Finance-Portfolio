@@ -1,35 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/server-data'
 import { DashboardView } from '@/components/dashboard/dashboard-view'
 import { getMonthKey } from '@/lib/utils'
 
 export const metadata = { title: 'Dashboard — Infinity Finance' }
 
 export default async function DashboardPage() {
+  const { userId, isPro, dateFilter } = await requireAuth()
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
   const now = new Date()
   const monthKey = getMonthKey(now)
-  const yearStart = `${now.getFullYear()}-01-01`
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription')
-    .eq('id', user.id)
-    .single()
-
-  const isPro = (profile as { subscription: string } | null)?.subscription === 'pro'
-
-  let transactionDateFilter: string
-  if (isPro) {
-    transactionDateFilter = yearStart
-  } else {
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    transactionDateFilter = threeMonthsAgo.toISOString().slice(0, 10)
-  }
+  let txQuery = supabase.from('transactions').select('*').eq('user_id', userId).is('deleted_at', null).order('date', { ascending: false })
+  if (dateFilter) txQuery = txQuery.gte('date', dateFilter)
 
   // Fetch all dashboard data in parallel
   const [
@@ -43,14 +27,14 @@ export default async function DashboardPage() {
     { data: settings },
   ] = await Promise.all([
     // TODO: implement cursor-based pagination when > 500 transactions
-    supabase.from('transactions').select('*').eq('user_id', user.id).gte('date', transactionDateFilter).is('deleted_at', null).order('date', { ascending: false }).limit(500),
-    supabase.from('bills').select('*').eq('user_id', user.id).eq('is_active', true).order('day'),
-    supabase.from('bill_payments').select('*').eq('user_id', user.id).eq('month_key', monthKey),
-    supabase.from('assets').select('*').eq('user_id', user.id).order('value', { ascending: false }),
-    supabase.from('debts').select('*').eq('user_id', user.id).order('balance', { ascending: false }),
-    supabase.from('goals').select('*').eq('user_id', user.id).order('created_at'),
-    supabase.from('budgets').select('*').eq('user_id', user.id),
-    supabase.from('settings').select('*').eq('user_id', user.id).single(),
+    txQuery.limit(500),
+    supabase.from('bills').select('*').eq('user_id', userId).eq('is_active', true).order('day'),
+    supabase.from('bill_payments').select('*').eq('user_id', userId).eq('month_key', monthKey),
+    supabase.from('assets').select('*').eq('user_id', userId).order('value', { ascending: false }),
+    supabase.from('debts').select('*').eq('user_id', userId).order('balance', { ascending: false }),
+    supabase.from('goals').select('*').eq('user_id', userId).order('created_at'),
+    supabase.from('budgets').select('*').eq('user_id', userId),
+    supabase.from('settings').select('*').eq('user_id', userId).single(),
   ])
 
   return (

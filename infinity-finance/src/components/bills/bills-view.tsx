@@ -14,6 +14,7 @@ import { formatCurrency, monthKeyToLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Plus, CheckCircle2, Circle, Pencil, Trash2, CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { toast } from 'sonner'
 
 interface Props {
   bills: Bill[]
@@ -37,6 +38,8 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const [open, setOpen]         = useState(false)
   const [editing, setEditing]   = useState<Bill | null>(null)
   const [month, setMonth]       = useState(currentMonth)
+  const [toggleError, setToggleError] = useState<string | null>(null)
+  const [togglingId, setTogglingId]   = useState<string | null>(null)
   const router                  = useRouter()
   const supabase                = createClient()
   const sym                     = settings?.currency_symbol ?? '£'
@@ -64,85 +67,91 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const totalUnpaid = totalDue - totalPaid
 
   async function togglePaid(bill: Bill) {
-    const isPaid       = paidIds.has(bill.id)
-    const existing     = payments[bill.id]
-    const becomingPaid = !isPaid
+    if (togglingId === bill.id) return  // Prevent double-click
+    setTogglingId(bill.id)
+    try {
+      const isPaid       = paidIds.has(bill.id)
+      const existing     = payments[bill.id]
+      const becomingPaid = !isPaid
 
-    if (existing) {
-      // Toggling an existing payment record
-      if (!becomingPaid && existing.transaction_id) {
-        // Soft-delete the linked transaction instead of hard-deleting
-        const { error: softDelErr } = await supabase
+      if (existing) {
+        // Toggling an existing payment record
+        if (!becomingPaid && existing.transaction_id) {
+          // Soft-delete the linked transaction instead of hard-deleting
+          const { error: softDelErr } = await supabase
+            .from('transactions')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', existing.transaction_id)
+            .eq('user_id', userId)
+          if (softDelErr) console.warn('Failed to soft-delete bill payment transaction:', softDelErr.message)
+        }
+
+        const updatePayload: BillPaymentUpdate = {
+          paid: !isPaid,
+          updated_at: new Date().toISOString(),
+          transaction_id: becomingPaid ? existing.transaction_id : null,
+        }
+        const { data } = await supabase.from('bill_payments').update(updatePayload).eq('id', existing.id).select().single()
+        if (data) setPayments({ ...payments, [bill.id]: data as BillPayment })
+      } else {
+        // Step 1: Insert bill_payment and capture returned id
+        const insertPayload: BillPaymentInsert = { bill_id: bill.id, user_id: userId, month_key: month, paid: true }
+        const { data: newPayment, error: paymentErr } = await supabase
+          .from('bill_payments')
+          .insert(insertPayload)
+          .select('id')
+          .single()
+        if (paymentErr || !newPayment) {
+          toast.error('Failed to update bill payment')
+          return
+        }
+
+        // Step 2: Create linked transaction with correct date for this month
+        const txDate = (() => {
+          const [year, mon] = month.split('-').map(Number)
+          const lastDay = new Date(year, mon, 0).getDate()
+          const day = Math.min(bill.day, lastDay)
+          return `${month}-${String(day).padStart(2, '0')}`
+        })()
+
+        const txPayload: TransactionInsert = {
+          user_id:      userId,
+          type:         'expense',
+          amount:       bill.amount,
+          category:     bill.category || 'Bills',
+          description:  bill.name,
+          date:         txDate,
+          notes:        `Auto-created for bill: ${bill.name}`,
+          is_recurring: false,
+          splits:       null,
+          tags:         ['bill'],
+        }
+        const { data: newTx, error: txErr } = await supabase
           .from('transactions')
-          .update({ deleted_at: new Date().toISOString() })
-          .eq('id', existing.transaction_id)
-          .eq('user_id', userId)
-        if (softDelErr) console.warn('Failed to soft-delete bill payment transaction:', softDelErr.message)
+          .insert(txPayload)
+          .select('id')
+          .single()
+        if (txErr || !newTx) {
+          toast.error('Failed to update bill payment')
+          // Roll back the bill_payment we just inserted
+          await supabase.from('bill_payments').delete().eq('id', (newPayment as { id: string }).id)
+          return
+        }
+
+        // Step 3: Link transaction_id back to bill_payment using the returned id (NOT state)
+        const { data: linked } = await supabase
+          .from('bill_payments')
+          .update({ transaction_id: (newTx as { id: string }).id })
+          .eq('id', (newPayment as { id: string }).id)
+          .select()
+          .single()
+        if (linked) setPayments({ ...payments, [bill.id]: linked as BillPayment })
       }
 
-      const updatePayload: BillPaymentUpdate = {
-        paid: !isPaid,
-        updated_at: new Date().toISOString(),
-        transaction_id: becomingPaid ? existing.transaction_id : null,
-      }
-      const { data } = await supabase.from('bill_payments').update(updatePayload).eq('id', existing.id).select().single()
-      if (data) setPayments({ ...payments, [bill.id]: data as BillPayment })
-    } else {
-      // Step 1: Insert bill_payment and capture returned id
-      const insertPayload: BillPaymentInsert = { bill_id: bill.id, user_id: userId, month_key: month, paid: true }
-      const { data: newPayment, error: paymentErr } = await supabase
-        .from('bill_payments')
-        .insert(insertPayload)
-        .select('id')
-        .single()
-      if (paymentErr || !newPayment) {
-        console.error('Failed to create bill payment record:', paymentErr?.message)
-        return
-      }
-
-      // Step 2: Create linked transaction with correct date for this month
-      const txDate = (() => {
-        const [year, mon] = month.split('-').map(Number)
-        const lastDay = new Date(year, mon, 0).getDate()
-        const day = Math.min(bill.day, lastDay)
-        return `${month}-${String(day).padStart(2, '0')}`
-      })()
-
-      const txPayload: TransactionInsert = {
-        user_id:      userId,
-        type:         'expense',
-        amount:       bill.amount,
-        category:     bill.category || 'Bills',
-        description:  bill.name,
-        date:         txDate,
-        notes:        `Auto-created for bill: ${bill.name}`,
-        is_recurring: false,
-        splits:       null,
-        tags:         ['bill'],
-      }
-      const { data: newTx, error: txErr } = await supabase
-        .from('transactions')
-        .insert(txPayload)
-        .select('id')
-        .single()
-      if (txErr || !newTx) {
-        console.error('Failed to create bill payment transaction:', txErr?.message)
-        // Roll back the bill_payment we just inserted
-        await supabase.from('bill_payments').delete().eq('id', (newPayment as { id: string }).id)
-        return
-      }
-
-      // Step 3: Link transaction_id back to bill_payment using the returned id (NOT state)
-      const { data: linked } = await supabase
-        .from('bill_payments')
-        .update({ transaction_id: (newTx as { id: string }).id })
-        .eq('id', (newPayment as { id: string }).id)
-        .select()
-        .single()
-      if (linked) setPayments({ ...payments, [bill.id]: linked as BillPayment })
+      router.refresh()
+    } finally {
+      setTogglingId(null)
     }
-
-    router.refresh()
   }
 
   async function deleteBill(id: string) {
@@ -241,6 +250,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                 >
                   <button
                     onClick={() => togglePaid(bill)}
+                    disabled={togglingId === bill.id}
                     className="shrink-0 transition"
                     aria-label={paid ? `Mark ${bill.name} unpaid` : `Mark ${bill.name} paid`}
                     aria-pressed={paid}

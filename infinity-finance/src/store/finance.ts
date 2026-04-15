@@ -28,6 +28,7 @@ interface FinanceState {
   setSettings:     (s: Settings | null) => void
   setCurrentMonth: (m: string) => void
   togglePrivacy:   () => void
+  setPrivacyMode:  (v: boolean) => void
 
   // Real-time helpers
   addTransaction:    (tx: Transaction) => void
@@ -72,6 +73,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   setSettings:     s => set({ settings: s }),
   setCurrentMonth: m => set({ currentMonth: m }),
   togglePrivacy:   () => set(s => ({ privacyMode: !s.privacyMode })),
+  setPrivacyMode:  v => set({ privacyMode: v }),
 
   getMonthTransactions: () => {
     const { transactions, currentMonth } = get()

@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import type { Transaction, Settings, Profile } from '@/types/supabase'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -48,238 +49,269 @@ export function InsightsView({ profile, transactions, settings }: Props) {
   const budgets = useFinanceStore(s => s.budgets)
 
   const currentMonth = getMonthKey(today)
-  const prevMonth    = getPrevMonthKey(currentMonth)
 
-  const thisTxs  = transactions.filter(t => t.date.startsWith(currentMonth))
-  const lastTxs  = transactions.filter(t => t.date.startsWith(prevMonth))
+  const insights = useMemo(() => {
+    const prevMonth = getPrevMonthKey(currentMonth)
 
-  // ── FREE INSIGHT 1: Spending Trend ─────────────────────────────────────────
-  const thisExpenses = thisTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
-  const lastExpenses = lastTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
+    const thisTxs  = transactions.filter(t => t.date.startsWith(currentMonth))
+    const lastTxs  = transactions.filter(t => t.date.startsWith(prevMonth))
 
-  let spendingTrendIcon:  LucideIcon
-  let spendingTrendColor: string
-  let spendingTrendLabel: string
-  let spendingTrendText:  string
+    // ── FREE INSIGHT 1: Spending Trend ───────────────────────────────────────
+    const thisExpenses = thisTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
+    const lastExpenses = lastTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
 
-  if (lastExpenses === 0) {
-    spendingTrendIcon  = AlertCircle
-    spendingTrendColor = 'var(--ios-blue)'
-    spendingTrendLabel = 'Spending trend'
-    spendingTrendText  = 'Not enough data — add transactions from last month to see your trend.'
-  } else {
-    const pctChange = ((thisExpenses - lastExpenses) / lastExpenses) * 100
-    if (pctChange > 0) {
-      spendingTrendIcon  = TrendingUp
-      spendingTrendColor = 'var(--ios-red)'
-      spendingTrendLabel = 'Spending up'
-      spendingTrendText  = `Spending is up ${pctChange.toFixed(0)}% vs last month (${formatCurrency(thisExpenses, sym)} vs ${formatCurrency(lastExpenses, sym)}).`
-    } else if (pctChange < 0) {
-      spendingTrendIcon  = TrendingDown
-      spendingTrendColor = 'var(--ios-green)'
-      spendingTrendLabel = 'Spending down'
-      spendingTrendText  = `Spending is down ${Math.abs(pctChange).toFixed(0)}% vs last month. Great work!`
-    } else {
-      spendingTrendIcon  = TrendingDown
+    let spendingTrendIcon:  LucideIcon
+    let spendingTrendColor: string
+    let spendingTrendLabel: string
+    let spendingTrendText:  string
+
+    if (lastExpenses === 0) {
+      spendingTrendIcon  = AlertCircle
       spendingTrendColor = 'var(--ios-blue)'
-      spendingTrendLabel = 'Spending stable'
-      spendingTrendText  = `Spending is the same as last month (${formatCurrency(thisExpenses, sym)}).`
+      spendingTrendLabel = 'Spending trend'
+      spendingTrendText  = 'Not enough data — add transactions from last month to see your trend.'
+    } else {
+      const pctChange = ((thisExpenses - lastExpenses) / lastExpenses) * 100
+      if (pctChange > 0) {
+        spendingTrendIcon  = TrendingUp
+        spendingTrendColor = 'var(--ios-red)'
+        spendingTrendLabel = 'Spending up'
+        spendingTrendText  = `Spending is up ${pctChange.toFixed(0)}% vs last month (${formatCurrency(thisExpenses, sym)} vs ${formatCurrency(lastExpenses, sym)}).`
+      } else if (pctChange < 0) {
+        spendingTrendIcon  = TrendingDown
+        spendingTrendColor = 'var(--ios-green)'
+        spendingTrendLabel = 'Spending down'
+        spendingTrendText  = `Spending is down ${Math.abs(pctChange).toFixed(0)}% vs last month. Great work!`
+      } else {
+        spendingTrendIcon  = TrendingDown
+        spendingTrendColor = 'var(--ios-blue)'
+        spendingTrendLabel = 'Spending stable'
+        spendingTrendText  = `Spending is the same as last month (${formatCurrency(thisExpenses, sym)}).`
+      }
     }
-  }
 
-  // ── FREE INSIGHT 2: Savings Rate ──────────────────────────────────────────
-  const income      = thisTxs.filter(t => t.type === 'income').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
-  const saved       = income - thisExpenses
-  const savingsRate = income > 0 ? (saved / income) * 100 : 0
+    // ── FREE INSIGHT 2: Savings Rate ────────────────────────────────────────
+    const thisIncome  = thisTxs.filter(t => t.type === 'income').reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
+    const saved       = thisIncome - thisExpenses
+    const savingsRate = thisIncome > 0 ? (saved / thisIncome) * 100 : 0
 
-  let savingsIcon:  LucideIcon
-  let savingsColor: string
-  let savingsLabel: string
-  let savingsText:  string
+    let savingsIcon:  LucideIcon
+    let savingsColor: string
+    let savingsLabel: string
+    let savingsText:  string
 
-  if (income === 0) {
-    savingsIcon  = AlertCircle
-    savingsColor = 'var(--ios-blue)'
-    savingsLabel = 'Savings rate'
-    savingsText  = 'No income recorded this month. Add income transactions to track your savings rate.'
-  } else if (savingsRate >= 20) {
-    savingsIcon  = CheckCircle2
-    savingsColor = 'var(--ios-green)'
-    savingsLabel = 'Healthy savings'
-    savingsText  = `You saved ${savingsRate.toFixed(0)}% of income this month (${formatCurrency(saved, sym)} saved). Keep it up!`
-  } else if (savingsRate > 0) {
-    savingsIcon  = AlertCircle
-    savingsColor = 'var(--ios-orange)'
-    savingsLabel = 'Low savings rate'
-    savingsText  = `You saved ${savingsRate.toFixed(0)}% of income this month (${formatCurrency(saved, sym)}). Aim for 20%+ for financial health.`
-  } else {
-    savingsIcon  = AlertCircle
-    savingsColor = 'var(--ios-red)'
-    savingsLabel = 'Spending over income'
-    savingsText  = `Expenses exceed income by ${formatCurrency(Math.abs(saved), sym)} this month. Review your spending.`
-  }
+    if (thisIncome === 0) {
+      savingsIcon  = AlertCircle
+      savingsColor = 'var(--ios-blue)'
+      savingsLabel = 'Savings rate'
+      savingsText  = 'No income recorded this month. Add income transactions to track your savings rate.'
+    } else if (savingsRate >= 20) {
+      savingsIcon  = CheckCircle2
+      savingsColor = 'var(--ios-green)'
+      savingsLabel = 'Healthy savings'
+      savingsText  = `You saved ${savingsRate.toFixed(0)}% of income this month (${formatCurrency(saved, sym)} saved). Keep it up!`
+    } else if (savingsRate > 0) {
+      savingsIcon  = AlertCircle
+      savingsColor = 'var(--ios-orange)'
+      savingsLabel = 'Low savings rate'
+      savingsText  = `You saved ${savingsRate.toFixed(0)}% of income this month (${formatCurrency(saved, sym)}). Aim for 20%+ for financial health.`
+    } else {
+      savingsIcon  = AlertCircle
+      savingsColor = 'var(--ios-red)'
+      savingsLabel = 'Spending over income'
+      savingsText  = `Expenses exceed income by ${formatCurrency(Math.abs(saved), sym)} this month. Review your spending.`
+    }
 
-  // ── FREE INSIGHT 3: Top Spending Category ──────────────────────────────────
-  const catTotals: Record<string, number> = {}
-  thisTxs.filter(t => t.type === 'expense').forEach(t => {
-    catTotals[t.category] = Math.round(((catTotals[t.category] ?? 0) * 100 + Math.round(t.amount * 100))) / 100
-  })
-  const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1])
-  const topCat     = sortedCats[0]
+    // ── FREE INSIGHT 3: Top Spending Category ────────────────────────────────
+    // Accumulate in pence (integers) to avoid floating-point drift,
+    // then divide by 100 when reading values.
+    const catTotalsPence: Record<string, number> = {}
+    thisTxs.filter(t => t.type === 'expense').forEach(t => {
+      catTotalsPence[t.category] = (catTotalsPence[t.category] ?? 0) + Math.round(t.amount * 100)
+    })
+    const sortedCats = Object.entries(catTotalsPence)
+      .map(([cat, pence]) => ({ category: cat, total: pence / 100 }))
+      .sort((a, b) => b.total - a.total)
+    const topCat = sortedCats[0]
 
-  let topCatText: string
-  if (!topCat) {
-    topCatText = 'No expense data this month.'
-  } else {
-    const pctOfSpending = thisExpenses > 0 ? (topCat[1] / thisExpenses) * 100 : 0
-    topCatText = `"${topCat[0]}" was your biggest expense at ${formatCurrency(topCat[1], sym)} (${pctOfSpending.toFixed(0)}% of spending).`
-  }
+    let topCatText: string
+    if (!topCat) {
+      topCatText = 'No expense data this month.'
+    } else {
+      const pctOfSpending = thisExpenses > 0 ? (topCat.total / thisExpenses) * 100 : 0
+      topCatText = `"${topCat.category}" was your biggest expense at ${formatCurrency(topCat.total, sym)} (${pctOfSpending.toFixed(0)}% of spending).`
+    }
 
-  // ── PRO INSIGHT 1: Recurring Charge Detection ──────────────────────────────
-  // Group all expense transactions by normalised description
-  const expenseTxs = transactions.filter(t => t.type === 'expense')
+    // ── PRO INSIGHT 1: Recurring Charge Detection ────────────────────────────
+    // Group all expense transactions by normalised description
+    const expenseTxs = transactions.filter(t => t.type === 'expense')
 
-  interface RecurringCandidate {
-    description: string
-    avgAmount:   number
-    monthCount:  number
-  }
+    interface RecurringCandidate {
+      description: string
+      avgAmount:   number
+      monthCount:  number
+    }
 
-  const descGroups: Record<string, { amounts: number[]; months: Set<string> }> = {}
-  expenseTxs.forEach(t => {
-    const key = t.description.trim().toLowerCase()
-    if (!descGroups[key]) descGroups[key] = { amounts: [], months: new Set() }
-    descGroups[key].amounts.push(t.amount)
-    // Extract YYYY-MM from date string
-    descGroups[key].months.add(t.date.slice(0, 7))
-  })
+    const descGroups: Record<string, { amounts: number[]; months: Set<string> }> = {}
+    expenseTxs.forEach(t => {
+      const key = t.description.trim().toLowerCase()
+      if (!descGroups[key]) descGroups[key] = { amounts: [], months: new Set() }
+      descGroups[key].amounts.push(t.amount)
+      // Extract YYYY-MM from date string
+      descGroups[key].months.add(t.date.slice(0, 7))
+    })
 
-  const recurringCandidates: RecurringCandidate[] = []
-  for (const [desc, data] of Object.entries(descGroups)) {
-    if (data.months.size < 2) continue
-    const mean = data.amounts.reduce((s, a) => s + Math.round(a * 100), 0) / (data.amounts.length * 100)
-    const allConsistent = data.amounts.every(a => Math.abs(a - mean) / mean <= 0.1)
-    if (!allConsistent) continue
-    // Find a representative display name (original casing of first occurrence)
-    const original = expenseTxs.find(t => t.description.trim().toLowerCase() === desc)?.description ?? desc
-    recurringCandidates.push({ description: original, avgAmount: mean, monthCount: data.months.size })
-  }
+    const recurringCandidates: RecurringCandidate[] = []
+    for (const [desc, data] of Object.entries(descGroups)) {
+      if (data.months.size < 2) continue
+      const mean = data.amounts.reduce((s, a) => s + Math.round(a * 100), 0) / (data.amounts.length * 100)
+      const allConsistent = data.amounts.every(a => Math.abs(a - mean) / mean <= 0.1)
+      if (!allConsistent) continue
+      // Find a representative display name (original casing of first occurrence)
+      const original = expenseTxs.find(t => t.description.trim().toLowerCase() === desc)?.description ?? desc
+      recurringCandidates.push({ description: original, avgAmount: mean, monthCount: data.months.size })
+    }
 
-  // Sort by avg amount descending
-  recurringCandidates.sort((a, b) => b.avgAmount - a.avgAmount)
+    // Sort by avg amount descending
+    recurringCandidates.sort((a, b) => b.avgAmount - a.avgAmount)
 
-  const totalRecurring = recurringCandidates.reduce((s, c) => s + Math.round(c.avgAmount * 100), 0) / 100
-  const top3Recurring  = recurringCandidates.slice(0, 3)
+    const totalRecurring = recurringCandidates.reduce((s, c) => s + Math.round(c.avgAmount * 100), 0) / 100
+    const top3Recurring  = recurringCandidates.slice(0, 3)
 
-  let recurringLabel: string
-  let recurringText:  string
-  if (recurringCandidates.length < 2) {
-    recurringLabel = 'Recurring charges'
-    recurringText  = 'No recurring patterns detected yet. Add more transactions to improve detection.'
-  } else {
-    const listStr = top3Recurring
-      .map(c => `${c.description} ${formatCurrency(c.avgAmount, sym)}`)
-      .join(', ')
-    recurringLabel = 'Recurring charges detected'
-    recurringText  = `Found ${recurringCandidates.length} potential recurring charge${recurringCandidates.length !== 1 ? 's' : ''} totalling ${formatCurrency(totalRecurring, sym)}/month. Top: ${listStr}.`
-  }
+    let recurringLabel: string
+    let recurringText:  string
+    if (recurringCandidates.length < 2) {
+      recurringLabel = 'Recurring charges'
+      recurringText  = 'No recurring patterns detected yet. Add more transactions to improve detection.'
+    } else {
+      const listStr = top3Recurring
+        .map(c => `${c.description} ${formatCurrency(c.avgAmount, sym)}`)
+        .join(', ')
+      recurringLabel = 'Recurring charges detected'
+      recurringText  = `Found ${recurringCandidates.length} potential recurring charge${recurringCandidates.length !== 1 ? 's' : ''} totalling ${formatCurrency(totalRecurring, sym)}/month. Top: ${listStr}.`
+    }
 
-  // ── PRO INSIGHT 2: Goal Savings Velocity ──────────────────────────────────
-  let velocityLabel: string
-  let velocityText:  string
+    // ── PRO INSIGHT 2: Goal Savings Velocity ─────────────────────────────────
+    let velocityLabel: string
+    let velocityText:  string
 
-  if (goals.length === 0) {
-    velocityLabel = 'Goal savings velocity'
-    velocityText  = 'Add a savings goal to track your velocity.'
-  } else {
-    // Find the first goal with progress
-    const activeGoals = goals.filter(g => g.target > 0)
-    const goalWithProgress = activeGoals.find(g => g.current > 0) ?? activeGoals[0]
-
-    if (!goalWithProgress) {
+    if (goals.length === 0) {
       velocityLabel = 'Goal savings velocity'
       velocityText  = 'Add a savings goal to track your velocity.'
     } else {
-      const usedFallback = !goalWithProgress.created_at
-      const startDate   = goalWithProgress.created_at
-        ? new Date(goalWithProgress.created_at)
-        : new Date(today.getFullYear(), today.getMonth() - 3)
-      const monthsElapsed = Math.max(monthsBetween(startDate, today), 1)
-      const monthlyRate   = goalWithProgress.current / monthsElapsed
+      // Find the first goal with progress
+      const activeGoals = goals.filter(g => g.target > 0)
+      const goalWithProgress = activeGoals.find(g => g.current > 0) ?? activeGoals[0]
 
-      if (monthlyRate === 0) {
+      if (!goalWithProgress) {
         velocityLabel = 'Goal savings velocity'
-        velocityText  = `Start saving towards "${goalWithProgress.name}" — no contributions yet.`
+        velocityText  = 'Add a savings goal to track your velocity.'
       } else {
-        const remaining       = goalWithProgress.target - goalWithProgress.current
-        const monthsRemaining = remaining / monthlyRate
-        const projectedDate   = addMonths(today, monthsRemaining)
+        const usedFallback = !goalWithProgress.created_at
+        const startDate   = goalWithProgress.created_at
+          ? new Date(goalWithProgress.created_at)
+          : new Date(today.getFullYear(), today.getMonth() - 3)
+        const monthsElapsed = Math.max(monthsBetween(startDate, today), 1)
+        const monthlyRate   = goalWithProgress.current / monthsElapsed
 
-        velocityLabel = 'Goal savings velocity'
-        velocityText  = `At current pace, you'll reach "${goalWithProgress.name}" by ${formatMonthYear(projectedDate)}.`
-        if (usedFallback) {
-          velocityText += ' (estimate based on current balance only)'
+        if (monthlyRate === 0) {
+          velocityLabel = 'Goal savings velocity'
+          velocityText  = `Start saving towards "${goalWithProgress.name}" — no contributions yet.`
+        } else {
+          const remaining       = goalWithProgress.target - goalWithProgress.current
+          const monthsRemaining = remaining / monthlyRate
+          const projectedDate   = addMonths(today, monthsRemaining)
+
+          velocityLabel = 'Goal savings velocity'
+          velocityText  = `At current pace, you'll reach "${goalWithProgress.name}" by ${formatMonthYear(projectedDate)}.`
+          if (usedFallback) {
+            velocityText += ' (estimate based on current balance only)'
+          }
         }
       }
     }
-  }
 
-  // ── PRO INSIGHT 3: Monthly Budget Adherence ───────────────────────────────
-  let budgetLabel: string
-  let budgetText:  string
+    // ── PRO INSIGHT 3: Monthly Budget Adherence ──────────────────────────────
+    let budgetLabel: string
+    let budgetText:  string
 
-  if (budgets.length === 0) {
-    budgetLabel = 'Budget adherence'
-    budgetText  = 'No budgets set. Add budgets in settings to track adherence.'
-  } else {
-    let withinCount = 0
-    const overCategories: string[] = []
-
-    budgets.forEach(budget => {
-      const spent = thisTxs
-        .filter(t => t.type === 'expense' && t.category === budget.category)
-        .reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
-      if (spent <= budget.amount) {
-        withinCount++
-      } else {
-        overCategories.push(budget.category)
-      }
-    })
-
-    const adherencePct = Math.round((withinCount / budgets.length) * 100)
-    budgetLabel = 'Monthly budget adherence'
-
-    if (overCategories.length === 0) {
-      budgetText = `You stayed within budget in all ${budgets.length} categor${budgets.length !== 1 ? 'ies' : 'y'} this month (${adherencePct}%). Excellent!`
+    if (budgets.length === 0) {
+      budgetLabel = 'Budget adherence'
+      budgetText  = 'No budgets set. Add budgets in settings to track adherence.'
     } else {
-      const overList = overCategories.slice(0, 3).join(', ')
-      const moreStr  = overCategories.length > 3 ? ` +${overCategories.length - 3} more` : ''
-      budgetText = `You stayed within budget in ${withinCount} of ${budgets.length} categories (${adherencePct}%). Over budget: ${overList}${moreStr}.`
-    }
-  }
+      let withinCount = 0
+      const overCategories: string[] = []
 
-  // ── Build insight arrays ───────────────────────────────────────────────────
-  const SpendingTrendIcon = spendingTrendIcon
-  const SavingsIcon       = savingsIcon
+      budgets.forEach(budget => {
+        const spent = thisTxs
+          .filter(t => t.type === 'expense' && t.category === budget.category)
+          .reduce((s, t) => s + Math.round(t.amount * 100), 0) / 100
+        if (spent <= budget.amount) {
+          withinCount++
+        } else {
+          overCategories.push(budget.category)
+        }
+      })
+
+      const adherencePct = Math.round((withinCount / budgets.length) * 100)
+      budgetLabel = 'Monthly budget adherence'
+
+      if (overCategories.length === 0) {
+        budgetText = `You stayed within budget in all ${budgets.length} categor${budgets.length !== 1 ? 'ies' : 'y'} this month (${adherencePct}%). Excellent!`
+      } else {
+        const overList = overCategories.slice(0, 3).join(', ')
+        const moreStr  = overCategories.length > 3 ? ` +${overCategories.length - 3} more` : ''
+        budgetText = `You stayed within budget in ${withinCount} of ${budgets.length} categories (${adherencePct}%). Over budget: ${overList}${moreStr}.`
+      }
+    }
+
+    return {
+      thisExpenses,
+      lastExpenses,
+      thisIncome,
+      savingsRate,
+      spendingTrendIcon,
+      spendingTrendColor,
+      spendingTrendLabel,
+      spendingTrendText,
+      savingsIcon,
+      savingsColor,
+      savingsLabel,
+      savingsText,
+      topCatText,
+      recurringCandidates,
+      totalRecurring,
+      recurringLabel,
+      recurringText,
+      velocityLabel,
+      velocityText,
+      budgetLabel,
+      budgetText,
+    }
+  }, [transactions, goals, budgets, currentMonth, sym, today])
+
+  // ── Build insight arrays ─────────────────────────────────────────────────────
+  const SpendingTrendIcon = insights.spendingTrendIcon
+  const SavingsIcon       = insights.savingsIcon
 
   const freeInsights = [
     {
       icon:  SpendingTrendIcon,
-      color: spendingTrendColor,
-      label: spendingTrendLabel,
-      text:  spendingTrendText,
+      color: insights.spendingTrendColor,
+      label: insights.spendingTrendLabel,
+      text:  insights.spendingTrendText,
     },
     {
       icon:  SavingsIcon,
-      color: savingsColor,
-      label: savingsLabel,
-      text:  savingsText,
+      color: insights.savingsColor,
+      label: insights.savingsLabel,
+      text:  insights.savingsText,
     },
     {
       icon:  Lightbulb,
       color: 'var(--ios-blue)',
       label: 'Top spending category',
-      text:  topCatText,
+      text:  insights.topCatText,
     },
   ]
 
@@ -287,20 +319,20 @@ export function InsightsView({ profile, transactions, settings }: Props) {
     {
       icon:  PiggyBank,
       color: 'var(--ios-blue)',
-      label: recurringLabel,
-      text:  recurringText,
+      label: insights.recurringLabel,
+      text:  insights.recurringText,
     },
     {
       icon:  Target,
       color: 'var(--ios-green)',
-      label: velocityLabel,
-      text:  velocityText,
+      label: insights.velocityLabel,
+      text:  insights.velocityText,
     },
     {
       icon:  Calendar,
       color: 'var(--ios-orange)',
-      label: budgetLabel,
-      text:  budgetText,
+      label: insights.budgetLabel,
+      text:  insights.budgetText,
     },
   ]
 
@@ -320,7 +352,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
             <Card key={i} className="p-4">
               <div className="flex items-start gap-4">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${ins.color}18` }}>
-                  <Icon className="w-4.5 h-4.5" style={{ color: ins.color }} aria-hidden="true" />
+                  <Icon className="w-4 h-4" style={{ color: ins.color }} aria-hidden="true" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{ins.label}</p>
@@ -349,7 +381,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
                 {isPro ? (
                   <div className="flex items-start gap-4">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${ins.color}18` }}>
-                      <Icon className="w-4.5 h-4.5" style={{ color: ins.color }} aria-hidden="true" />
+                      <Icon className="w-4 h-4" style={{ color: ins.color }} aria-hidden="true" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{ins.label}</p>

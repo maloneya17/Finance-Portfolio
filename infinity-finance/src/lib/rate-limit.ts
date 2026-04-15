@@ -13,6 +13,10 @@ let writeCount = 0
  * @param key       - Unique identifier for the caller (e.g. user ID)
  * @param limit     - Maximum number of requests allowed within the window
  * @param windowMs  - Duration of the sliding window in milliseconds
+ *
+ * Keys should be namespaced to avoid cross-route bucket sharing:
+ * Example: rateLimit(`export:${userId}`, 10, 60_000)
+ * Example: rateLimit(`delete:${userId}`, 3, 300_000)
  */
 export function rateLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now()

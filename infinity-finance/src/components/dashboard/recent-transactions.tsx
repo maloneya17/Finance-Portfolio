@@ -10,9 +10,10 @@ import { ArrowRight } from 'lucide-react'
 interface Props { sym: string }
 
 export function RecentTransactions({ sym }: Props) {
-  const txs     = useFinanceStore(s => s.getMonthTransactions())
-  const privacy = useFinanceStore(s => s.privacyMode)
-  const recent  = [...txs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
+  const txs         = useFinanceStore(s => s.getMonthTransactions())
+  const allTxs      = useFinanceStore(s => s.transactions)
+  const privacy     = useFinanceStore(s => s.privacyMode)
+  const recent      = [...txs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
 
   return (
     <Card>
@@ -25,7 +26,21 @@ export function RecentTransactions({ sym }: Props) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        {recent.length === 0 ? (
+        {allTxs.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-muted p-8 text-center">
+            <div className="text-4xl mb-3">💸</div>
+            <h3 className="font-semibold mb-1">Add your first transaction</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Track your income and expenses to see insights about your spending.
+            </p>
+            <Link
+              href="/transactions"
+              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
+            >
+              Add Transaction →
+            </Link>
+          </div>
+        ) : recent.length === 0 ? (
           <div className="text-center py-10 text-slate-400 dark:text-slate-500">
             <div className="text-3xl mb-2">💸</div>
             <p className="text-sm">No transactions yet this month</p>

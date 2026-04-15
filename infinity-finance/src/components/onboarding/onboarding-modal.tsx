@@ -23,6 +23,7 @@ export function OnboardingModal({ userId }: Props) {
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('GBP')
   const [saving, setSaving] = useState(false)
+  const [completed, setCompleted] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -34,17 +35,17 @@ export function OnboardingModal({ userId }: Props) {
       supabase.from('profiles').update({ username: name || null }).eq('id', userId),
       supabase.from('settings').upsert({
         user_id: userId,
-        currency_code: selected.code,
+        currency: selected.code,
         currency_symbol: selected.symbol,
-        theme: 'system',
-        locale: 'en-GB',
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' }),
     ])
 
-    setSaving(false)
-    router.refresh()
+    setCompleted(true)  // Hide modal immediately
+    router.refresh()    // Then sync server state
   }
+
+  if (completed) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">

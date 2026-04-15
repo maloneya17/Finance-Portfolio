@@ -1,8 +1,13 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Json = any
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json }
+  | Json[]
 
 export type SubscriptionTier = 'free' | 'pro'
-export type TransactionType = 'income' | 'expense'
+export type TransactionType = 'income' | 'expense' | 'transfer'
 export type AssetType = 'cash' | 'stocks' | 'crypto' | 'property' | 'pension' | 'other'
 export type DebtType = 'credit_card' | 'loan' | 'mortgage' | 'student' | 'other'
 
@@ -29,6 +34,7 @@ export interface SettingsInsert {
   currency?: string
   currency_symbol?: string
   categories?: string[]
+  privacy_mode?: boolean
 }
 
 export interface TransactionInsert {
@@ -134,6 +140,7 @@ export interface Database {
           currency: string
           currency_symbol: string
           categories: string[]
+          privacy_mode: boolean
           created_at: string
           updated_at: string
         }

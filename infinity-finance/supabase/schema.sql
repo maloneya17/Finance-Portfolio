@@ -14,7 +14,7 @@ create table public.profiles (
   subscription    text not null default 'free' check (subscription in ('free','pro')),
   stripe_customer_id text unique,
   stripe_subscription_id text unique,
-  subscription_ends_at timestamptz,
+  subscription_ends_at  timestamptz,  -- Pro access valid until this date (null = no expiry limit)
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
@@ -36,6 +36,35 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Prevent users from self-modifying billing/subscription columns
+CREATE OR REPLACE FUNCTION protect_billing_columns()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF (
+    NEW.subscription IS DISTINCT FROM OLD.subscription OR
+    NEW.stripe_customer_id IS DISTINCT FROM OLD.stripe_customer_id OR
+    NEW.stripe_subscription_id IS DISTINCT FROM OLD.stripe_subscription_id OR
+    NEW.subscription_ends_at IS DISTINCT FROM OLD.subscription_ends_at
+  ) AND current_user = 'authenticated' THEN
+    RAISE EXCEPTION 'Billing fields cannot be modified directly';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER enforce_billing_column_protection
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION protect_billing_columns();
+
+create policy "Service role only can insert profiles"
+  on profiles for insert
+  with check (false);
+
 -- ─── SETTINGS ────────────────────────────────────────────────────────────────
 create table public.settings (
   id              uuid primary key default uuid_generate_v4(),
@@ -44,6 +73,7 @@ create table public.settings (
   currency        text not null default 'GBP',
   currency_symbol text not null default '£',
   categories      text[] not null default array['Food','Transport','Entertainment','Shopping','Health','Bills','Housing','Savings','Income','Other'],
+  privacy_mode    boolean not null default false,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now()
 );
@@ -83,9 +113,6 @@ CREATE INDEX IF NOT EXISTS idx_transactions_active
   ON transactions(user_id, date)
   WHERE deleted_at IS NULL;
 
--- Bills by user and due date
-create index if not exists idx_bills_user_due on bills(user_id, day);
-
 alter table public.transactions enable row level security;
 drop policy if exists "Users own their transactions" on transactions;
 
@@ -121,6 +148,9 @@ create table public.bills (
 
 alter table public.bills enable row level security;
 create policy "Users own their bills" on bills for all using (auth.uid() = user_id);
+
+-- Bills by user and due date
+create index if not exists idx_bills_user_due on bills(user_id, day);
 
 create table public.bill_payments (
   id          uuid primary key default uuid_generate_v4(),
@@ -160,7 +190,7 @@ create table public.assets (
   user_id     uuid references public.profiles on delete cascade not null,
   name        text not null,
   type        text not null check (type in ('cash','stocks','crypto','property','pension','other')),
-  value       numeric(15,2) not null constraint value_positive check (value > 0),
+  value       numeric(15,2) not null constraint value_positive check (value >= 0),
   ticker      text,
   quantity    numeric(20,8),
   price_per_unit numeric(15,2),
@@ -177,7 +207,7 @@ create table public.debts (
   id          uuid primary key default uuid_generate_v4(),
   user_id     uuid references public.profiles on delete cascade not null,
   name        text not null,
-  balance     numeric(15,2) not null constraint balance_positive check (balance > 0),
+  balance     numeric(15,2) not null constraint balance_positive check (balance >= 0),
   apr         numeric(8,4) not null default 0,
   min_payment numeric(15,2) not null default 0,
   type        text not null default 'other' check (type in ('credit_card','loan','mortgage','student','other')),
@@ -234,8 +264,6 @@ create table public.wealth_snapshots (
   debts_total  numeric(15,2) not null,
   unique(user_id, date)
 );
-
-ALTER TABLE wealth_snapshots ADD CONSTRAINT IF NOT EXISTS wealth_snapshots_user_date_unique UNIQUE (user_id, date);
 
 alter table public.wealth_snapshots enable row level security;
 create policy "Users own their snapshots" on wealth_snapshots for all using (auth.uid() = user_id);

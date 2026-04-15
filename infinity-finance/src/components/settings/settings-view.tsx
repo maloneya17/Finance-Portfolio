@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Settings, SettingsInsert, Budget } from '@/types/supabase'
@@ -55,8 +55,27 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
   const router   = useRouter()
   const supabase = createClient()
 
-  const privacyMode   = useFinanceStore(s => s.privacyMode)
-  const togglePrivacy = useFinanceStore(s => s.togglePrivacy)
+  const privacyMode    = useFinanceStore(s => s.privacyMode)
+  const togglePrivacy  = useFinanceStore(s => s.togglePrivacy)
+  const setPrivacyMode = useFinanceStore(s => s.setPrivacyMode)
+
+  // Initialise privacy mode from DB on mount
+  useEffect(() => {
+    if (settings?.privacy_mode !== undefined) {
+      setPrivacyMode(settings.privacy_mode)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handlePrivacyToggle() {
+    const newValue = !privacyMode
+    togglePrivacy()
+    await supabase.from('settings').upsert({
+      user_id: user.id,
+      privacy_mode: newValue,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+  }
 
   function handleTabChange(newTab: Tab) {
     setTab(newTab)
@@ -201,7 +220,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
                 <button
                   role="switch"
                   aria-checked={privacyMode}
-                  onClick={togglePrivacy}
+                  onClick={handlePrivacyToggle}
                   className={cn(
                     'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     privacyMode ? 'bg-primary' : 'bg-input',

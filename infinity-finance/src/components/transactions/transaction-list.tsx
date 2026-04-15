@@ -68,8 +68,8 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
       .eq('user_id', userId)
 
     if (deleteError) {
-      // Restore on failure
-      setTransactions(allTransactions)
+      // Restore on failure using current store state (not stale closure)
+      setTransactions(useFinanceStore.getState().transactions)
       setError('Failed to delete transaction. Please try again.')
       return
     }
@@ -99,7 +99,8 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
       .eq('user_id', userId)
 
     if (!undoError) {
-      setTransactions([undoItem.tx, ...allTransactions])
+      // Use current store state to avoid stale closure from 8-second undo window
+      setTransactions([undoItem.tx, ...useFinanceStore.getState().transactions.filter(t => t.id !== undoItem.tx.id)])
     }
     setUndoItem(null)
     router.refresh()

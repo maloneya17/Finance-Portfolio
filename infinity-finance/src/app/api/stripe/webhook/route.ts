@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
         const periodEnd = sub.items.data[0]?.current_period_end
         const { error } = await supabase.from('profiles').update({
           subscription: active ? 'pro' : 'free',
+          stripe_subscription_id: sub.id,
           subscription_ends_at: periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null,
         }).eq('id', userId)
 
