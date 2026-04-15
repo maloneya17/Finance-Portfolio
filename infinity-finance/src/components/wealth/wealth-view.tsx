@@ -81,18 +81,21 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   ]
 
   async function deleteAsset(id: string) {
+    if (!confirm('Delete this asset? This cannot be undone.')) return
     await supabase.from('assets').delete().eq('id', id)
     setAssets(assets.filter(a => a.id !== id))
     recordSnapshot()
   }
 
   async function deleteDebt(id: string) {
+    if (!confirm('Delete this debt entry? This cannot be undone.')) return
     await supabase.from('debts').delete().eq('id', id)
     setDebts(debts.filter(d => d.id !== id))
     recordSnapshot()
   }
 
   async function deleteGoal(id: string) {
+    if (!confirm('Delete this goal? This cannot be undone.')) return
     await supabase.from('goals').delete().eq('id', id)
     setGoals(goals.filter(g => g.id !== id))
   }

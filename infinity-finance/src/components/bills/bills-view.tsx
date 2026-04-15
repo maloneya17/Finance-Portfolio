@@ -146,6 +146,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   }
 
   async function deleteBill(id: string) {
+    if (!confirm('Delete this bill? This cannot be undone.')) return
     const deactivate: Partial<BillInsert> = { is_active: false }
     await supabase.from('bills').update(deactivate).eq('id', id)
     setBills(bills.filter(b => b.id !== id))

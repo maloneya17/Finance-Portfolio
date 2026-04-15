@@ -318,7 +318,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-slate-400 mt-4">Cancel anytime. Annual plan saves 33%.</p>
+                <p className="text-xs text-muted-foreground mt-4">Billed monthly. Cancel anytime.</p>
               </CardContent>
             </Card>
           )}

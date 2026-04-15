@@ -1,13 +1,11 @@
 'use client'
 
-import Link from 'next/link'
 import type { Transaction, Settings, Profile } from '@/types/supabase'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, getMonthKey, monthKeyToLabel } from '@/lib/utils'
 import { useFinanceStore } from '@/store/finance'
-import { Crown, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Lightbulb, Target, Calendar, PiggyBank, type LucideIcon } from 'lucide-react'
+import { TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Lightbulb, Target, Calendar, PiggyBank, type LucideIcon } from 'lucide-react'
 
 interface Props {
   profile: Profile | null
@@ -335,7 +333,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
       </div>
 
       {/* Pro insights section */}
-      <div className="relative">
+      <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-2">
             Advanced Insights
@@ -343,40 +341,41 @@ export function InsightsView({ profile, transactions, settings }: Props) {
           </h2>
         </div>
 
-        <div className={`space-y-3 ${!isPro ? 'opacity-50 pointer-events-none select-none' : ''}`}>
+        <div className="space-y-3">
           {proInsights.map((ins, i) => {
             const Icon = ins.icon
             return (
               <Card key={i} className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${ins.color}18` }}>
-                    <Icon className="w-4.5 h-4.5" style={{ color: ins.color }} aria-hidden="true" />
+                {isPro ? (
+                  <div className="flex items-start gap-4">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${ins.color}18` }}>
+                      <Icon className="w-4.5 h-4.5" style={{ color: ins.color }} aria-hidden="true" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{ins.label}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{ins.text}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-0.5">{ins.label}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{ins.text}</p>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="text-2xl mb-2">🔒</div>
+                    <p className="text-sm font-medium">Pro feature</p>
+                    <p className="text-xs text-muted-foreground mt-1">Upgrade to unlock advanced insights</p>
+                    <button
+                      onClick={async () => {
+                        const res = await fetch('/api/stripe/checkout', { method: 'POST' })
+                        if (res.ok) { const d = await res.json(); window.location.href = d.url }
+                      }}
+                      className="mt-3 rounded-md bg-primary text-primary-foreground px-4 py-1.5 text-xs font-medium hover:bg-primary/90"
+                    >
+                      Upgrade to Pro
+                    </button>
                   </div>
-                </div>
+                )}
               </Card>
             )
           })}
         </div>
-
-        {/* Upgrade prompt overlay */}
-        {!isPro && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Card className="p-6 text-center shadow-xl max-w-xs">
-              <Crown className="w-8 h-8 mx-auto mb-3" style={{ color: 'var(--ios-orange)' }} aria-hidden="true" />
-              <h3 className="font-bold text-slate-900 dark:text-white mb-2">Unlock Advanced Insights</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                Recurring charge detection, goal velocity, budget adherence and more.
-              </p>
-              <Button asChild className="w-full">
-                <Link href="/settings?tab=billing">Upgrade to Pro — £4.99/mo</Link>
-              </Button>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   )
