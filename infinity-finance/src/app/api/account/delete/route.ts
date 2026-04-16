@@ -1,13 +1,13 @@
-import { createClient as createAnonClient } from '@/lib/supabase/server'
+import { createClient as createSessionClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { rateLimit } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  // 1. Verify the requesting user is authenticated via anon client
-  const anonClient = await createAnonClient()
-  const { data: { user }, error: authError } = await anonClient.auth.getUser()
+  // 1. Verify the requesting user is authenticated via the session client (cookie-based)
+  const sessionClient = await createSessionClient()
+  const { data: { user }, error: authError } = await sessionClient.auth.getUser()
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -27,8 +27,11 @@ export async function POST(request: Request) {
   }
 
   // 3. Re-authenticate to confirm the request is intentional
-  const { error: reAuthError } = await anonClient.auth.signInWithPassword({
-    email: user.email!,
+  if (!user.email) {
+    return NextResponse.json({ error: 'Account has no email — cannot re-authenticate' }, { status: 400 })
+  }
+  const { error: reAuthError } = await sessionClient.auth.signInWithPassword({
+    email: user.email,
     password,
   })
   if (reAuthError) {

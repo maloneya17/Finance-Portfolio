@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, subscription, subscription_ends_at')
         .eq('stripe_customer_id', customerId)
         .single()
 
@@ -151,11 +151,19 @@ export async function POST(req: NextRequest) {
       if (invoice.subscription) {
         const sub = await stripe.subscriptions.retrieve(invoice.subscription as string)
         const periodEnd = sub.items.data[0]?.current_period_end
-        const userId = (profile as { id: string }).id
+        const userId = (profile as { id: string; subscription: string; subscription_ends_at: string | null }).id
+        const newPeriodEndISO = periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null
+
+        // Idempotency guard: skip if subscription is already pro with the same period end
+        const typedProfile = profile as { id: string; subscription: string; subscription_ends_at: string | null }
+        if (typedProfile.subscription === 'pro' && typedProfile.subscription_ends_at === newPeriodEndISO) {
+          logger.warn('stripe-webhook', `Duplicate invoice.paid for user ${userId} — skipping`)
+          break
+        }
 
         const { error } = await supabase.from('profiles').update({
           subscription: 'pro',
-          subscription_ends_at: periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null,
+          subscription_ends_at: newPeriodEndISO,
         }).eq('id', userId)
 
         if (error) {

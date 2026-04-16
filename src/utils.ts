@@ -1,8 +1,22 @@
+import Decimal from 'decimal.js'
+
 export const math = (v: string | number | undefined | null): number => {
-  const n = Number(v ?? 0);
-  if (isNaN(n) || !isFinite(n)) return 0;
-  return parseFloat(n.toFixed(2));
-};
+  try {
+    const d = new Decimal(v ?? 0)
+    if (!d.isFinite()) return 0
+    const result = d.toDecimalPlaces(2).toNumber()
+    // Normalize -0 → 0
+    return result === 0 ? 0 : result
+  } catch {
+    return 0
+  }
+}
+
+// Safe accumulator — avoids floating-point drift in reduce() chains
+export const sumDecimals = (...values: (number | string | null | undefined)[]): number =>
+  values.reduce<Decimal>((acc, v) => {
+    try { return acc.plus(new Decimal(v ?? 0)) } catch { return acc }
+  }, new Decimal(0)).toNumber()
 
 export const fmt = (n: number): string =>
   parseFloat(String(n)).toLocaleString('en-GB', {

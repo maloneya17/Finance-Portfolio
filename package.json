@@ -8,16 +8,20 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "tsc --noEmit",
+    "lint:all": "npm run lint && npm run lint --prefix infinity-finance"
   },
   "dependencies": {
     "chart.js": "^4.4.7",
-    "chartjs-plugin-datalabels": "^2.2.0"
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "decimal.js": "^10.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
     "@vitest/coverage-v8": "^4.1.1",
     "autoprefixer": "^10.4.20",
+    "eslint": "^9.0.0",
     "jsdom": "^29.0.1",
     "postcss": "^8.5.3",
     "sharp": "^0.34.5",

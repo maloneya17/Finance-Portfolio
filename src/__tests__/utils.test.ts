@@ -21,8 +21,9 @@ describe('math()', () => {
   it('returns 0 for -Infinity', () => expect(math(-Infinity)).toBe(0));
   it('handles integer', () => expect(math(42)).toBe(42));
   it('handles negative', () => expect(math(-5.5)).toBe(-5.5));
-  // IEEE 754: 1.005 is actually 1.00499... in binary, so toFixed(2) = "1.00"
-  it('rounds to 2dp (IEEE 754 aware)', () => expect(math(1.005)).toBe(1.00));
+  // decimal.js parses 1.005 as the exact decimal (not the IEEE 754 float),
+  // so half-up rounding gives 1.01 — the mathematically correct result.
+  it('rounds to 2dp', () => expect(math(1.005)).toBe(1.01));
   it('handles string number', () => expect(math('99.99')).toBe(99.99));
   it('handles string with leading zeros', () => expect(math('007')).toBe(7));
   it('handles zero', () => expect(math(0)).toBe(0));

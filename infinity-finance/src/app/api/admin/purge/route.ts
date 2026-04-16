@@ -13,13 +13,19 @@ function safeCompare(a: string, b: string): boolean {
 // Called by Supabase cron or external scheduler
 // Protected by a shared secret
 export async function POST(req: Request) {
+  // Fail fast if the secret is not configured — an empty secret would match
+  // any request that sends "Authorization: Bearer " (trailing space), bypassing auth.
+  if (!process.env.PURGE_SECRET) {
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
+  }
+
   if (!rateLimit('purge', 5, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
   const authHeader = req.headers.get('authorization')
   const provided = authHeader ?? ''
-  const expected = `Bearer ${process.env.PURGE_SECRET ?? ''}`
+  const expected = `Bearer ${process.env.PURGE_SECRET}`
   if (!safeCompare(provided, expected)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
