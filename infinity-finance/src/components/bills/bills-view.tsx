@@ -38,7 +38,6 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const [open, setOpen]         = useState(false)
   const [editing, setEditing]   = useState<Bill | null>(null)
   const [month, setMonth]       = useState(currentMonth)
-  const [toggleError, setToggleError] = useState<string | null>(null)
   const [togglingId, setTogglingId]   = useState<string | null>(null)
   const router                  = useRouter()
   const supabase                = createClient()

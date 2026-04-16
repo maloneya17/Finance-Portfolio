@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useFinanceStore } from '@/store/finance'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { formatCurrency, formatCompact } from '@/lib/utils'
+import { formatCompact } from '@/lib/utils'
 import { ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

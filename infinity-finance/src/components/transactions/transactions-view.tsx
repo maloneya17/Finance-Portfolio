@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Transaction, Settings } from '@/types/supabase'
 import { createClient } from '@/lib/supabase/client'
 import { MonthPicker } from '@/components/dashboard/month-picker'
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { getMonthKey } from '@/lib/utils'
 import { useFinanceStore } from '@/store/finance'
 
 interface Props {
@@ -25,7 +24,7 @@ export function TransactionsView({ transactions, settings, userId, isPro, hitLim
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
 
-  const { setTransactions, currentMonth } = useFinanceStore()
+  const { setTransactions } = useFinanceStore()
   const allTransactions = useFinanceStore(s => s.transactions)
 
   // Keep a ref in sync with allTransactions so the realtime handler can read

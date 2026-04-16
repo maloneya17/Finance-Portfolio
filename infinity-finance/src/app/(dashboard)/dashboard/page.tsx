@@ -6,7 +6,7 @@ import { getMonthKey } from '@/lib/utils'
 export const metadata = { title: 'Dashboard — Infinity Finance' }
 
 export default async function DashboardPage() {
-  const { userId, isPro, dateFilter } = await requireAuth()
+  const { userId, dateFilter } = await requireAuth()
   const supabase = await createClient()
 
   const now = new Date()

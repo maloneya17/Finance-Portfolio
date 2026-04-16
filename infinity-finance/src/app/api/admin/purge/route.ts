@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { timingSafeEqual, createHash } from 'crypto'
 import { rateLimit } from '@/lib/rate-limit'

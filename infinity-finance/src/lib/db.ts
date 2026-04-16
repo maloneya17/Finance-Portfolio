@@ -14,7 +14,7 @@ export interface TransactionInsert {
   tags?: string[] | null
 }
 
-export interface TransactionUpdate extends Partial<Omit<TransactionInsert, 'user_id'>> {}
+export type TransactionUpdate = Partial<Omit<TransactionInsert, 'user_id'>>
 
 export interface BillInsert {
   user_id: string
@@ -26,7 +26,7 @@ export interface BillInsert {
   notes?: string | null
 }
 
-export interface BillUpdate extends Partial<Omit<BillInsert, 'user_id'>> {}
+export type BillUpdate = Partial<Omit<BillInsert, 'user_id'>>
 
 export interface BillPaymentInsert {
   bill_id: string
@@ -46,7 +46,7 @@ export interface AssetInsert {
   notes?: string | null
 }
 
-export interface AssetUpdate extends Partial<Omit<AssetInsert, 'user_id'>> {}
+export type AssetUpdate = Partial<Omit<AssetInsert, 'user_id'>>
 
 export interface DebtInsert {
   user_id: string
@@ -58,7 +58,7 @@ export interface DebtInsert {
   notes?: string | null
 }
 
-export interface DebtUpdate extends Partial<Omit<DebtInsert, 'user_id'>> {}
+export type DebtUpdate = Partial<Omit<DebtInsert, 'user_id'>>
 
 export interface GoalInsert {
   user_id: string
@@ -69,7 +69,7 @@ export interface GoalInsert {
   icon?: string | null
 }
 
-export interface GoalUpdate extends Partial<Omit<GoalInsert, 'user_id'>> {}
+export type GoalUpdate = Partial<Omit<GoalInsert, 'user_id'>>
 
 export interface BudgetUpsert {
   user_id: string

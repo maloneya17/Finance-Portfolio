@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatCompact, pct, clamp } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target, Landmark } from 'lucide-react'
+import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
@@ -487,7 +487,7 @@ function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; 
   const [current, setCurrent]   = useState(goal ? String(goal.current) : '0')
   const [emoji, setEmoji]       = useState(goal?.emoji ?? '')
   const [deadline, setDeadline] = useState(goal?.deadline ?? '')
-  const [notes, setNotes]       = useState(goal?.notes ?? '')
+  const notes = goal?.notes ?? ''
   const [loading, setLoading]   = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {

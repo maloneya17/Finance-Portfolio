@@ -42,12 +42,14 @@ function formatMonthYear(date: Date): string {
 export function InsightsView({ profile, transactions, settings }: Props) {
   const isPro   = profile?.subscription === 'pro'
   const sym     = settings?.currency_symbol ?? '£'
-  const today   = new Date()
 
   // Pull goals and budgets from the Zustand store
   const goals   = useFinanceStore(s => s.goals)
   const budgets = useFinanceStore(s => s.budgets)
 
+  // Stable date reference — recomputed once per mount, not on every render.
+  // Insights are month-scoped so per-render Date churn adds no value.
+  const today        = useMemo(() => new Date(), [])
   const currentMonth = getMonthKey(today)
 
   const insights = useMemo(() => {

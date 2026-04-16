@@ -34,7 +34,7 @@ interface AppShellProps {
   children: React.ReactNode
 }
 
-export function AppShell({ user, profile, settings, children }: AppShellProps) {
+export function AppShell({ user, profile, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const isPro = profile?.subscription === 'pro'

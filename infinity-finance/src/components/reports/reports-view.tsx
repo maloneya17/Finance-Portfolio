@@ -50,14 +50,14 @@ export function ReportsView({ transactions, settings }: Props) {
       .map(([name, value]) => ({ name, value }))
   }, [transactions])
 
-  // Net worth trend (cumulative)
-  const netTrend = useMemo(() => {
-    let running = 0
-    return monthlyData.map(m => {
-      running += m.net
-      return { month: m.month, net: running }
-    })
-  }, [monthlyData])
+  // Net worth trend (cumulative) — use reduce so no variable is mutated after render
+  const netTrend = useMemo(() =>
+    monthlyData.reduce<Array<{ month: string; net: number }>>((acc, m) => {
+      const prev = acc.length > 0 ? acc[acc.length - 1].net : 0
+      acc.push({ month: m.month, net: prev + m.net })
+      return acc
+    }, [])
+  , [monthlyData])
 
   const totalIncome   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)

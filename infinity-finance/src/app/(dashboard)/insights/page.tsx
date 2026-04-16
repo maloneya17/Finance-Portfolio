@@ -6,7 +6,7 @@ import type { Transaction, Settings, Profile } from '@/types/supabase'
 export const metadata = { title: 'Insights — Infinity Finance' }
 
 export default async function InsightsPage() {
-  const { userId, isPro, dateFilter } = await requireAuth()
+  const { userId, dateFilter } = await requireAuth()
   const supabase = await createClient()
 
   const [{ data: profile }, { data: settings }] = await Promise.all([

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useFinanceStore } from '@/store/finance'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { formatCurrency, getMonthKey } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { ArrowRight, CheckCircle2, Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -12,7 +12,6 @@ interface Props { sym: string }
 export function BillsWidget({ sym }: Props) {
   const bills       = useFinanceStore(s => s.bills)
   const payments    = useFinanceStore(s => s.billPayments)
-  const currentMonth = useFinanceStore(s => s.currentMonth)
   const privacy      = useFinanceStore(s => s.privacyMode)
 
   const paidIds = new Set(payments.filter(p => p.paid).map(p => p.bill_id))
