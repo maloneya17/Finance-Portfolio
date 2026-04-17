@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       break
     }
 
-    case 'customer.subscription.trial_ending': {
+    case 'customer.subscription.trial_will_end': {
       const sub = event.data.object as Stripe.Subscription
       logger.info('stripe-webhook', `Trial ending for subscription ${sub.id} (customer: ${sub.customer as string})`)
       // TODO: send trial-ending notification email
@@ -148,8 +148,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Retrieve the subscription to get the latest period end
-      if (invoice.subscription) {
-        const sub = await stripe.subscriptions.retrieve(invoice.subscription as string)
+      // In Stripe v22 the subscription reference moved from invoice.subscription to invoice.parent.subscription
+      const subscriptionRef = invoice.parent?.type === 'subscription_details'
+        ? invoice.parent.subscription_details?.subscription
+        : null
+      if (subscriptionRef) {
+        const subId = typeof subscriptionRef === 'string' ? subscriptionRef : subscriptionRef.id
+        const sub = await stripe.subscriptions.retrieve(subId)
         const periodEnd = sub.items.data[0]?.current_period_end
         const userId = (profile as { id: string; subscription: string; subscription_ends_at: string | null }).id
         const newPeriodEndISO = periodEnd != null ? new Date(periodEnd * 1000).toISOString() : null

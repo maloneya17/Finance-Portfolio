@@ -95,6 +95,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
       currency:        currency,
       currency_symbol: currencyObj.symbol,
       categories:      categories,
+      privacy_mode:    privacyMode,
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await supabase.from('settings').upsert(settingsPayload as any, { onConflict: 'user_id' })
