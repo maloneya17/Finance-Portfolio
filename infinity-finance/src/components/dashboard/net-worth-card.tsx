@@ -53,23 +53,28 @@ export function NetWorthCard({ sym }: Props) {
           </div>
 
           {/* Visual bar */}
-          {totalAssets > 0 && (
-            <div className="mt-3">
-              <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, (totalAssets / (totalAssets + totalDebts)) * 100)}%`,
-                    background: 'linear-gradient(90deg, var(--ios-green), var(--ios-teal))',
-                  }}
-                />
+          {totalAssets > 0 && (() => {
+            const denom = totalAssets + totalDebts
+            const assetPct = denom > 0 ? Math.min(100, (totalAssets / denom) * 100) : 100
+            const debtPct  = denom > 0 ? (totalDebts / denom) * 100 : 0
+            return (
+              <div className="mt-3">
+                <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${assetPct}%`,
+                      background: 'linear-gradient(90deg, var(--ios-green), var(--ios-teal))',
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                  <span>Assets {assetPct.toFixed(0)}%</span>
+                  <span>Debts {debtPct.toFixed(0)}%</span>
+                </div>
               </div>
-              <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                <span>Assets {((totalAssets / (totalAssets + totalDebts)) * 100).toFixed(0)}%</span>
-                <span>Debts {((totalDebts / (totalAssets + totalDebts)) * 100).toFixed(0)}%</span>
-              </div>
-            </div>
-          )}
+            )
+          })()}
         </div>
       </CardContent>
     </Card>

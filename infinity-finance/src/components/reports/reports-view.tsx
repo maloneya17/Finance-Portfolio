@@ -82,7 +82,7 @@ export function ReportsView({ transactions, settings }: Props) {
           <Card key={item.label} className="p-5 text-center">
             <p className="text-xs text-slate-500 mb-2">{item.label}</p>
             <p className="text-2xl font-bold" style={{ color: item.color }}>
-              {item.extra ?? formatCurrency(item.value!, sym)}
+              {item.extra ?? formatCurrency(item.value ?? 0, sym)}
             </p>
           </Card>
         ))}

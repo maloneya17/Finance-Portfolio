@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
-import type { Profile, Settings } from '@/types/supabase'
+import type { Profile } from '@/types/supabase'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, ArrowLeftRight, Receipt, TrendingUp,
@@ -30,7 +30,6 @@ const NAV_ITEMS: NavItem[] = [
 interface AppShellProps {
   user: User
   profile: Profile | null
-  settings: Settings | null
   children: React.ReactNode
 }
 

@@ -17,7 +17,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   ])
 
   return (
-    <AppShell user={user} profile={profile} settings={settings}>
+    <AppShell user={user} profile={profile}>
       <ErrorBoundary>
         {children}
       </ErrorBoundary>

@@ -47,9 +47,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
   const goals   = useFinanceStore(s => s.goals)
   const budgets = useFinanceStore(s => s.budgets)
 
-  // Stable date reference — recomputed once per mount, not on every render.
-  // Insights are month-scoped so per-render Date churn adds no value.
-  const today        = useMemo(() => new Date(), [])
+  const today        = new Date()
   const currentMonth = getMonthKey(today)
 
   const insights = useMemo(() => {
@@ -167,6 +165,7 @@ export function InsightsView({ profile, transactions, settings }: Props) {
     for (const [desc, data] of Object.entries(descGroups)) {
       if (data.months.size < 2) continue
       const mean = data.amounts.reduce((s, a) => s + Math.round(a * 100), 0) / (data.amounts.length * 100)
+      if (mean === 0) continue
       const allConsistent = data.amounts.every(a => Math.abs(a - mean) / mean <= 0.1)
       if (!allConsistent) continue
       // Find a representative display name (original casing of first occurrence)
@@ -290,7 +289,8 @@ export function InsightsView({ profile, transactions, settings }: Props) {
       budgetLabel,
       budgetText,
     }
-  }, [transactions, goals, budgets, currentMonth, sym, today])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions, goals, budgets, currentMonth, sym])
 
   // ── Build insight arrays ─────────────────────────────────────────────────────
   const SpendingTrendIcon = insights.spendingTrendIcon
