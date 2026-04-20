@@ -376,7 +376,13 @@ function AssetForm({ asset, sym, userId, onSuccess }: { asset?: Asset; sym: stri
     e.preventDefault()
     setLoading(true)
     try {
-      const assetPayload: AssetInsert = { user_id: userId, name, type: type as AssetInsert['type'], value: parseFloat(value), ticker: ticker || null }
+      const parsedValue = parseFloat(value)
+      if (!Number.isFinite(parsedValue) || parsedValue < 0) {
+        toast.error('Please enter a valid value.')
+        setLoading(false)
+        return
+      }
+      const assetPayload: AssetInsert = { user_id: userId, name, type: type as AssetInsert['type'], value: parsedValue, ticker: ticker || null }
       if (asset) {
         const { data, error } = await supabase.from('assets').update(assetPayload).eq('id', asset.id).select().single()
         if (error || !data) {
@@ -433,7 +439,20 @@ function DebtForm({ debt, sym, userId, onSuccess }: { debt?: Debt; sym: string; 
     e.preventDefault()
     setLoading(true)
     try {
-      const debtPayload: DebtInsert = { user_id: userId, name, balance: parseFloat(balance), apr: parseFloat(apr), min_payment: parseFloat(minPayment || '0'), type: debtType as DebtInsert['type'] }
+      const parsedBalance = parseFloat(balance)
+      const parsedApr = parseFloat(apr)
+      const parsedMinPayment = parseFloat(minPayment || '0')
+      if (!Number.isFinite(parsedBalance) || parsedBalance < 0) {
+        toast.error('Please enter a valid balance.')
+        setLoading(false)
+        return
+      }
+      if (!Number.isFinite(parsedApr) || parsedApr < 0) {
+        toast.error('Please enter a valid APR.')
+        setLoading(false)
+        return
+      }
+      const debtPayload: DebtInsert = { user_id: userId, name, balance: parsedBalance, apr: parsedApr, min_payment: Number.isFinite(parsedMinPayment) ? parsedMinPayment : 0, type: debtType as DebtInsert['type'] }
       if (debt) {
         const { data, error } = await supabase.from('debts').update(debtPayload).eq('id', debt.id).select().single()
         if (error || !data) {
@@ -494,7 +513,14 @@ function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; 
     e.preventDefault()
     setLoading(true)
     try {
-      const goalPayload: GoalInsert = { user_id: userId, name, target: parseFloat(target), current: parseFloat(current || '0'), emoji: emoji || null, deadline: deadline || null, notes: notes || null }
+      const parsedTarget = parseFloat(target)
+      const parsedCurrent = parseFloat(current || '0')
+      if (!Number.isFinite(parsedTarget) || parsedTarget < 0) {
+        toast.error('Please enter a valid target amount.')
+        setLoading(false)
+        return
+      }
+      const goalPayload: GoalInsert = { user_id: userId, name, target: parsedTarget, current: Number.isFinite(parsedCurrent) ? parsedCurrent : 0, emoji: emoji || null, deadline: deadline || null, notes: notes || null }
       if (goal) {
         const { data, error } = await supabase.from('goals').update(goalPayload).eq('id', goal.id).select().single()
         if (error || !data) {

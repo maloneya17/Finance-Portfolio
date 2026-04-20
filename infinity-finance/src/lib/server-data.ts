@@ -9,8 +9,8 @@ export interface UserContext {
 
 export async function requireAuth(): Promise<UserContext> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')

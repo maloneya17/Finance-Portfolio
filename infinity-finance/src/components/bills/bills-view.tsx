@@ -331,7 +331,13 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
     setError(null)
     setLoading(true)
     // Clamp day to 28 — the safe maximum that works for all months including February
-    const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parseFloat(amount), day: Math.min(Number(day), 28), category }
+    const parsedAmount = parseFloat(amount)
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setError('Please enter a valid amount.')
+      setLoading(false)
+      return
+    }
+    const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parsedAmount, day: Math.min(Number(day), 28), category }
     if (bill) {
       const { data, error } = await supabase.from('bills').update(payload).eq('id', bill.id).select().single()
       if (error) { setError(error.message); setLoading(false); return }

@@ -33,8 +33,10 @@ export function ReportsView({ transactions, settings }: Props) {
     })
     return Object.values(map).sort((a, b) => a.month.localeCompare(b.month)).map(m => ({
       ...m,
+      income:   Math.round(m.income   * 100) / 100,
+      expenses: Math.round(m.expenses * 100) / 100,
       month: new Date(m.month + '-01').toLocaleString('default', { month: 'short' }),
-      net: m.income - m.expenses,
+      net: Math.round((m.income - m.expenses) * 100) / 100,
     }))
   }, [transactions])
 
@@ -59,8 +61,8 @@ export function ReportsView({ transactions, settings }: Props) {
     }, [])
   , [monthlyData])
 
-  const totalIncome   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const totalIncome   = Math.round(transactions.filter(t => t.type === 'income').reduce((s, t)  => s + t.amount, 0) * 100) / 100
+  const totalExpenses = Math.round(transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) * 100) / 100
   const savingsRate   = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0
 
   const tooltipStyle = { background: '#1e293b', border: 'none', borderRadius: 8, color: '#f1f5f9', fontSize: 12 }

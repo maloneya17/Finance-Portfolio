@@ -59,6 +59,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (loading) return
     setError(null)
     setLoading(true)
 

@@ -6,9 +6,9 @@ import { OnboardingModal } from '@/components/onboarding/onboarding-modal'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  if (error || !user) redirect('/login')
 
   // Fetch profile + settings in parallel
   const [{ data: profile }, { data: settings }] = await Promise.all([
