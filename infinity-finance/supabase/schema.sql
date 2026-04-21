@@ -309,3 +309,60 @@ CREATE INDEX IF NOT EXISTS idx_wealth_snapshots_user_date ON wealth_snapshots(us
 
 -- Missing index: partial index for GDPR purge query performance
 CREATE INDEX IF NOT EXISTS idx_transactions_deleted ON transactions(deleted_at) WHERE deleted_at IS NOT NULL;
+
+-- ─── MARK BILL PAID (ATOMIC RPC) ─────────────────────────────────────────────
+-- Replaces the 3-step client-side insert/insert/update pattern that could leave
+-- orphaned transaction rows if the network dropped between steps 2 and 3.
+-- All three writes (bill_payment insert, transaction insert, transaction_id link)
+-- execute inside a single implicit PL/pgSQL transaction — they all commit or all
+-- roll back together.  RLS on both tables still applies (SECURITY INVOKER).
+CREATE OR REPLACE FUNCTION public.mark_bill_paid(
+  p_bill_id      uuid,
+  p_month_key    text,
+  p_amount       numeric,
+  p_category     text,
+  p_name         text,
+  p_tx_date      date
+)
+RETURNS json
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+  v_payment_id   uuid;
+  v_tx_id        uuid;
+  v_result       json;
+BEGIN
+  -- Insert bill_payment; RLS policy enforces user_id = auth.uid()
+  INSERT INTO bill_payments (bill_id, user_id, month_key, paid)
+  VALUES (p_bill_id, auth.uid(), p_month_key, true)
+  RETURNING id INTO v_payment_id;
+
+  -- Insert linked transaction
+  INSERT INTO transactions (
+    user_id, type, amount, category, description,
+    date, notes, is_recurring, splits, tags
+  )
+  VALUES (
+    auth.uid(), 'expense', p_amount, p_category, p_name,
+    p_tx_date, 'Auto-created for bill: ' || p_name, false, null, ARRAY['bill']
+  )
+  RETURNING id INTO v_tx_id;
+
+  -- Link the transaction back to the bill_payment
+  UPDATE bill_payments
+  SET transaction_id = v_tx_id
+  WHERE id = v_payment_id;
+
+  -- Return the completed bill_payment row as JSON
+  SELECT row_to_json(bp.*) INTO v_result
+  FROM bill_payments bp
+  WHERE bp.id = v_payment_id;
+
+  RETURN v_result;
+END;
+$$;
+
+-- Only authenticated users may call this function
+REVOKE ALL ON FUNCTION public.mark_bill_paid FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.mark_bill_paid TO authenticated;

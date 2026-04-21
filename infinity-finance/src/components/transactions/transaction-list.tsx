@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/store/finance'
 import { createClient } from '@/lib/supabase/client'
@@ -24,7 +24,8 @@ interface Props {
 export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   const [search, setSearch]   = useState('')
   const [error, setError]     = useState<string | null>(null)
-  const [undoItem, setUndoItem] = useState<{ id: string; tx: Transaction; timer: ReturnType<typeof setTimeout> } | null>(null)
+  const [undoItem, setUndoItem] = useState<{ id: string; tx: Transaction } | null>(null)
+  const undoTimerRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router                  = useRouter()
 
   const transactions  = useFinanceStore(s => s.getMonthTransactions())
@@ -32,12 +33,12 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   const allTransactions = useFinanceStore(s => s.transactions)
   const privacy         = useFinanceStore(s => s.privacyMode)
 
-  // Clean up pending timer on unmount
+  // Clear any pending undo timer when the component unmounts
   useEffect(() => {
     return () => {
-      if (undoItem?.timer) clearTimeout(undoItem.timer)
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
     }
-  }, [undoItem])
+  }, [])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return transactions
@@ -82,14 +83,14 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
       .eq('user_id', userId)
 
     // 4. Show undo for 8 seconds
-    if (undoItem) clearTimeout(undoItem.timer)
-    const timer = setTimeout(() => setUndoItem(null), 8000)
-    setUndoItem({ id, tx: txToDelete, timer })
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    undoTimerRef.current = setTimeout(() => { setUndoItem(null); undoTimerRef.current = null }, 8000)
+    setUndoItem({ id, tx: txToDelete })
   }
 
   async function handleUndo() {
     if (!undoItem) return
-    clearTimeout(undoItem.timer)
+    if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null }
 
     const supabase = createClient()
     const { error: undoError } = await supabase

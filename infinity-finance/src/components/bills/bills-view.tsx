@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Bill, BillInsert, BillPayment, BillPaymentInsert, BillPaymentUpdate, Settings, TransactionInsert } from '@/types/supabase'
+import type { Bill, BillInsert, BillPayment, BillPaymentUpdate, Settings } from '@/types/supabase'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -93,19 +93,8 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
         const { data } = await supabase.from('bill_payments').update(updatePayload).eq('id', existing.id).select().single()
         if (data) setPayments({ ...payments, [bill.id]: data as BillPayment })
       } else {
-        // Step 1: Insert bill_payment and capture returned id
-        const insertPayload: BillPaymentInsert = { bill_id: bill.id, user_id: userId, month_key: month, paid: true }
-        const { data: newPayment, error: paymentErr } = await supabase
-          .from('bill_payments')
-          .insert(insertPayload)
-          .select('id')
-          .single()
-        if (paymentErr || !newPayment) {
-          toast.error('Failed to update bill payment')
-          return
-        }
-
-        // Step 2: Create linked transaction with correct date for this month
+        // Single atomic RPC: bill_payment insert + transaction insert + link all
+        // execute inside one DB transaction — no orphaned rows on network failure
         const txDate = (() => {
           const [year, mon] = month.split('-').map(Number)
           const lastDay = new Date(year, mon, 0).getDate()
@@ -113,38 +102,19 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
           return `${month}-${String(day).padStart(2, '0')}`
         })()
 
-        const txPayload: TransactionInsert = {
-          user_id:      userId,
-          type:         'expense',
-          amount:       bill.amount,
-          category:     bill.category || 'Bills',
-          description:  bill.name,
-          date:         txDate,
-          notes:        `Auto-created for bill: ${bill.name}`,
-          is_recurring: false,
-          splits:       null,
-          tags:         ['bill'],
-        }
-        const { data: newTx, error: txErr } = await supabase
-          .from('transactions')
-          .insert(txPayload)
-          .select('id')
-          .single()
-        if (txErr || !newTx) {
+        const { data: linked, error: rpcErr } = await supabase.rpc('mark_bill_paid', {
+          p_bill_id:   bill.id,
+          p_month_key: month,
+          p_amount:    bill.amount,
+          p_category:  bill.category || 'Bills',
+          p_name:      bill.name,
+          p_tx_date:   txDate,
+        })
+        if (rpcErr || !linked) {
           toast.error('Failed to update bill payment')
-          // Roll back the bill_payment we just inserted
-          await supabase.from('bill_payments').delete().eq('id', (newPayment as { id: string }).id)
           return
         }
-
-        // Step 3: Link transaction_id back to bill_payment using the returned id (NOT state)
-        const { data: linked } = await supabase
-          .from('bill_payments')
-          .update({ transaction_id: (newTx as { id: string }).id })
-          .eq('id', (newPayment as { id: string }).id)
-          .select()
-          .single()
-        if (linked) setPayments({ ...payments, [bill.id]: linked as BillPayment })
+        setPayments({ ...payments, [bill.id]: linked as BillPayment })
       }
 
       router.refresh()
