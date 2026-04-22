@@ -42,6 +42,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   const netWorth    = totalAssets - totalDebts
 
   useEffect(() => {
+    let cancelled = false
     const supabase = createClient()
     supabase
       .from('wealth_snapshots')
@@ -50,28 +51,31 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       .order('date', { ascending: true })
       .limit(30)
       .then(({ data }) => {
-        if (data) setSnapshots(data as Array<{ date: string; net_worth: number }>)
+        if (!cancelled && data) setSnapshots(data as Array<{ date: string; net_worth: number }>)
       })
+    return () => { cancelled = true }
   }, [userId])
 
   async function recordSnapshot(): Promise<void> {
-    const supabase = createClient()
-    // Fetch current totals fresh from DB
-    const [{ data: assetRows }, { data: debtRows }] = await Promise.all([
-      supabase.from('assets').select('value').eq('user_id', userId),
-      supabase.from('debts').select('balance').eq('user_id', userId),
-    ])
-    const totalAssets = (assetRows ?? []).reduce((s: number, a: { value: number }) => s + a.value, 0)
-    const totalDebts  = (debtRows  ?? []).reduce((s: number, d: { balance: number }) => s + d.balance, 0)
-    const today = new Date().toISOString().split('T')[0]
-
-    await supabase.from('wealth_snapshots').upsert({
-      user_id:      userId,
-      date:         today,
-      net_worth:    totalAssets - totalDebts,
-      assets_total: totalAssets,
-      debts_total:  totalDebts,
-    }, { onConflict: 'user_id,date' })
+    try {
+      const supabase = createClient()
+      const [{ data: assetRows }, { data: debtRows }] = await Promise.all([
+        supabase.from('assets').select('value').eq('user_id', userId),
+        supabase.from('debts').select('balance').eq('user_id', userId),
+      ])
+      const snapshotAssets = (assetRows ?? []).reduce((s: number, a: { value: number }) => s + a.value, 0)
+      const snapshotDebts  = (debtRows  ?? []).reduce((s: number, d: { balance: number }) => s + d.balance, 0)
+      const today = new Date().toISOString().split('T')[0]
+      await supabase.from('wealth_snapshots').upsert({
+        user_id:      userId,
+        date:         today,
+        net_worth:    snapshotAssets - snapshotDebts,
+        assets_total: snapshotAssets,
+        debts_total:  snapshotDebts,
+      }, { onConflict: 'user_id,date' })
+    } catch {
+      // snapshot is non-critical — don't surface errors to the user
+    }
   }
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
@@ -83,22 +87,28 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
 
   async function deleteAsset(id: string) {
     if (!confirm('Delete this asset? This cannot be undone.')) return
-    await supabase.from('assets').delete().eq('id', id)
+    const prev = assets
     setAssets(assets.filter(a => a.id !== id))
+    const { error } = await supabase.from('assets').delete().eq('id', id)
+    if (error) { setAssets(prev); toast.error('Failed to delete asset. Please try again.'); return }
     await recordSnapshot()
   }
 
   async function deleteDebt(id: string) {
     if (!confirm('Delete this debt entry? This cannot be undone.')) return
-    await supabase.from('debts').delete().eq('id', id)
+    const prev = debts
     setDebts(debts.filter(d => d.id !== id))
+    const { error } = await supabase.from('debts').delete().eq('id', id)
+    if (error) { setDebts(prev); toast.error('Failed to delete debt. Please try again.'); return }
     await recordSnapshot()
   }
 
   async function deleteGoal(id: string) {
     if (!confirm('Delete this goal? This cannot be undone.')) return
-    await supabase.from('goals').delete().eq('id', id)
+    const prev = goals
     setGoals(goals.filter(g => g.id !== id))
+    const { error } = await supabase.from('goals').delete().eq('id', id)
+    if (error) { setGoals(prev); toast.error('Failed to delete goal. Please try again.') }
   }
 
   return (

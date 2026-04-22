@@ -125,8 +125,8 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
 
   async function deleteBill(id: string) {
     if (!confirm('Delete this bill? This cannot be undone.')) return
-    const deactivate: Partial<BillInsert> = { is_active: false }
-    await supabase.from('bills').update(deactivate).eq('id', id)
+    const { error } = await supabase.from('bills').update({ is_active: false } as Partial<BillInsert>).eq('id', id)
+    if (error) { toast.error('Failed to delete bill. Please try again.'); return }
     setBills(bills.filter(b => b.id !== id))
   }
 
@@ -307,15 +307,23 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
       setLoading(false)
       return
     }
-    const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parsedAmount, day: Math.min(Number(day), 28), category }
-    if (bill) {
-      const { data, error } = await supabase.from('bills').update(payload).eq('id', bill.id).select().single()
-      if (error) { setError(error.message); setLoading(false); return }
-      onSuccess(data as Bill)
-    } else {
-      const { data, error } = await supabase.from('bills').insert(payload).select().single()
-      if (error) { setError(error.message); setLoading(false); return }
-      onSuccess(data as Bill)
+    try {
+      const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parsedAmount, day: Math.min(Number(day), 28), category }
+      if (bill) {
+        const { data, error } = await supabase.from('bills').update(payload).eq('id', bill.id).select().single()
+        if (error || !data) { setError(error?.message ?? 'Failed to save bill.'); return }
+        setLoading(false)
+        onSuccess(data as Bill)
+      } else {
+        const { data, error } = await supabase.from('bills').insert(payload).select().single()
+        if (error || !data) { setError(error?.message ?? 'Failed to save bill.'); return }
+        setLoading(false)
+        onSuccess(data as Bill)
+      }
+    } catch {
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFinanceStore } from '@/store/finance'
+import { useShallow } from 'zustand/react/shallow'
 import { createClient } from '@/lib/supabase/client'
 import type { Transaction } from '@/types/supabase'
 import { formatCurrency } from '@/lib/utils'
@@ -28,7 +29,7 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   const undoTimerRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router                  = useRouter()
 
-  const transactions  = useFinanceStore(s => s.getMonthTransactions())
+  const transactions  = useFinanceStore(useShallow(s => s.transactions.filter(t => t.date.startsWith(s.currentMonth))))
   const setTransactions = useFinanceStore(s => s.setTransactions)
   const allTransactions = useFinanceStore(s => s.transactions)
   const privacy         = useFinanceStore(s => s.privacyMode)

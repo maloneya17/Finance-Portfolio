@@ -333,6 +333,12 @@ DECLARE
   v_tx_id        uuid;
   v_result       json;
 BEGIN
+  -- Verify the calling user owns the bill before proceeding
+  PERFORM 1 FROM bills WHERE id = p_bill_id AND user_id = auth.uid();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Bill not found or access denied';
+  END IF;
+
   -- Insert bill_payment; RLS policy enforces user_id = auth.uid()
   INSERT INTO bill_payments (bill_id, user_id, month_key, paid)
   VALUES (p_bill_id, auth.uid(), p_month_key, true)

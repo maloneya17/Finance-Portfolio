@@ -70,11 +70,12 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
   async function handlePrivacyToggle() {
     const newValue = !privacyMode
     togglePrivacy()
-    await supabase.from('settings').upsert({
+    const { error } = await supabase.from('settings').upsert({
       user_id: user.id,
       privacy_mode: newValue,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
+    if (error) togglePrivacy() // rollback on failure
   }
 
   function handleTabChange(newTab: Tab) {
@@ -97,12 +98,17 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
       categories:      categories,
       privacy_mode:    privacyMode,
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await supabase.from('settings').upsert(settingsPayload as any, { onConflict: 'user_id' })
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-    router.refresh()
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await supabase.from('settings').upsert(settingsPayload as any, { onConflict: 'user_id' })
+      if (!error) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+        router.refresh()
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleSignOut() {
@@ -138,12 +144,13 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
     const amount = parseFloat(newBudgetAmt)
     if (isNaN(amount) || amount <= 0) return
     setBudgetSaving(true)
-    const { data } = await supabase
-      .from('budgets')
-      .upsert({ user_id: user.id, category: newBudgetCat, amount }, { onConflict: 'user_id,category' })
-      .select()
-      .single()
-    if (data) {
+    try {
+      const { data, error } = await supabase
+        .from('budgets')
+        .upsert({ user_id: user.id, category: newBudgetCat, amount }, { onConflict: 'user_id,category' })
+        .select()
+        .single()
+      if (error || !data) return
       setBudgets(prev => {
         const existing = prev.findIndex(b => b.category === newBudgetCat)
         if (existing >= 0) {
@@ -151,15 +158,18 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
         }
         return [...prev, data as Budget]
       })
+      setNewBudgetCat('')
+      setNewBudgetAmt('')
+    } finally {
+      setBudgetSaving(false)
     }
-    setNewBudgetCat('')
-    setNewBudgetAmt('')
-    setBudgetSaving(false)
   }
 
   async function deleteBudget(id: string) {
-    setBudgets(prev => prev.filter(b => b.id !== id))
-    await supabase.from('budgets').delete().eq('id', id).eq('user_id', user.id)
+    const prev = budgets
+    setBudgets(b => b.filter(x => x.id !== id))
+    const { error } = await supabase.from('budgets').delete().eq('id', id).eq('user_id', user.id)
+    if (error) setBudgets(prev) // rollback on failure
   }
 
   const tabs = [

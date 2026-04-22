@@ -136,6 +136,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
         resetForm()
       }
 
+      setLoading(false)
       router.refresh()
       onSuccess()
     } catch (err) {

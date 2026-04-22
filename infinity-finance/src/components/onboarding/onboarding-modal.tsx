@@ -29,20 +29,25 @@ export function OnboardingModal({ userId }: Props) {
 
   async function handleFinish() {
     setSaving(true)
-    const selected = CURRENCIES.find(c => c.code === currency)!
-
-    await Promise.all([
-      supabase.from('profiles').update({ username: name || null }).eq('id', userId),
-      supabase.from('settings').upsert({
-        user_id: userId,
-        currency: selected.code,
-        currency_symbol: selected.symbol,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' }),
-    ])
-
-    setCompleted(true)  // Hide modal immediately
-    router.refresh()    // Then sync server state
+    try {
+      const selected = CURRENCIES.find(c => c.code === currency)!
+      const results = await Promise.all([
+        supabase.from('profiles').update({ username: name || null }).eq('id', userId),
+        supabase.from('settings').upsert({
+          user_id: userId,
+          currency: selected.code,
+          currency_symbol: selected.symbol,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' }),
+      ])
+      if (results.some(r => r.error)) return
+      setCompleted(true)
+      router.refresh()
+    } catch {
+      // keep modal open so user can retry
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (completed) return null
