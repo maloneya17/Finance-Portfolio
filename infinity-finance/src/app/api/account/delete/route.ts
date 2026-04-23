@@ -14,8 +14,7 @@ export async function POST(request: Request) {
   }
 
   // 1b. Rate-limit account deletion to 3 attempts per 5 minutes
-  const allowed = rateLimit(`account-delete:${user.id}`, 3, 300_000)
-  if (!allowed) {
+  if (!await rateLimit(`account-delete:${user.id}`, 3, 300_000)) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }
 

@@ -8,9 +8,11 @@ import { TransactionList } from './transaction-list'
 import { TransactionForm } from './transaction-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, ChevronDown } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useFinanceStore } from '@/store/finance'
+
+const PAGE_SIZE = 100
 
 interface Props {
   transactions: Transaction[]
@@ -23,6 +25,8 @@ interface Props {
 export function TransactionsView({ transactions, settings, userId, isPro, hitLimit }: Props) {
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
+  const [hasMore, setHasMore] = useState(hitLimit ?? false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const { setTransactions } = useFinanceStore()
   const allTransactions = useFinanceStore(s => s.transactions)
@@ -84,6 +88,32 @@ export function TransactionsView({ transactions, settings, userId, isPro, hitLim
     }
   }, [userId, setTransactions])
 
+  async function loadMore() {
+    const oldest = allTransactions.at(-1)
+    if (!oldest || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .is('deleted_at', null)
+        .lt('date', oldest.date)
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(PAGE_SIZE)
+      if (data && data.length > 0) {
+        setTransactions([...allTransactions, ...(data as Transaction[])])
+        setHasMore(data.length === PAGE_SIZE)
+      } else {
+        setHasMore(false)
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   const sym        = settings?.currency_symbol ?? '£'
   const categories = settings?.categories ?? []
 
@@ -122,13 +152,16 @@ export function TransactionsView({ transactions, settings, userId, isPro, hitLim
         </div>
       )}
 
-      {hitLimit && (
-        <div className="rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800 mb-4">
-          Showing your most recent 500 transactions. Older transactions are stored but not displayed here.
+      <TransactionList sym={sym} onEdit={handleEdit} userId={userId} />
+
+      {hasMore && (
+        <div className="flex justify-center mt-4">
+          <Button variant="outline" size="sm" onClick={loadMore} loading={loadingMore}>
+            <ChevronDown className="w-4 h-4" aria-hidden="true" />
+            {loadingMore ? 'Loading…' : 'Load older transactions'}
+          </Button>
         </div>
       )}
-
-      <TransactionList sym={sym} onEdit={handleEdit} userId={userId} />
 
       <Dialog open={open} onOpenChange={v => { if (!v) handleClose() }}>
         <DialogContent>

@@ -56,7 +56,7 @@ export async function GET(request: Request) {
   }
 
   // 2. Rate limit per user
-  if (!rateLimit(`export:${user.id}`, 10, 60_000)) {
+  if (!await rateLimit(`export:${user.id}`, 10, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

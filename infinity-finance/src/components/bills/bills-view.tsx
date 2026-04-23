@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import { Plus, CheckCircle2, Circle, Pencil, Trash2, CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Props {
   bills: Bill[]
@@ -39,6 +40,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const [editing, setEditing]   = useState<Bill | null>(null)
   const [month, setMonth]       = useState(currentMonth)
   const [togglingId, setTogglingId]   = useState<string | null>(null)
+  const [confirmBillId, setConfirmBillId] = useState<string | null>(null)
   const router                  = useRouter()
   const supabase                = createClient()
   const sym                     = settings?.currency_symbol ?? '£'
@@ -123,11 +125,11 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
     }
   }
 
-  async function deleteBill(id: string) {
-    if (!confirm('Delete this bill? This cannot be undone.')) return
+  async function confirmDeleteBill(id: string) {
     const { error } = await supabase.from('bills').update({ is_active: false } as Partial<BillInsert>).eq('id', id)
     if (error) { toast.error('Failed to delete bill. Please try again.'); return }
     setBills(bills.filter(b => b.id !== id))
+    setConfirmBillId(null)
   }
 
   return (
@@ -246,7 +248,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                     <Button variant="ghost" size="icon-sm" onClick={() => { setEditing(bill); setOpen(true) }} aria-label={`Edit ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]">
                       <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
-                    <Button variant="ghost" size="icon-sm" onClick={() => deleteBill(bill.id)} aria-label={`Delete ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-red)]">
+                    <Button variant="ghost" size="icon-sm" onClick={() => setConfirmBillId(bill.id)} aria-label={`Delete ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-red)]">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
                   </div>
@@ -277,6 +279,14 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
           />
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmBillId !== null}
+        title="Delete bill"
+        description="This will permanently remove the bill and cannot be undone."
+        onConfirm={() => { if (confirmBillId) confirmDeleteBill(confirmBillId) }}
+        onCancel={() => setConfirmBillId(null)}
+      />
     </div>
   )
 }

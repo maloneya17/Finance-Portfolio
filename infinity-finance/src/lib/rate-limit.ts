@@ -1,57 +1,69 @@
-interface RateLimitEntry {
-  count: number
-  windowStart: number
-}
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
-const store = new Map<string, RateLimitEntry>()
-let writeCount = 0
+// ─── In-memory fallback (development / single-instance) ───────────────────────
+interface RateLimitEntry { count: number; windowStart: number }
+const memStore = new Map<string, RateLimitEntry>()
 
-/**
- * Simple in-memory rate limiter (per-instance, best-effort).
- * Returns true if the request is allowed, false if rate limited.
- *
- * @param key       - Unique identifier for the caller (e.g. user ID)
- * @param limit     - Maximum number of requests allowed within the window
- * @param windowMs  - Duration of the sliding window in milliseconds
- *
- * Keys should be namespaced to avoid cross-route bucket sharing:
- * Example: rateLimit(`export:${userId}`, 10, 60_000)
- * Example: rateLimit(`delete:${userId}`, 3, 300_000)
- */
-export function rateLimit(key: string, limit: number, windowMs: number): boolean {
+function memRateLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now()
-  const entry = store.get(key)
-
+  const entry = memStore.get(key)
   if (!entry || now - entry.windowStart >= windowMs) {
-    // No existing entry or the window has expired — start a fresh window
-    store.set(key, { count: 1, windowStart: now })
-
-    // Prune expired entries after every write
-    for (const [k, v] of store) {
-      if (v.windowStart + windowMs < now) {
-        store.delete(k)
-      }
+    memStore.set(key, { count: 1, windowStart: now })
+    // Prune stale entries to prevent unbounded growth
+    for (const [k, v] of memStore) {
+      if (v.windowStart + windowMs < now) memStore.delete(k)
     }
-
-    // Every 100 writes, do a full sweep of all keys using their own windowMs
-    writeCount += 1
-    if (writeCount % 100 === 0) {
-      for (const [k, v] of store) {
-        // Use the same windowMs from the current call as a conservative bound;
-        // entries that are stale relative to any reasonable window are removed.
-        if (v.windowStart + windowMs < now) {
-          store.delete(k)
-        }
-      }
-    }
-
     return true
   }
-
-  if (entry.count >= limit) {
-    return false
-  }
-
+  if (entry.count >= limit) return false
   entry.count += 1
   return true
+}
+
+// ─── Upstash Redis rate limiter (production / multi-instance) ─────────────────
+// Requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars.
+// Falls back to in-memory when they are not set (e.g. local development).
+let redisLimiterCache: Map<string, Ratelimit> | null = null
+
+function getRedisLimiter(limit: number, windowMs: number): Ratelimit | null {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return null
+  }
+  const cacheKey = `${limit}:${windowMs}`
+  if (!redisLimiterCache) redisLimiterCache = new Map()
+  if (!redisLimiterCache.has(cacheKey)) {
+    const redis = new Redis({
+      url:   process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+    redisLimiterCache.set(
+      cacheKey,
+      new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+        prefix: 'rl',
+      }),
+    )
+  }
+  return redisLimiterCache.get(cacheKey)!
+}
+
+/**
+ * Rate limiter that uses Upstash Redis in production (shared across all
+ * instances) and falls back to an in-memory store in development.
+ *
+ * Returns true if the request is allowed, false if rate-limited.
+ *
+ * Keys should be namespaced by route to avoid bucket collisions:
+ *   rateLimit(`checkout:${userId}`, 5, 60_000)
+ *   rateLimit(`delete:${userId}`,   3, 300_000)
+ */
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  const limiter = getRedisLimiter(limit, windowMs)
+  if (limiter) {
+    const { success } = await limiter.limit(key)
+    return success
+  }
+  return memRateLimit(key, limit, windowMs)
 }

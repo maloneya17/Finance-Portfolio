@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 })
   }
 
-  if (!rateLimit('purge', 5, 60_000)) {
+  if (!await rateLimit('purge', 5, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

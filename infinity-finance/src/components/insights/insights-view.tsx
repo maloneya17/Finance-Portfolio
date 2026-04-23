@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { Transaction, Settings, Profile } from '@/types/supabase'
+import type { Transaction, Settings } from '@/types/supabase'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, getMonthKey, monthKeyToLabel } from '@/lib/utils'
@@ -9,7 +9,7 @@ import { useFinanceStore } from '@/store/finance'
 import { TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Lightbulb, Target, Calendar, PiggyBank, type LucideIcon } from 'lucide-react'
 
 interface Props {
-  profile: Profile | null
+  isPro: boolean
   transactions: Transaction[]
   settings: Settings | null
 }
@@ -39,8 +39,7 @@ function formatMonthYear(date: Date): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function InsightsView({ profile, transactions, settings }: Props) {
-  const isPro   = profile?.subscription === 'pro'
+export function InsightsView({ isPro, transactions, settings }: Props) {
   const sym     = settings?.currency_symbol ?? '£'
 
   // Pull goals and budgets from the Zustand store

@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Props {
   assets: Asset[]
@@ -27,12 +28,15 @@ interface Props {
 
 type Tab = 'overview' | 'assets' | 'debts' | 'goals'
 
+type ConfirmState = { title: string; description: string; action: () => Promise<void> } | null
+
 export function WealthView({ assets: initAssets, debts: initDebts, goals: initGoals, settings, userId }: Props) {
   const [tab, setTab]         = useState<Tab>('overview')
   const [assets, setAssets]   = useState(initAssets)
   const [debts, setDebts]     = useState(initDebts)
   const [goals, setGoals]     = useState(initGoals)
   const [dialog, setDialog]   = useState<{ type: 'asset' | 'debt' | 'goal'; item?: Asset | Debt | Goal } | null>(null)
+  const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [snapshots, setSnapshots] = useState<Array<{ date: string; net_worth: number }>>([])
   const supabase               = createClient()
   const sym                    = settings?.currency_symbol ?? '£'
@@ -85,30 +89,45 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
     { id: 'goals',    label: `Goals (${goals.length})`,    icon: Target       },
   ]
 
-  async function deleteAsset(id: string) {
-    if (!confirm('Delete this asset? This cannot be undone.')) return
-    const prev = assets
-    setAssets(a => a.filter(x => x.id !== id))
-    const { error } = await supabase.from('assets').delete().eq('id', id)
-    if (error) { setAssets(prev); toast.error('Failed to delete asset. Please try again.'); return }
-    await recordSnapshot()
+  function deleteAsset(id: string) {
+    setConfirm({
+      title: 'Delete asset',
+      description: 'This will permanently remove the asset and cannot be undone.',
+      action: async () => {
+        const prev = assets
+        setAssets(a => a.filter(x => x.id !== id))
+        const { error } = await supabase.from('assets').delete().eq('id', id)
+        if (error) { setAssets(prev); toast.error('Failed to delete asset. Please try again.'); return }
+        await recordSnapshot()
+      },
+    })
   }
 
-  async function deleteDebt(id: string) {
-    if (!confirm('Delete this debt entry? This cannot be undone.')) return
-    const prev = debts
-    setDebts(d => d.filter(x => x.id !== id))
-    const { error } = await supabase.from('debts').delete().eq('id', id)
-    if (error) { setDebts(prev); toast.error('Failed to delete debt. Please try again.'); return }
-    await recordSnapshot()
+  function deleteDebt(id: string) {
+    setConfirm({
+      title: 'Delete debt',
+      description: 'This will permanently remove the debt entry and cannot be undone.',
+      action: async () => {
+        const prev = debts
+        setDebts(d => d.filter(x => x.id !== id))
+        const { error } = await supabase.from('debts').delete().eq('id', id)
+        if (error) { setDebts(prev); toast.error('Failed to delete debt. Please try again.'); return }
+        await recordSnapshot()
+      },
+    })
   }
 
-  async function deleteGoal(id: string) {
-    if (!confirm('Delete this goal? This cannot be undone.')) return
-    const prev = goals
-    setGoals(g => g.filter(x => x.id !== id))
-    const { error } = await supabase.from('goals').delete().eq('id', id)
-    if (error) { setGoals(prev); toast.error('Failed to delete goal. Please try again.') }
+  function deleteGoal(id: string) {
+    setConfirm({
+      title: 'Delete goal',
+      description: 'This will permanently remove the goal and cannot be undone.',
+      action: async () => {
+        const prev = goals
+        setGoals(g => g.filter(x => x.id !== id))
+        const { error } = await supabase.from('goals').delete().eq('id', id)
+        if (error) { setGoals(prev); toast.error('Failed to delete goal. Please try again.') }
+      },
+    })
   }
 
   return (
@@ -368,6 +387,14 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title ?? ''}
+        description={confirm?.description ?? ''}
+        onConfirm={async () => { await confirm?.action(); setConfirm(null) }}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   )
 }
