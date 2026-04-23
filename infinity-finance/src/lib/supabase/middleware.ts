@@ -21,13 +21,9 @@ export async function updateSession(request: NextRequest) {
     },
   )
 
-  let user = null
-  try {
-    const { data } = await supabase.auth.getUser()
-    user = data.user
-  } catch {
-    // Treat as unauthenticated on network error
-  }
+  const user = await supabase.auth.getUser()
+    .then(({ data }) => data.user)
+    .catch(() => null)
 
   const { pathname } = request.nextUrl
 

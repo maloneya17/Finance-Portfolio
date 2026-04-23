@@ -312,12 +312,10 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
       if (bill) {
         const { data, error } = await supabase.from('bills').update(payload).eq('id', bill.id).select().single()
         if (error || !data) { setError(error?.message ?? 'Failed to save bill.'); return }
-        setLoading(false)
         onSuccess(data as Bill)
       } else {
         const { data, error } = await supabase.from('bills').insert(payload).select().single()
         if (error || !data) { setError(error?.message ?? 'Failed to save bill.'); return }
-        setLoading(false)
         onSuccess(data as Bill)
       }
     } catch {

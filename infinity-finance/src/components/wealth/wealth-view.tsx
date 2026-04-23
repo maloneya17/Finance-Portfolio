@@ -88,7 +88,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   async function deleteAsset(id: string) {
     if (!confirm('Delete this asset? This cannot be undone.')) return
     const prev = assets
-    setAssets(assets.filter(a => a.id !== id))
+    setAssets(a => a.filter(x => x.id !== id))
     const { error } = await supabase.from('assets').delete().eq('id', id)
     if (error) { setAssets(prev); toast.error('Failed to delete asset. Please try again.'); return }
     await recordSnapshot()
@@ -97,7 +97,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   async function deleteDebt(id: string) {
     if (!confirm('Delete this debt entry? This cannot be undone.')) return
     const prev = debts
-    setDebts(debts.filter(d => d.id !== id))
+    setDebts(d => d.filter(x => x.id !== id))
     const { error } = await supabase.from('debts').delete().eq('id', id)
     if (error) { setDebts(prev); toast.error('Failed to delete debt. Please try again.'); return }
     await recordSnapshot()
@@ -106,7 +106,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   async function deleteGoal(id: string) {
     if (!confirm('Delete this goal? This cannot be undone.')) return
     const prev = goals
-    setGoals(goals.filter(g => g.id !== id))
+    setGoals(g => g.filter(x => x.id !== id))
     const { error } = await supabase.from('goals').delete().eq('id', id)
     if (error) { setGoals(prev); toast.error('Failed to delete goal. Please try again.') }
   }
