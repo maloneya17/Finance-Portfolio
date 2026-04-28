@@ -58,6 +58,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
   const privacyMode    = useFinanceStore(s => s.privacyMode)
   const togglePrivacy  = useFinanceStore(s => s.togglePrivacy)
   const setPrivacyMode = useFinanceStore(s => s.setPrivacyMode)
+  const clearAllData   = useFinanceStore(s => s.clearAllData)
 
   // Initialise privacy mode from DB on mount
   useEffect(() => {
@@ -112,6 +113,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
   }
 
   async function handleSignOut() {
+    clearAllData()
     await supabase.auth.signOut()
     router.push('/login')
   }
@@ -131,6 +133,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
         setDeleting(false)
         return
       }
+      clearAllData()
       await supabase.auth.signOut()
       router.push('/login')
     } catch {

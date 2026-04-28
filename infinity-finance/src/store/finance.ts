@@ -36,6 +36,9 @@ interface FinanceState {
   removeTransaction: (id: string) => void
   updateTransaction: (tx: Transaction) => void
 
+  // Lifecycle
+  clearAllData: () => void
+
   // Helpers
   getMonthTransactions: () => Transaction[]
   getIncome:  () => number
@@ -65,6 +68,11 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   updateTransaction: tx => set(state => ({
     transactions: state.transactions.map(t => t.id === tx.id ? tx : t)
   })),
+  clearAllData: () => set({
+    transactions: [], bills: [], billPayments: [],
+    assets: [], debts: [], goals: [], budgets: [], settings: null,
+  }),
+
   setBills:        b => set({ bills: b }),
   setBillPayments: b => set({ billPayments: b }),
   setAssets:       a => set({ assets: a }),

@@ -25,20 +25,76 @@ function sanitizeCsvField(value: string): string {
   return value
 }
 
+function san(v: string | null | undefined): string | null | undefined {
+  return v ? sanitizeCsvField(v) : v
+}
+
 function buildTransactionCSV(transactions: Transaction[]): string {
   const header = 'Date,Type,Category,Description,Amount,Notes,Tags'
   const rows = transactions.map(tx => {
-    const tags = tx.tags ? sanitizeCsvField(tx.tags.join(';')) : ''
+    // Use | as tag delimiter — semicolons can appear in tag values
+    const tags = tx.tags ? sanitizeCsvField(tx.tags.join('|')) : ''
     return [
       escapeCSVValue(tx.date),
       escapeCSVValue(tx.type),
-      escapeCSVValue(tx.category ? sanitizeCsvField(tx.category) : tx.category),
-      escapeCSVValue(tx.description ? sanitizeCsvField(tx.description) : tx.description),
+      escapeCSVValue(san(tx.category)),
+      escapeCSVValue(san(tx.description)),
       escapeCSVValue(tx.amount),
-      escapeCSVValue(tx.notes ? sanitizeCsvField(tx.notes) : tx.notes),
+      escapeCSVValue(san(tx.notes)),
       escapeCSVValue(tags),
     ].join(',')
   })
+  return [header, ...rows].join('\n')
+}
+
+function buildBillsCSV(bills: Bill[]): string {
+  const header = 'Name,Amount,DayOfMonth,Category,Active'
+  const rows = bills.map(b => [
+    escapeCSVValue(san(b.name)),
+    escapeCSVValue(b.amount),
+    escapeCSVValue(b.day),
+    escapeCSVValue(san(b.category)),
+    escapeCSVValue(b.is_active),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+function buildAssetsCSV(assets: Asset[]): string {
+  const header = 'Name,Type,Value,Ticker,Quantity,PricePerUnit,Notes'
+  const rows = assets.map(a => [
+    escapeCSVValue(san(a.name)),
+    escapeCSVValue(a.type),
+    escapeCSVValue(a.value),
+    escapeCSVValue(a.ticker),
+    escapeCSVValue(a.quantity),
+    escapeCSVValue(a.price_per_unit),
+    escapeCSVValue(san(a.notes)),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+function buildDebtsCSV(debts: Debt[]): string {
+  const header = 'Name,Type,Balance,APR,MinPayment,Notes'
+  const rows = debts.map(d => [
+    escapeCSVValue(san(d.name)),
+    escapeCSVValue(d.type),
+    escapeCSVValue(d.balance),
+    escapeCSVValue(d.apr),
+    escapeCSVValue(d.min_payment),
+    escapeCSVValue(san(d.notes)),
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
+
+function buildGoalsCSV(goals: Goal[]): string {
+  const header = 'Name,Target,Current,Deadline,Notes'
+  const rows = goals.map(g => [
+    escapeCSVValue(san(g.name)),
+    escapeCSVValue(g.target),
+    escapeCSVValue(g.current),
+    escapeCSVValue(g.deadline),
+    escapeCSVValue(san(g.notes)),
+  ].join(','))
   return [header, ...rows].join('\n')
 }
 
@@ -175,13 +231,21 @@ export async function GET(request: Request) {
       })
     }
 
-    // format === 'csv' — export transactions (most common use case)
-    const csv = buildTransactionCSV(transactions)
+    // format === 'csv' — route to the correct builder per type
+    let csv: string
+    let csvFilename: string
+    switch (type) {
+      case 'bills':  csv = buildBillsCSV(bills);   csvFilename = `bills-${today}.csv`;   break
+      case 'assets': csv = buildAssetsCSV(assets);  csvFilename = `assets-${today}.csv`;  break
+      case 'debts':  csv = buildDebtsCSV(debts);    csvFilename = `debts-${today}.csv`;   break
+      case 'goals':  csv = buildGoalsCSV(goals);    csvFilename = `goals-${today}.csv`;   break
+      default:       csv = buildTransactionCSV(transactions); csvFilename = `transactions-${today}.csv`
+    }
     return new NextResponse(csv, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="transactions-${today}.csv"`,
+        'Content-Disposition': `attachment; filename="${csvFilename}"`,
         'Cache-Control': 'no-store, private',
       },
     })

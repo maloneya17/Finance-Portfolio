@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -7,7 +8,7 @@ export interface UserContext {
   dateFilter: string | null  // ISO date string, null = no filter (pro)
 }
 
-export async function requireAuth(): Promise<UserContext> {
+export const requireAuth = cache(async function requireAuth(): Promise<UserContext> {
   const supabase = await createClient()
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) redirect('/login')
@@ -24,10 +25,10 @@ export async function requireAuth(): Promise<UserContext> {
 
   let dateFilter: string | null = null
   if (!isPro) {
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    dateFilter = threeMonthsAgo.toISOString().split('T')[0]
+    // Use the 1st of the month 3 months ago for a stable, day-length-safe cutoff
+    const cutoff = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+    dateFilter = cutoff.toISOString().split('T')[0]
   }
 
   return { userId: user.id, isPro, dateFilter }
-}
+})

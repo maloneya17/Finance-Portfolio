@@ -23,7 +23,12 @@ export function LoginForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(error.message)
+      const msg = error.message.toLowerCase()
+      if (msg.includes('email') && (msg.includes('confirm') || msg.includes('verif'))) {
+        setError('Please verify your email address before signing in. Check your inbox for a confirmation link.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }

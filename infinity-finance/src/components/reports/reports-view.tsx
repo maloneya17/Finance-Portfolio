@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 
 interface Props {
+  isPro: boolean
   transactions: Transaction[]
   settings: Settings | null
 }
@@ -19,7 +20,7 @@ const CATEGORY_COLORS = [
   '#5AC8FA','#FF2D55','#30D158','#FF6B00','#636366',
 ]
 
-export function ReportsView({ transactions, settings }: Props) {
+export function ReportsView({ isPro, transactions, settings }: Props) {
   const sym = settings?.currency_symbol ?? '£'
 
   // Monthly breakdown
@@ -71,8 +72,18 @@ export function ReportsView({ transactions, settings }: Props) {
     <div className="p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Reports</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Year to date financial overview</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          {isPro ? 'Year to date financial overview' : 'Last 3 months — upgrade to Pro for full history'}
+        </p>
       </div>
+
+      {!isPro && (
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <span>Showing last 3 months of data.</span>
+          <a href="/settings?tab=billing" className="font-semibold underline underline-offset-2">Upgrade to Pro</a>
+          <span>for full history and advanced insights.</span>
+        </div>
+      )}
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-3 gap-4 mb-6">

@@ -6,7 +6,7 @@ import type { Transaction, Settings } from '@/types/supabase'
 export const metadata = { title: 'Reports — Infinity Finance' }
 
 export default async function ReportsPage() {
-  const { userId, dateFilter } = await requireAuth()
+  const { userId, isPro, dateFilter } = await requireAuth()
   const supabase = await createClient()
 
   const { data: settings } = await supabase.from('settings').select('*').eq('user_id', userId).single()
@@ -26,6 +26,7 @@ export default async function ReportsPage() {
 
   return (
     <ReportsView
+      isPro={isPro}
       transactions={(transactions ?? []) as Transaction[]}
       settings={settings as Settings | null}
     />
