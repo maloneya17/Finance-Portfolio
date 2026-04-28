@@ -26,6 +26,7 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   const [search, setSearch]   = useState('')
   const [error, setError]     = useState<string | null>(null)
   const [undoItem, setUndoItem] = useState<{ id: string; tx: Transaction } | null>(null)
+  const [isUndoing, setIsUndoing] = useState(false)
   const undoTimerRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router                  = useRouter()
 
@@ -90,22 +91,27 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   }
 
   async function handleUndo() {
-    if (!undoItem) return
+    if (!undoItem || isUndoing) return
     if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null }
+    setIsUndoing(true)
 
-    const supabase = createClient()
-    const { error: undoError } = await supabase
-      .from('transactions')
-      .update({ deleted_at: null })
-      .eq('id', undoItem.id)
-      .eq('user_id', userId)
+    try {
+      const supabase = createClient()
+      const { error: undoError } = await supabase
+        .from('transactions')
+        .update({ deleted_at: null })
+        .eq('id', undoItem.id)
+        .eq('user_id', userId)
 
-    if (!undoError) {
-      // Use current store state to avoid stale closure from 8-second undo window
-      setTransactions([undoItem.tx, ...useFinanceStore.getState().transactions.filter(t => t.id !== undoItem.tx.id)])
+      if (!undoError) {
+        // Use current store state to avoid stale closure from 8-second undo window
+        setTransactions([undoItem.tx, ...useFinanceStore.getState().transactions.filter(t => t.id !== undoItem.tx.id)])
+      }
+      setUndoItem(null)
+      router.refresh()
+    } finally {
+      setIsUndoing(false)
     }
-    setUndoItem(null)
-    router.refresh()
   }
 
   return (
@@ -210,9 +216,10 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
           <span>Transaction deleted</span>
           <button
             onClick={handleUndo}
-            className="ml-4 underline underline-offset-2 hover:no-underline"
+            disabled={isUndoing}
+            className="ml-4 underline underline-offset-2 hover:no-underline disabled:opacity-60"
           >
-            Undo
+            {isUndoing ? 'Restoring…' : 'Undo'}
           </button>
         </div>
       )}

@@ -130,7 +130,6 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
       const data = await res.json() as { success?: boolean; error?: string }
       if (!res.ok || data.error) {
         setDeleteError(data.error ?? 'Failed to delete account. Please try again.')
-        setDeleting(false)
         return
       }
       clearAllData()
@@ -138,6 +137,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
       router.push('/login')
     } catch {
       setDeleteError('An unexpected error occurred. Please try again.')
+    } finally {
       setDeleting(false)
     }
   }

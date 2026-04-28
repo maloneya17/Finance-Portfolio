@@ -25,19 +25,24 @@ export function SignupForm() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: name } },
-    })
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } },
+      })
 
-    if (error) {
-      setError(error.message)
+      if (error) {
+        setError(error.message)
+        return
+      }
+
+      setDone(true)
+    } catch {
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    setDone(true)
   }
 
   async function handleGoogle() {

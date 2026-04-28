@@ -96,7 +96,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       action: async () => {
         const prev = assets
         setAssets(a => a.filter(x => x.id !== id))
-        const { error } = await supabase.from('assets').delete().eq('id', id)
+        const { error } = await supabase.from('assets').delete().eq('id', id).eq('user_id', userId)
         if (error) { setAssets(prev); toast.error('Failed to delete asset. Please try again.'); return }
         await recordSnapshot()
       },
@@ -110,7 +110,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       action: async () => {
         const prev = debts
         setDebts(d => d.filter(x => x.id !== id))
-        const { error } = await supabase.from('debts').delete().eq('id', id)
+        const { error } = await supabase.from('debts').delete().eq('id', id).eq('user_id', userId)
         if (error) { setDebts(prev); toast.error('Failed to delete debt. Please try again.'); return }
         await recordSnapshot()
       },
@@ -124,7 +124,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       action: async () => {
         const prev = goals
         setGoals(g => g.filter(x => x.id !== id))
-        const { error } = await supabase.from('goals').delete().eq('id', id)
+        const { error } = await supabase.from('goals').delete().eq('id', id).eq('user_id', userId)
         if (error) { setGoals(prev); toast.error('Failed to delete goal. Please try again.') }
       },
     })
@@ -160,7 +160,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
             <p className="text-lg font-bold" style={{ color: 'var(--ios-red)' }}>-{formatCompact(totalDebts, sym)}</p>
           </div>
         </div>
-        {snapshots.length >= 2 && (
+        {snapshots.length >= 2 ? (
           <div className="mt-4">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Net Worth History</p>
             <ResponsiveContainer width="100%" height={80}>
@@ -180,6 +180,10 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
               </LineChart>
             </ResponsiveContainer>
           </div>
+        ) : (
+          <p className="text-xs text-slate-500 mt-4">
+            Net worth history will appear here once you have data from 2+ days.
+          </p>
         )}
       </Card>
 

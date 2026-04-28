@@ -10,13 +10,15 @@ import { cn } from '@/lib/utils'
 interface Props { sym: string }
 
 export function NetWorthCard({ sym }: Props) {
-  const assets  = useFinanceStore(s => s.assets)
-  const debts   = useFinanceStore(s => s.debts)
-  const privacy = useFinanceStore(s => s.privacyMode)
+  const assets      = useFinanceStore(s => s.assets)
+  const debts       = useFinanceStore(s => s.debts)
+  const privacy     = useFinanceStore(s => s.privacyMode)
+  const getNetWorth = useFinanceStore(s => s.getNetWorth)
 
+  // Use store's Decimal-safe computation for the displayed figure
+  const netWorth    = getNetWorth()
   const totalAssets = assets.reduce((s, a) => s + a.value, 0)
   const totalDebts  = debts.reduce((s, d) => s + d.balance, 0)
-  const netWorth    = totalAssets - totalDebts
 
   const fmt = (n: number) => privacy ? '••••' : formatCompact(n, sym)
 

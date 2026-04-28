@@ -30,7 +30,7 @@ export function OnboardingModal({ userId }: Props) {
   async function handleFinish() {
     setSaving(true)
     try {
-      const selected = CURRENCIES.find(c => c.code === currency)!
+      const selected = CURRENCIES.find(c => c.code === currency) ?? CURRENCIES[0]
       const results = await Promise.all([
         supabase.from('profiles').update({ username: name || null }).eq('id', userId),
         supabase.from('settings').upsert({
