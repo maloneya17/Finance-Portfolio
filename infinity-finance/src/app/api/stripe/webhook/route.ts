@@ -4,15 +4,17 @@ import Stripe from 'stripe'
 import { logger } from '@/lib/logger'
 
 function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-03-31.basil' })
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key, { apiVersion: '2025-03-31.basil' })
 }
 
 // Use service-role client to bypass RLS
 function getAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  )
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) throw new Error('Supabase service-role env vars are not configured')
+  return createClient(url, key)
 }
 
 export async function POST(req: NextRequest) {

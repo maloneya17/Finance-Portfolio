@@ -43,6 +43,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
   const [newCat, setNewCat]         = useState('')
   const [saving, setSaving]         = useState(false)
   const [saved, setSaved]           = useState(false)
+  const [saveError, setSaveError]   = useState<string | null>(null)
   const [deleting, setDeleting]       = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [showDeleteForm, setShowDeleteForm] = useState(false)
@@ -89,6 +90,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
 
   async function saveSettings() {
     setSaving(true)
+    setSaveError(null)
     // Include ALL settings fields on every upsert so no field is ever reset to
     // its database default when only a subset of fields was changed.
     const settingsPayload: Required<SettingsInsert> = {
@@ -102,7 +104,9 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.from('settings').upsert(settingsPayload as any, { onConflict: 'user_id' })
-      if (!error) {
+      if (error) {
+        setSaveError('Failed to save settings. Please try again.')
+      } else {
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
         router.refresh()
@@ -190,10 +194,12 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 mb-6 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit">
+      <div role="tablist" className="flex gap-1 mb-6 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit">
         {tabs.map(t => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
             onClick={() => handleTabChange(t.id)}
             className={cn(
               'px-4 py-2 text-xs font-semibold rounded-lg transition',
@@ -279,6 +285,11 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
             </CardContent>
           </Card>
 
+          {saveError && (
+            <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">
+              {saveError}
+            </div>
+          )}
           <Button onClick={saveSettings} loading={saving} className="w-full">
             {saved ? '✓ Saved!' : 'Save Settings'}
           </Button>

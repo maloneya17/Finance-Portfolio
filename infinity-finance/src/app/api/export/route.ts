@@ -117,13 +117,20 @@ export async function GET(request: Request) {
   }
 
   // 3. Check subscription
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('subscription')
+    .select('subscription, subscription_ends_at')
     .eq('id', user.id)
     .single()
 
-  const isPro = (profile as { subscription: string } | null)?.subscription === 'pro'
+  if (profileError) {
+    logger.error('export', 'Failed to fetch profile', { userId: user.id, error: profileError.message })
+    return NextResponse.json({ error: 'Failed to verify subscription' }, { status: 500 })
+  }
+
+  const p = profile as { subscription: string; subscription_ends_at: string | null } | null
+  const isPro = p?.subscription === 'pro' &&
+    (p?.subscription_ends_at == null || new Date(p.subscription_ends_at) > new Date())
 
   // 4. Parse query params
   const url = new URL(request.url)

@@ -125,9 +125,10 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
         ].map(item => (
           <Card key={item.label} className="p-4 text-center">
             <p className="text-xs text-slate-500 mb-1">{item.label}</p>
-            <p className={cn('text-lg font-bold tabular-nums', privacy && 'blur-[5px]')} style={{ color: item.color }}>
-              {formatCurrency(item.value, sym)}
+            <p className={cn('text-lg font-bold tabular-nums', privacy && 'blur-[5px] select-none')} aria-hidden={privacy || undefined} style={{ color: item.color }}>
+              {privacy ? '••••' : formatCurrency(item.value, sym)}
             </p>
+            {privacy && <span className="sr-only">Amount hidden</span>}
           </Card>
         ))}
       </div>
@@ -266,14 +267,16 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
 
                 {/* Amount */}
                 <span
-                  className={cn('text-sm font-semibold tabular-nums shrink-0', privacy && 'blur-[5px]')}
+                  className={cn('text-sm font-semibold tabular-nums shrink-0', privacy && 'blur-[5px] select-none')}
+                  aria-hidden={privacy || undefined}
                   style={{ color: tx.type === 'income' ? 'var(--ios-green)' : 'var(--ios-red)' }}
                 >
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount, sym)}
+                  {privacy ? '••••' : `${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount, sym)}`}
                 </span>
+                {privacy && <span className="sr-only">Amount hidden</span>}
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                <div className="flex items-center gap-1 transition">
                   <Button
                     variant="ghost"
                     size="icon-sm"

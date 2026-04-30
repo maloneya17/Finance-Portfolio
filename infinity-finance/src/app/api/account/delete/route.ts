@@ -40,9 +40,16 @@ export async function POST(request: Request) {
   const userId = user.id
 
   // 2. Create service role client to bypass RLS for deletion
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !serviceRoleKey) {
+    logger.error('account-delete', 'Missing Supabase service-role env vars')
+    return NextResponse.json({ error: 'Service configuration error' }, { status: 500 })
+  }
+
   const serviceClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl,
+    serviceRoleKey,
     { auth: { autoRefreshToken: false, persistSession: false } },
   )
 

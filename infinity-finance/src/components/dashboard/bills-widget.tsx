@@ -9,6 +9,12 @@ import { cn } from '@/lib/utils'
 
 interface Props { sym: string }
 
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
 export function BillsWidget({ sym }: Props) {
   const bills       = useFinanceStore(s => s.bills)
   const payments    = useFinanceStore(s => s.billPayments)
@@ -44,20 +50,22 @@ export function BillsWidget({ sym }: Props) {
                   <Circle className="w-4 h-4 shrink-0 text-slate-300 dark:text-slate-600" aria-hidden="true" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{bill.name}</p>
-                    <p className="text-xs text-slate-400">Due {bill.day}th</p>
+                    <p className="text-xs text-slate-400">Due {ordinal(bill.day)}</p>
                   </div>
-                  <span className={cn('text-sm font-semibold shrink-0', privacy && 'blur-[5px]')} style={{ color: 'var(--ios-red)' }}>
-                    {formatCurrency(bill.amount, sym)}
+                  <span className={cn('text-sm font-semibold shrink-0', privacy && 'blur-[5px] select-none')} aria-hidden={privacy || undefined} style={{ color: 'var(--ios-red)' }}>
+                    {privacy ? '••••' : formatCurrency(bill.amount, sym)}
                   </span>
+                  {privacy && <span className="sr-only">Amount hidden</span>}
                 </li>
               ))}
             </ul>
             {totalUnpaid > 0 && (
               <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs">
                 <span className="text-slate-500">Total outstanding</span>
-                <span className={cn('font-bold', privacy && 'blur-[4px]')} style={{ color: 'var(--ios-red)' }}>
-                  {formatCurrency(totalUnpaid, sym)}
+                <span className={cn('font-bold', privacy && 'blur-[4px] select-none')} aria-hidden={privacy || undefined} style={{ color: 'var(--ios-red)' }}>
+                  {privacy ? '••••' : formatCurrency(totalUnpaid, sym)}
                 </span>
+                {privacy && <span className="sr-only">Amount hidden</span>}
               </div>
             )}
           </>

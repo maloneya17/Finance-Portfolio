@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Transaction } from '@/types/supabase'
@@ -36,6 +36,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
   const [splits, setSplits]     = useState<SplitRow[]>(
     (editing?.splits as SplitRow[] | null)?.map((s: SplitRow) => ({ category: s.category, amount: String(s.amount) })) ?? [],
   )
+  const submittingRef           = useRef(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
 
@@ -59,7 +60,8 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (loading) return
+    if (submittingRef.current) return
+    submittingRef.current = true
     setError(null)
     setLoading(true)
 
@@ -67,7 +69,6 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
       const parsedAmount = parseFloat(amount)
       if (isNaN(parsedAmount) || parsedAmount <= 0) {
         setError('Please enter a valid amount.')
-        setLoading(false)
         return
       }
 
@@ -78,7 +79,6 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
       if (hasSplits && parsedSplits !== null) {
         if (parsedSplits.length < 2) {
           setError('Please add at least 2 valid split rows (each needs a category and amount).')
-          setLoading(false)
           return
         }
         const splitSumPence = splits.reduce((s, r) => s + Math.round(parseFloat(r.amount || '0') * 100), 0)
@@ -88,18 +88,10 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
           setError(
             `Split amounts (${sym}${splitSum.toFixed(2)}) must add up to the total (${sym}${parsedAmount.toFixed(2)})`
           )
-          setLoading(false)
           return
         }
       }
 
-      // Atomicity note: split rows are stored as a JSONB array in the `splits`
-      // column of the parent transaction row — NOT as separate DB rows. This means
-      // the entire split is written in a single INSERT/UPDATE, so it is inherently
-      // atomic: either all split data is saved or none of it is. No manual rollback
-      // is required. If Supabase ever moves splits to a child table, each insert
-      // would need to be wrapped in a DB transaction (RPC) or rolled back manually
-      // by deleting any successfully inserted rows on failure.
       const txPayload = {
         user_id:     userId,
         type,
@@ -118,7 +110,6 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
         if (error) {
           toast.error('Failed to update transaction')
           setError(error.message)
-          setLoading(false)
           return
         }
         if (data) setTransactions(allTransactions.map(t => t.id === editing.id ? data : t))
@@ -128,7 +119,6 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
         if (error) {
           toast.error('Failed to add transaction')
           setError(error.message)
-          setLoading(false)
           return
         }
         if (data) setTransactions([data, ...allTransactions])
@@ -136,12 +126,13 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
         resetForm()
       }
 
-      setLoading(false)
       router.refresh()
       onSuccess()
     } catch (err) {
       toast.error('Failed to add transaction')
       setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
+    } finally {
+      submittingRef.current = false
       setLoading(false)
     }
   }

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, formatCompact, pct, clamp } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useFinanceStore } from '@/store/finance'
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
@@ -35,6 +36,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   const [assets, setAssets]   = useState(initAssets)
   const [debts, setDebts]     = useState(initDebts)
   const [goals, setGoals]     = useState(initGoals)
+  const privacy                = useFinanceStore(s => s.privacyMode)
   const [dialog, setDialog]   = useState<{ type: 'asset' | 'debt' | 'goal'; item?: Asset | Debt | Goal } | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [snapshots, setSnapshots] = useState<Array<{ date: string; net_worth: number }>>([])
@@ -148,16 +150,16 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       <Card className="p-6 mb-6 bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 text-white border-0">
         <p className="text-sm text-slate-400 mb-1">Net Worth</p>
         <p className="text-4xl font-bold mb-4" style={{ color: netWorth >= 0 ? 'var(--ios-teal)' : 'var(--ios-red)' }}>
-          {formatCompact(netWorth, sym)}
+          {privacy ? '••••' : formatCompact(netWorth, sym)}
         </p>
         <div className="flex gap-8">
           <div>
             <p className="text-xs text-slate-400">Assets</p>
-            <p className="text-lg font-bold" style={{ color: 'var(--ios-green)' }}>{formatCompact(totalAssets, sym)}</p>
+            <p className="text-lg font-bold" style={{ color: 'var(--ios-green)' }}>{privacy ? '••••' : formatCompact(totalAssets, sym)}</p>
           </div>
           <div>
             <p className="text-xs text-slate-400">Debts</p>
-            <p className="text-lg font-bold" style={{ color: 'var(--ios-red)' }}>-{formatCompact(totalDebts, sym)}</p>
+            <p className="text-lg font-bold" style={{ color: 'var(--ios-red)' }}>{privacy ? '••••' : `-${formatCompact(totalDebts, sym)}`}</p>
           </div>
         </div>
         {snapshots.length >= 2 ? (
@@ -188,10 +190,12 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       </Card>
 
       {/* Tab bar */}
-      <div className="flex gap-1 mb-5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+      <div role="tablist" className="flex gap-1 mb-5 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
         {tabs.map(t => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
             className={cn(
               'flex-1 py-2 text-xs font-semibold rounded-lg transition',
@@ -218,7 +222,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
                         <span className="text-xs font-semibold">{a.name}</span>
-                        <span className="text-xs" style={{ color: 'var(--ios-green)' }}>{formatCurrency(a.value, sym)}</span>
+                        <span className="text-xs" style={{ color: 'var(--ios-green)' }}>{privacy ? '••••' : formatCurrency(a.value, sym)}</span>
                       </div>
                       <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full">
                         <div className="h-full rounded-full" style={{ width: `${pct(a.value, totalAssets)}%`, background: 'var(--ios-green)' }} />
@@ -240,12 +244,12 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
                         <span className="text-xs font-semibold">{d.name}</span>
-                        <span className="text-xs" style={{ color: 'var(--ios-red)' }}>{formatCurrency(d.balance, sym)}</span>
+                        <span className="text-xs" style={{ color: 'var(--ios-red)' }}>{privacy ? '••••' : formatCurrency(d.balance, sym)}</span>
                       </div>
                       <div className="flex gap-2 text-[10px] text-slate-400">
                         <span>{d.apr}% APR</span>
                         <span>·</span>
-                        <span>Min {formatCurrency(d.min_payment, sym)}/mo</span>
+                        <span>Min {privacy ? '••••' : formatCurrency(d.min_payment, sym)}/mo</span>
                       </div>
                     </div>
                   </div>
@@ -276,8 +280,8 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                       {a.ticker && <span className="text-xs text-slate-400">{a.ticker}</span>}
                     </div>
                   </div>
-                  <p className="text-sm font-bold" style={{ color: 'var(--ios-green)' }}>{formatCurrency(a.value, sym)}</p>
-                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                  <p className="text-sm font-bold" style={{ color: 'var(--ios-green)' }}>{privacy ? '••••' : formatCurrency(a.value, sym)}</p>
+                  <div className="flex gap-1 transition">
                     <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'asset', item: a })} aria-label={`Edit ${a.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon-sm" onClick={() => deleteAsset(a.id)} aria-label={`Delete ${a.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
@@ -309,10 +313,10 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold" style={{ color: 'var(--ios-red)' }}>{formatCurrency(d.balance, sym)}</p>
-                    <p className="text-xs text-slate-400">Min {formatCurrency(d.min_payment, sym)}/mo</p>
+                    <p className="text-sm font-bold" style={{ color: 'var(--ios-red)' }}>{privacy ? '••••' : formatCurrency(d.balance, sym)}</p>
+                    <p className="text-xs text-slate-400">Min {privacy ? '••••' : formatCurrency(d.min_payment, sym)}/mo</p>
                   </div>
-                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                  <div className="flex gap-1 transition">
                     <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'debt', item: d })} aria-label={`Edit ${d.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon-sm" onClick={() => deleteDebt(d.id)} aria-label={`Delete ${d.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
@@ -355,9 +359,9 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                       <div className="h-full rounded-full transition-all" style={{ width: `${clamp(p, 0, 100)}%`, background: color }} />
                     </div>
                     <div className="flex justify-between text-xs text-slate-500">
-                      <span>{formatCurrency(g.current, sym)} saved</span>
+                      <span>{privacy ? '••••' : formatCurrency(g.current, sym)} saved</span>
                       <span style={{ color }}>{p.toFixed(0)}%</span>
-                      <span>{formatCurrency(g.target, sym)} goal</span>
+                      <span>{privacy ? '••••' : formatCurrency(g.target, sym)} goal</span>
                     </div>
                   </div>
                 </div>
@@ -412,14 +416,16 @@ function AssetForm({ asset, sym, userId, onSuccess }: { asset?: Asset; sym: stri
   const [value, setValue]     = useState(asset ? String(asset.value) : '')
   const [ticker, setTicker]   = useState(asset?.ticker ?? '')
   const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
     setLoading(true)
     try {
       const parsedValue = parseFloat(value)
       if (!Number.isFinite(parsedValue) || parsedValue < 0) {
-        toast.error('Please enter a valid value.')
+        setError('Please enter a valid value.')
         setLoading(false)
         return
       }
@@ -448,6 +454,9 @@ function AssetForm({ asset, sym, userId, onSuccess }: { asset?: Asset; sym: stri
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">{error}</div>
+      )}
       <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="ISA, House, etc." required /></div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -475,21 +484,23 @@ function DebtForm({ debt, sym, userId, onSuccess }: { debt?: Debt; sym: string; 
   const [minPayment, setMinPayment] = useState(debt ? String(debt.min_payment) : '')
   const [debtType, setDebtType] = useState(debt?.type ?? 'other')
   const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
     setLoading(true)
     try {
       const parsedBalance = parseFloat(balance)
       const parsedApr = parseFloat(apr)
       const parsedMinPayment = parseFloat(minPayment || '0')
       if (!Number.isFinite(parsedBalance) || parsedBalance < 0) {
-        toast.error('Please enter a valid balance.')
+        setError('Please enter a valid balance.')
         setLoading(false)
         return
       }
       if (!Number.isFinite(parsedApr) || parsedApr < 0) {
-        toast.error('Please enter a valid APR.')
+        setError('Please enter a valid APR.')
         setLoading(false)
         return
       }
@@ -518,6 +529,9 @@ function DebtForm({ debt, sym, userId, onSuccess }: { debt?: Debt; sym: string; 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">{error}</div>
+      )}
       <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Credit card, mortgage, etc." required /></div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Balance ({sym})</label><Input type="number" step="0.01" min="0" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0.00" required /></div>
@@ -547,17 +561,19 @@ function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; 
   const [current, setCurrent]   = useState(goal ? String(goal.current) : '0')
   const [emoji, setEmoji]       = useState(goal?.emoji ?? '')
   const [deadline, setDeadline] = useState(goal?.deadline ?? '')
-  const [notes, setNotes] = useState(goal?.notes ?? '')
+  const [notes, setNotes]       = useState(goal?.notes ?? '')
   const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
     setLoading(true)
     try {
       const parsedTarget = parseFloat(target)
       const parsedCurrent = parseFloat(current || '0')
       if (!Number.isFinite(parsedTarget) || parsedTarget < 0) {
-        toast.error('Please enter a valid target amount.')
+        setError('Please enter a valid target amount.')
         setLoading(false)
         return
       }
@@ -586,6 +602,9 @@ function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">{error}</div>
+      )}
       <div className="flex gap-3">
         <div className="w-16"><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Emoji</label><Input value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="🎯" className="text-center" /></div>
         <div className="flex-1"><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Goal name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Emergency fund, holiday, etc." required /></div>

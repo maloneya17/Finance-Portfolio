@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Bill, BillInsert, BillPayment, BillPaymentUpdate, Settings } from '@/types/supabase'
@@ -39,8 +39,9 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const [open, setOpen]         = useState(false)
   const [editing, setEditing]   = useState<Bill | null>(null)
   const [month, setMonth]       = useState(currentMonth)
-  const [togglingId, setTogglingId]   = useState<string | null>(null)
+  const [togglingId, setTogglingId]       = useState<string | null>(null)
   const [confirmBillId, setConfirmBillId] = useState<string | null>(null)
+  const [loadingPayments, setLoadingPayments] = useState(false)
   const router                  = useRouter()
   const supabase                = createClient()
   const sym                     = settings?.currency_symbol ?? '£'
@@ -48,18 +49,26 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
 
   // Re-fetch payment records whenever the selected month changes
   useEffect(() => {
+    setPayments({})  // clear immediately to avoid stale checkmarks from the previous month
+    let cancelled = false
     async function fetchPayments() {
-      const client = createClient()
-      const { data } = await client
-        .from('bill_payments')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('month_key', month)
-      if (data) {
-        setPayments(Object.fromEntries((data as BillPayment[]).map(p => [p.bill_id, p])))
+      setLoadingPayments(true)
+      try {
+        const client = createClient()
+        const { data } = await client
+          .from('bill_payments')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('month_key', month)
+        if (!cancelled && data) {
+          setPayments(Object.fromEntries((data as BillPayment[]).map(p => [p.bill_id, p])))
+        }
+      } finally {
+        if (!cancelled) setLoadingPayments(false)
       }
     }
     fetchPayments()
+    return () => { cancelled = true }
   }, [month, userId])
 
   const paidIds    = new Set(Object.values(payments).filter(p => p.paid).map(p => p.bill_id))
@@ -187,7 +196,10 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
         >
           ←
         </button>
-        <span className="font-medium text-sm">{monthKeyToLabel(month)}</span>
+        <span className="font-medium text-sm">
+          {monthKeyToLabel(month)}
+          {loadingPayments && <span className="ml-2 text-xs text-slate-400 animate-pulse">Loading…</span>}
+        </span>
         <button
           onClick={() => {
             const [y, m] = month.split('-').map(Number)
@@ -244,7 +256,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                     {formatCurrency(bill.amount, sym)}
                   </span>
 
-                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
+                  <div className="flex gap-1 transition">
                     <Button variant="ghost" size="icon-sm" onClick={() => { setEditing(bill); setOpen(true) }} aria-label={`Edit ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]">
                       <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
@@ -298,7 +310,8 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
   userId: string
   onSuccess: (bill: Bill) => void
 }) {
-  const supabase   = createClient()
+  const supabase      = createClient()
+  const submittingRef = useRef(false)
   const [name, setName]       = useState(bill?.name ?? '')
   const [amount, setAmount]   = useState(bill ? String(bill.amount) : '')
   const [day, setDay]         = useState(bill ? String(bill.day) : '1')
@@ -308,16 +321,17 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (submittingRef.current) return
+    submittingRef.current = true
     setError(null)
     setLoading(true)
-    // Clamp day to 28 — the safe maximum that works for all months including February
-    const parsedAmount = parseFloat(amount)
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setError('Please enter a valid amount.')
-      setLoading(false)
-      return
-    }
     try {
+      // Clamp day to 28 — the safe maximum that works for all months including February
+      const parsedAmount = parseFloat(amount)
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+        setError('Please enter a valid amount.')
+        return
+      }
       const payload: BillInsert = { user_id: userId, name: name.trim(), amount: parsedAmount, day: Math.min(Number(day), 28), category }
       if (bill) {
         const { data, error } = await supabase.from('bills').update(payload).eq('id', bill.id).select().single()
@@ -331,6 +345,7 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
     } catch {
       setError('An unexpected error occurred. Please try again.')
     } finally {
+      submittingRef.current = false
       setLoading(false)
     }
   }
