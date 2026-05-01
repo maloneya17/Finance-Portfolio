@@ -21,7 +21,7 @@ export function BudgetOverview({ sym }: Props) {
   const activeBudgets = budgets.filter(b => b.amount > 0)
   if (activeBudgets.length === 0) return null
 
-  const fmt = (n: number) => privacy ? '••' : formatCompact(n, sym)
+  const fmt = (n: number) => privacy ? '••••' : formatCompact(n, sym)
 
   return (
     <Card>
@@ -39,10 +39,11 @@ export function BudgetOverview({ sym }: Props) {
             <div key={b.id}>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{b.category}</span>
-                <span className={cn('text-xs font-medium', privacy && 'blur-[4px]')}>
+                <span className="text-xs font-medium" aria-hidden={privacy || undefined}>
                   <span style={{ color }}>{fmt(s)}</span>
                   <span className="text-slate-400"> / {fmt(b.amount)}</span>
                 </span>
+                {privacy && <span className="sr-only">Amount hidden</span>}
               </div>
               <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div

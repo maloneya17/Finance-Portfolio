@@ -34,23 +34,26 @@ export function NetWorthCard({ sym }: Props) {
       </CardHeader>
       <CardContent className="pt-0">
         <div
-          className={cn('text-3xl font-bold mb-4', privacy && 'blur-[6px] select-none')}
+          className="text-3xl font-bold mb-4 tabular-nums"
           style={{ color: netWorth >= 0 ? 'var(--ios-purple)' : 'var(--ios-red)' }}
         >
-          {fmt(netWorth)}
+          <span className="inline-block min-w-[6ch]" aria-hidden={privacy || undefined}>{fmt(netWorth)}</span>
+          {privacy && <span className="sr-only">Amount hidden</span>}
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-slate-500 dark:text-slate-400">Assets</span>
-            <span className={cn('font-semibold', privacy && 'blur-[5px]')} style={{ color: 'var(--ios-green)' }}>
-              {fmt(totalAssets)}
+            <span className="font-semibold tabular-nums" style={{ color: 'var(--ios-green)' }}>
+              <span className="inline-block min-w-[5ch]" aria-hidden={privacy || undefined}>{fmt(totalAssets)}</span>
+              {privacy && <span className="sr-only">Amount hidden</span>}
             </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-slate-500 dark:text-slate-400">Debts</span>
-            <span className={cn('font-semibold', privacy && 'blur-[5px]')} style={{ color: 'var(--ios-red)' }}>
-              -{fmt(totalDebts)}
+            <span className="font-semibold tabular-nums" style={{ color: 'var(--ios-red)' }}>
+              <span className="inline-block min-w-[5ch]" aria-hidden={privacy || undefined}>{privacy ? '••••' : `-${fmt(totalDebts)}`}</span>
+              {privacy && <span className="sr-only">Amount hidden</span>}
             </span>
           </div>
 

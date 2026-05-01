@@ -63,9 +63,14 @@ export function KpiCards({ sym }: KpiCardsProps) {
                 <Icon className="w-4 h-4" aria-hidden="true" style={{ color: card.color }} />
               </div>
             </div>
-            <div className={cn('text-2xl font-bold', privacy && 'blur-[6px] select-none')} style={{ color: card.color }}>
+            <div
+              className={cn('text-2xl font-bold tabular-nums inline-block min-w-[6ch]', privacy && 'blur-[6px] select-none')}
+              aria-hidden={privacy || undefined}
+              style={{ color: card.color }}
+            >
               {card.value}
             </div>
+            {privacy && <span className="sr-only">Amount hidden</span>}
             {card.label === (isDeficit ? 'Deficit' : 'Balance') && income > 0 && (
               <div className="text-[11px] text-slate-400 mt-1">{savingsRate.toFixed(0)}% savings rate</div>
             )}
