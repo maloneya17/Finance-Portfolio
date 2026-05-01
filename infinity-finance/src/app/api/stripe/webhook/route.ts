@@ -222,6 +222,7 @@ export async function POST(req: NextRequest) {
 
         const { error } = await supabase.from('profiles').update({
           subscription: 'free',
+          stripe_customer_id: null,
           stripe_subscription_id: null,
           subscription_ends_at: periodEndDate && periodEndDate > now
             ? periodEndDate.toISOString()

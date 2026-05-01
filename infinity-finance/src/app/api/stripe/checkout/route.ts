@@ -20,13 +20,25 @@ export async function POST() {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
+  if (!user.email) {
+    return NextResponse.json({ error: 'Account has no email address' }, { status: 400 })
+  }
+
   try {
     const { data: profile } = await supabase.from('profiles').select('stripe_customer_id').eq('id', user.id).single()
 
     let customerId = (profile as { stripe_customer_id: string | null } | null)?.stripe_customer_id
     if (!customerId) {
-      const customer = await stripe.customers.create({ email: user.email!, metadata: { supabase_id: user.id } })
-      customerId = customer.id
+      // Search Stripe for an existing customer by email before creating to avoid
+      // orphaned duplicate customers from concurrent checkout requests (TOCTOU race).
+      const existing = await stripe.customers.list({ email: user.email, limit: 1 })
+      if (existing.data.length > 0) {
+        customerId = existing.data[0].id
+      } else {
+        const customer = await stripe.customers.create({ email: user.email, metadata: { supabase_id: user.id } })
+        customerId = customer.id
+      }
+      // Always write back so the DB stays consistent regardless of which path was taken.
       await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id)
     }
 

@@ -77,6 +77,15 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
         assets_total: snapshotAssets,
         debts_total:  snapshotDebts,
       }, { onConflict: 'user_id,date' })
+
+      // Prune snapshots older than 90 days to prevent unbounded growth
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - 90)
+      await supabase
+        .from('wealth_snapshots')
+        .delete()
+        .eq('user_id', userId)
+        .lt('date', cutoff.toISOString().split('T')[0])
     } catch {
       // snapshot is non-critical — don't surface errors to the user
     }

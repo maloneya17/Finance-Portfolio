@@ -372,3 +372,35 @@ $$;
 -- Only authenticated users may call this function
 REVOKE ALL ON FUNCTION public.mark_bill_paid FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.mark_bill_paid TO authenticated;
+
+-- ─── ADDITIONAL PERFORMANCE INDEXES ──────────────────────────────────────────
+
+-- bill_payments lookup by bill_id (FK join used in mark_bill_paid and cascades)
+CREATE INDEX IF NOT EXISTS idx_bill_payments_bill_id ON bill_payments(bill_id);
+
+-- bill_payments lookup by month_key alone (used when filtering all payments for a month)
+CREATE INDEX IF NOT EXISTS idx_bill_payments_month_key ON bill_payments(month_key);
+
+-- ─── Account deletion RPC (deploy to replace sequential REST calls) ──────────
+-- Wraps all user data deletion in a single transaction. Call with service role.
+-- After this succeeds, call auth.admin.deleteUser() from the API route.
+create or replace function delete_account(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Delete in dependency order
+  delete from bill_payments  where bill_id in (select id from bills where user_id = p_user_id);
+  delete from transactions   where user_id = p_user_id;
+  delete from bills          where user_id = p_user_id;
+  delete from assets         where user_id = p_user_id;
+  delete from debts          where user_id = p_user_id;
+  delete from goals          where user_id = p_user_id;
+  delete from budgets        where user_id = p_user_id;
+  delete from wealth_snapshots where user_id = p_user_id;
+  delete from settings       where user_id = p_user_id;
+  delete from profiles       where id = p_user_id;
+end;
+$$;

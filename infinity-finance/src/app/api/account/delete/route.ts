@@ -24,6 +24,9 @@ export async function POST(request: Request) {
   if (!password) {
     return NextResponse.json({ error: 'Password is required' }, { status: 400 })
   }
+  if (password.length > 1024) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
 
   // 3. Re-authenticate to confirm the request is intentional
   if (!user.email) {
