@@ -5,7 +5,9 @@ import { rateLimit } from '@/lib/rate-limit'
 import { logger } from '@/lib/logger'
 
 function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-03-31.basil' })
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key, { apiVersion: '2025-03-31.basil' })
 }
 
 export async function POST() {

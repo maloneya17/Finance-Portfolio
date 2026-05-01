@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Bill, BillInsert, BillPayment, BillPaymentUpdate, Settings } from '@/types/supabase'
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, monthKeyToLabel } from '@/lib/utils'
+import { formatCurrency, monthKeyToLabel, ordinal } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Plus, CheckCircle2, Circle, Pencil, Trash2, CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -25,12 +25,6 @@ interface Props {
   currentMonth: string
 }
 
-function ordinal(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd']
-  const v = n % 100
-  return n + (s[(v - 20) % 10] || s[v] || s[0])
-}
-
 export function BillsView({ bills: initBills, initialPayments, settings, userId, currentMonth }: Props) {
   const [bills, setBills]       = useState<Bill[]>(initBills)
   const [payments, setPayments] = useState<Record<string, BillPayment>>(
@@ -43,7 +37,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const [confirmBillId, setConfirmBillId] = useState<string | null>(null)
   const [loadingPayments, setLoadingPayments] = useState(false)
   const router                  = useRouter()
-  const supabase                = createClient()
+  const supabase                = useMemo(() => createClient(), [])
   const sym                     = settings?.currency_symbol ?? '£'
   const categories              = settings?.categories ?? []
 
@@ -54,8 +48,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
     async function fetchPayments() {
       setLoadingPayments(true)
       try {
-        const client = createClient()
-        const { data } = await client
+        const { data } = await supabase
           .from('bill_payments')
           .select('*')
           .eq('user_id', userId)
@@ -69,7 +62,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
     }
     fetchPayments()
     return () => { cancelled = true }
-  }, [month, userId])
+  }, [supabase, month, userId])
 
   const paidIds    = new Set(Object.values(payments).filter(p => p.paid).map(p => p.bill_id))
   const totalDue   = bills.reduce((s, b) => s + b.amount, 0)

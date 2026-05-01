@@ -14,7 +14,7 @@ export function GoalsWidget({ sym }: Props) {
   const privacy = useFinanceStore(s => s.privacyMode)
 
   const top = goals.slice(0, 3)
-  const fmt = (n: number) => privacy ? '••' : formatCompact(n, sym)
+  const fmt = (n: number) => privacy ? '••••' : formatCompact(n, sym)
 
   return (
     <Card>
@@ -43,9 +43,14 @@ export function GoalsWidget({ sym }: Props) {
                       {g.emoji && <span aria-hidden="true">{g.emoji}</span>}
                       {g.name}
                     </span>
-                    <span className={cn('text-xs font-medium', privacy && 'blur-[4px]')} style={{ color }}>
+                    <span
+                      className={cn('text-xs font-medium', privacy && 'blur-[4px] select-none')}
+                      aria-hidden={privacy || undefined}
+                      style={{ color }}
+                    >
                       {p.toFixed(0)}%
                     </span>
+                    {privacy && <span className="sr-only">Progress hidden</span>}
                   </div>
                   <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div
@@ -53,7 +58,10 @@ export function GoalsWidget({ sym }: Props) {
                       style={{ width: `${clamp(p, 0, 100)}%`, background: color }}
                     />
                   </div>
-                  <div className={cn('flex justify-between text-[10px] text-slate-400 mt-1', privacy && 'blur-[3px]')}>
+                  <div
+                    className={cn('flex justify-between text-[10px] text-slate-400 mt-1', privacy && 'blur-[3px] select-none')}
+                    aria-hidden={privacy || undefined}
+                  >
                     <span>{fmt(g.current)}</span>
                     <span>{fmt(g.target)}</span>
                   </div>

@@ -64,10 +64,12 @@ export function RecentTransactions({ sym }: Props) {
                 </div>
                 <span
                   className={cn('text-sm font-semibold shrink-0 tabular-nums', privacy && 'blur-[5px] select-none')}
+                  aria-hidden={privacy || undefined}
                   style={{ color: tx.type === 'income' ? 'var(--ios-green)' : 'var(--ios-red)' }}
                 >
-                  {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount, sym)}
+                  {privacy ? '••••' : `${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount, sym)}`}
                 </span>
+                {privacy && <span className="sr-only">Amount hidden</span>}
               </li>
             ))}
           </ul>

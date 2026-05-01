@@ -5,26 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** Convert a display amount string/number to integer pence (multiply by 100, round) */
-export function toPence(value: number | string): number {
-  return Math.round(parseFloat(String(value)) * 100)
-}
-
-/** Add two financial amounts safely via integer pence arithmetic */
-export function addAmounts(...values: (number | string)[]): number {
-  return values.reduce((sum: number, v) => sum + toPence(v), 0) / 100
-}
-
-/** Subtract b from a safely */
-export function subtractAmounts(a: number | string, b: number | string): number {
-  return (toPence(a) - toPence(b)) / 100
-}
-
-/** Sum an array of numbers safely */
-export function sumAmounts(values: (number | string)[]): number {
-  return values.reduce((sum: number, v) => sum + toPence(v), 0) / 100
-}
-
 export function formatCurrency(amount: number, symbol = '£', locale = 'en-GB'): string {
   // Map common currency symbols to their locale for correct formatting
   const localeMap: Record<string, string> = {
@@ -63,10 +43,10 @@ export function monthKeyToLabel(key: string): string {
   return new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })
 }
 
-export function parseAmount(value: string): number {
-  const cleaned = value.replace(/[^0-9.-]/g, '')
-  const n = parseFloat(cleaned)
-  return isNaN(n) ? 0 : Math.round(n * 100) / 100
+export function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
 export function clamp(value: number, min: number, max: number): number {
@@ -76,12 +56,4 @@ export function clamp(value: number, min: number, max: number): number {
 export function pct(part: number, total: number): number {
   if (total === 0) return 0
   return clamp((part / total) * 100, 0, 100)
-}
-
-export function daysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate()
-}
-
-export function isPro(subscription: string | null | undefined): boolean {
-  return subscription === 'pro'
 }

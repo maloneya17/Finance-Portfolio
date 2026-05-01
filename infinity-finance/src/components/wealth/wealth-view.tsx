@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Asset, Debt, Goal, Settings } from '@/types/supabase'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -40,7 +40,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   const [dialog, setDialog]   = useState<{ type: 'asset' | 'debt' | 'goal'; item?: Asset | Debt | Goal } | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [snapshots, setSnapshots] = useState<Array<{ date: string; net_worth: number }>>([])
-  const supabase               = createClient()
+  const supabase               = useMemo(() => createClient(), [])
   const sym                    = settings?.currency_symbol ?? '£'
 
   const totalAssets = assets.reduce((s, a) => s + a.value, 0)
@@ -49,7 +49,6 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
 
   useEffect(() => {
     let cancelled = false
-    const supabase = createClient()
     supabase
       .from('wealth_snapshots')
       .select('date, net_worth')
@@ -60,11 +59,10 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
         if (!cancelled && data) setSnapshots(data as Array<{ date: string; net_worth: number }>)
       })
     return () => { cancelled = true }
-  }, [userId])
+  }, [supabase, userId])
 
   async function recordSnapshot(): Promise<void> {
     try {
-      const supabase = createClient()
       const [{ data: assetRows }, { data: debtRows }] = await Promise.all([
         supabase.from('assets').select('value').eq('user_id', userId),
         supabase.from('debts').select('balance').eq('user_id', userId),
