@@ -36,6 +36,8 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
+
 -- Prevent users from self-modifying billing/subscription columns
 CREATE OR REPLACE FUNCTION protect_billing_columns()
 RETURNS TRIGGER
@@ -60,6 +62,8 @@ CREATE TRIGGER enforce_billing_column_protection
   BEFORE UPDATE ON profiles
   FOR EACH ROW
   EXECUTE FUNCTION protect_billing_columns();
+
+REVOKE ALL ON FUNCTION public.protect_billing_columns() FROM PUBLIC;
 
 create policy "Service role only can insert profiles"
   on profiles for insert
@@ -126,7 +130,8 @@ create policy "Users can insert own transactions"
 
 create policy "Users can update own transactions"
   on transactions for update
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
 
 create policy "Users can delete own transactions"
   on transactions for delete
@@ -270,9 +275,11 @@ create policy "Users own their snapshots" on wealth_snapshots for all using (aut
 
 -- ─── UPDATED_AT TRIGGERS ──────────────────────────────────────────────────────
 create or replace function public.set_updated_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin new.updated_at = now(); return new; end;
 $$;
+
+REVOKE ALL ON FUNCTION public.set_updated_at() FROM PUBLIC;
 
 create trigger set_updated_at before update on public.profiles        for each row execute function set_updated_at();
 create trigger set_updated_at before update on public.settings        for each row execute function set_updated_at();
@@ -295,6 +302,8 @@ BEGIN
     AND deleted_at < NOW() - INTERVAL '90 days';
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.purge_soft_deleted_transactions() FROM PUBLIC;
 
 -- Note: Schedule this via pg_cron in Supabase dashboard:
 -- SELECT cron.schedule('purge-deleted-transactions', '0 3 * * *', 'SELECT purge_soft_deleted_transactions()');
@@ -391,6 +400,10 @@ security definer
 set search_path = public
 as $$
 begin
+  IF p_user_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
+
   -- Delete in dependency order
   delete from bill_payments  where bill_id in (select id from bills where user_id = p_user_id);
   delete from transactions   where user_id = p_user_id;
@@ -404,3 +417,5 @@ begin
   delete from profiles       where id = p_user_id;
 end;
 $$;
+
+REVOKE ALL ON FUNCTION public.delete_account(uuid) FROM PUBLIC;
