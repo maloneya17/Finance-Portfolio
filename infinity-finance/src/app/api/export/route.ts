@@ -139,10 +139,11 @@ export async function GET(request: Request) {
   const type   = searchParams.get('type') ?? 'transactions'
 
   // Free users: only allow JSON transactions export
-  if (!isPro && (format === 'csv' || type === 'all')) {
-    return NextResponse.json({
-      error: 'Upgrade to Pro for CSV export and full data export. Basic JSON export of your transactions is always free.',
-    }, { status: 403 })
+  if (!isPro && !(format === 'json' && type === 'transactions')) {
+    return NextResponse.json(
+      { error: 'Pro subscription required for this export' },
+      { status: 403 }
+    )
   }
 
   const validFormats = ['csv', 'json']
