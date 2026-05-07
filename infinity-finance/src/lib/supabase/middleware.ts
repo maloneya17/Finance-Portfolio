@@ -1,15 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function updateSession(request: NextRequest, nonce?: string) {
-  // Clone request headers so we can forward the nonce to server components
-  const requestHeaders = new Headers(request.headers)
-  if (nonce) {
-    requestHeaders.set('x-nonce', nonce)
-  }
+export async function updateSession(request: NextRequest, requestHeaders?: Headers) {
+  // Use the caller-supplied headers (which already contain x-nonce and
+  // content-security-policy) or fall back to a plain clone of the originals.
+  const headers = requestHeaders ?? new Headers(request.headers)
 
   let supabaseResponse = NextResponse.next({
-    request: { headers: requestHeaders },
+    request: { headers },
   })
 
   const supabase = createServerClient(
@@ -21,7 +19,7 @@ export async function updateSession(request: NextRequest, nonce?: string) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
-            request: { headers: requestHeaders },
+            request: { headers },
           })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
