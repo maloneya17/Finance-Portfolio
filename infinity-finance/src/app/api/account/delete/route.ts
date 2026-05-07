@@ -57,125 +57,18 @@ export async function POST(request: Request) {
   )
 
   try {
-    // 3. Delete data in dependency order to avoid FK violations
-
-    // bill_payments depends on bills — fetch bill IDs first
-    const { data: billRows, error: billFetchError } = await serviceClient
-      .from('bills')
-      .select('id')
-      .eq('user_id', userId)
-    if (billFetchError) {
-      logger.error('account-delete', 'Step failed', { error: billFetchError.message })
+    const { error: rpcError } = await serviceClient.rpc('delete_account', {
+      p_user_id: userId,
+    })
+    if (rpcError) {
+      logger.error('account-delete', 'delete_account RPC failed', { error: rpcError.message })
       throw new Error('Account deletion failed at data cleanup step')
     }
 
-    const billIds = (billRows ?? []).map((r: { id: string }) => r.id)
-    if (billIds.length > 0) {
-      const { error: billPaymentsError } = await serviceClient
-        .from('bill_payments')
-        .delete()
-        .in('bill_id', billIds)
-      if (billPaymentsError) {
-        logger.error('account-delete', 'Step failed', { error: billPaymentsError.message })
-        throw new Error('Account deletion failed at data cleanup step')
-      }
-    }
-
-    // transactions
-    const { error: transactionsError } = await serviceClient
-      .from('transactions')
-      .delete()
-      .eq('user_id', userId)
-    if (transactionsError) {
-      logger.error('account-delete', 'Step failed', { error: transactionsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // bills
-    const { error: billsError } = await serviceClient
-      .from('bills')
-      .delete()
-      .eq('user_id', userId)
-    if (billsError) {
-      logger.error('account-delete', 'Step failed', { error: billsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // assets
-    const { error: assetsError } = await serviceClient
-      .from('assets')
-      .delete()
-      .eq('user_id', userId)
-    if (assetsError) {
-      logger.error('account-delete', 'Step failed', { error: assetsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // debts
-    const { error: debtsError } = await serviceClient
-      .from('debts')
-      .delete()
-      .eq('user_id', userId)
-    if (debtsError) {
-      logger.error('account-delete', 'Step failed', { error: debtsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // goals
-    const { error: goalsError } = await serviceClient
-      .from('goals')
-      .delete()
-      .eq('user_id', userId)
-    if (goalsError) {
-      logger.error('account-delete', 'Step failed', { error: goalsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // budgets
-    const { error: budgetsError } = await serviceClient
-      .from('budgets')
-      .delete()
-      .eq('user_id', userId)
-    if (budgetsError) {
-      logger.error('account-delete', 'Step failed', { error: budgetsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // wealth_snapshots
-    const { error: wealthSnapshotsError } = await serviceClient
-      .from('wealth_snapshots')
-      .delete()
-      .eq('user_id', userId)
-    if (wealthSnapshotsError) {
-      logger.error('account-delete', 'Step failed', { error: wealthSnapshotsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // settings
-    const { error: settingsError } = await serviceClient
-      .from('settings')
-      .delete()
-      .eq('user_id', userId)
-    if (settingsError) {
-      logger.error('account-delete', 'Step failed', { error: settingsError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // profiles
-    const { error: profilesError } = await serviceClient
-      .from('profiles')
-      .delete()
-      .eq('id', userId)
-    if (profilesError) {
-      logger.error('account-delete', 'Step failed', { error: profilesError.message })
-      throw new Error('Account deletion failed at data cleanup step')
-    }
-
-    // Finally delete the auth user (requires service role)
     const { error: deleteUserError } = await serviceClient.auth.admin.deleteUser(userId)
     if (deleteUserError) {
-      logger.error('account-delete', 'Step failed', { error: deleteUserError.message })
-      throw new Error('Account deletion failed at data cleanup step')
+      logger.error('account-delete', 'Auth user deletion failed', { error: deleteUserError.message })
+      throw new Error('Account deletion failed at auth cleanup step')
     }
 
     return NextResponse.json({ success: true })

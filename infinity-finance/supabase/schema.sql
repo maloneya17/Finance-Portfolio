@@ -137,6 +137,34 @@ create policy "Users can delete own transactions"
   on transactions for delete
   using (auth.uid() = user_id);
 
+-- ─── SOFT-DELETE GUARD TRIGGER ───────────────────────────────────────────────
+-- Prevents any caller from clearing deleted_at once it has been set.
+-- Hard-deletes (DELETE statement) are unaffected — this only intercepts UPDATE.
+-- The GDPR purge function uses DELETE, so it is not blocked by this trigger.
+create or replace function block_transaction_undelete()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Prevent any caller (except service role via direct DB access) from
+  -- clearing deleted_at once it has been set. Soft-delete is permanent
+  -- from the application layer.
+  if old.deleted_at is not null and new.deleted_at is null then
+    raise exception 'Cannot restore a soft-deleted transaction';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger prevent_transaction_undelete
+  before update on transactions
+  for each row
+  execute function block_transaction_undelete();
+
+revoke all on function public.block_transaction_undelete() from public;
+
 -- ─── BILLS ────────────────────────────────────────────────────────────────────
 create table public.bills (
   id          uuid primary key default uuid_generate_v4(),
@@ -400,9 +428,9 @@ security definer
 set search_path = public
 as $$
 begin
-  IF p_user_id IS DISTINCT FROM auth.uid() THEN
-    RAISE EXCEPTION 'Forbidden';
-  END IF;
+  -- Ownership is enforced at the API route layer (password re-auth + session check).
+  -- This function is only callable by service_role, so auth.uid() is NULL here —
+  -- do not add an auth.uid() check.
 
   -- Delete in dependency order
   delete from bill_payments  where bill_id in (select id from bills where user_id = p_user_id);
@@ -419,3 +447,4 @@ end;
 $$;
 
 REVOKE ALL ON FUNCTION public.delete_account(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.delete_account(uuid) TO service_role;
