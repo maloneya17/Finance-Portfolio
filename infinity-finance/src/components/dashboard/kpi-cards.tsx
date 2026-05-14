@@ -72,7 +72,7 @@ export function KpiCards({ sym }: KpiCardsProps) {
             </div>
             {privacy && <span className="sr-only">Amount hidden</span>}
             {card.label === (isDeficit ? 'Deficit' : 'Balance') && income > 0 && (
-              <div className="text-[11px] text-slate-400 mt-1">{savingsRate.toFixed(0)}% savings rate</div>
+              <div className="text-xs text-slate-500 mt-1">{savingsRate.toFixed(0)}% savings rate</div>
             )}
           </Card>
         )
