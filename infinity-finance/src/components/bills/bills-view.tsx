@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency, monthKeyToLabel, ordinal } from '@/lib/utils'
 import { cn } from '@/lib/utils'
-import { Plus, CheckCircle2, Circle, Pencil, Trash2, CalendarDays } from 'lucide-react'
+import { Plus, CheckCircle2, Circle, Pencil, Trash2, CalendarDays, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -184,10 +184,10 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
             const prev = new Date(y, m - 2, 1)
             setMonth(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`)
           }}
-          className="p-2 rounded hover:bg-muted"
+          className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
           aria-label="Previous month"
         >
-          ←
+          <ChevronLeft className="w-4 h-4" aria-hidden="true" />
         </button>
         <span className="font-medium text-sm">
           {monthKeyToLabel(month)}
@@ -199,10 +199,10 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
             const next = new Date(y, m, 1)
             setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`)
           }}
-          className="p-2 rounded hover:bg-muted"
+          className="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
           aria-label="Next month"
         >
-          →
+          <ChevronRight className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -231,9 +231,11 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                     aria-label={paid ? `Mark ${bill.name} unpaid` : `Mark ${bill.name} paid`}
                     aria-pressed={paid}
                   >
-                    {paid
-                      ? <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--ios-green)' }} aria-hidden="true" />
-                      : <Circle className="w-5 h-5 text-slate-300 dark:text-slate-600 hover:text-[var(--ios-blue)]" aria-hidden="true" />
+                    {togglingId === bill.id
+                      ? <Loader2 className="w-5 h-5 animate-spin text-slate-400" aria-hidden="true" />
+                      : paid
+                        ? <CheckCircle2 className="w-5 h-5 text-[var(--ios-green)]" aria-hidden="true" />
+                        : <Circle className="w-5 h-5 text-slate-300 dark:text-slate-600 hover:text-[var(--ios-blue)]" aria-hidden="true" />
                     }
                   </button>
 

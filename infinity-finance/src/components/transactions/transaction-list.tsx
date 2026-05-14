@@ -6,7 +6,7 @@ import { useFinanceStore } from '@/store/finance'
 import { useShallow } from 'zustand/react/shallow'
 import { createClient } from '@/lib/supabase/client'
 import type { Transaction } from '@/types/supabase'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Pencil, Trash2, Search, Download, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Props {
   sym: string
@@ -25,6 +26,7 @@ interface Props {
 export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   const [search, setSearch]   = useState('')
   const [error, setError]     = useState<string | null>(null)
+  const [deletingTx, setDeletingTx] = useState<Transaction | null>(null)
   const [undoItem, setUndoItem] = useState<{ id: string; tx: Transaction } | null>(null)
   const [isUndoing, setIsUndoing] = useState(false)
   const undoTimerRef            = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -256,11 +258,11 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{tx.description}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-slate-400">{tx.category}</span>
+                    <span className="text-xs text-slate-500">{tx.category}</span>
                     <span className="text-slate-200 dark:text-slate-700">·</span>
-                    <span className="text-xs text-slate-400">{tx.date}</span>
+                    <span className="text-xs text-slate-500">{formatDate(tx.date)}</span>
                     {tx.tags?.map(tag => (
-                      <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                      <Badge key={tag} variant="outline" className="text-xs px-1.5 py-0">{tag}</Badge>
                     ))}
                   </div>
                 </div>
@@ -289,7 +291,7 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    onClick={() => handleDelete(tx.id)}
+                    onClick={() => setDeletingTx(tx)}
                     aria-label={`Delete ${tx.description}`}
                     className="text-slate-400 hover:text-[var(--ios-red)]"
                   >
@@ -301,6 +303,20 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
           </ul>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={deletingTx !== null}
+        title="Delete transaction?"
+        description="This will remove the transaction. You can undo within 8 seconds."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (deletingTx) {
+            handleDelete(deletingTx.id)
+            setDeletingTx(null)
+          }
+        }}
+        onCancel={() => setDeletingTx(null)}
+      />
     </div>
   )
 }

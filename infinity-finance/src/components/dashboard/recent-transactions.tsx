@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useFinanceStore } from '@/store/finance'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { ArrowRight } from 'lucide-react'
 
@@ -60,7 +60,7 @@ export function RecentTransactions({ sym }: Props) {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{tx.description}</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">{tx.category} · {tx.date}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{tx.category} · {formatDate(tx.date)}</p>
                 </div>
                 <span
                   className={cn('text-sm font-semibold shrink-0 tabular-nums', privacy && 'blur-[5px] select-none')}

@@ -57,3 +57,11 @@ export function pct(part: number, total: number): number {
   if (total === 0) return 0
   return clamp((part / total) * 100, 0, 100)
 }
+
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
