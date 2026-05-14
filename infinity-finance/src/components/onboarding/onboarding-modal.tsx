@@ -24,10 +24,12 @@ export function OnboardingModal({ userId }: Props) {
   const [currency, setCurrency] = useState('GBP')
   const [saving, setSaving] = useState(false)
   const [completed, setCompleted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   async function handleFinish() {
+    setError(null)
     setSaving(true)
     try {
       const selected = CURRENCIES.find(c => c.code === currency) ?? CURRENCIES[0]
@@ -44,7 +46,7 @@ export function OnboardingModal({ userId }: Props) {
       setCompleted(true)
       router.refresh()
     } catch {
-      // keep modal open so user can retry
+      setError('Something went wrong. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -124,6 +126,9 @@ export function OnboardingModal({ userId }: Props) {
                 {saving ? 'Setting up...' : 'Get Started 🚀'}
               </button>
             </div>
+            {error && (
+              <p className="text-sm text-[var(--ios-red)] text-center mt-2">{error}</p>
+            )}
           </>
         )}
       </div>

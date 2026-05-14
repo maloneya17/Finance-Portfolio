@@ -26,6 +26,7 @@ interface Props {
 export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   const [search, setSearch]   = useState('')
   const [error, setError]     = useState<string | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
   const [deletingTx, setDeletingTx] = useState<Transaction | null>(null)
   const [undoItem, setUndoItem] = useState<{ id: string; tx: Transaction } | null>(null)
   const [isUndoing, setIsUndoing] = useState(false)
@@ -43,6 +44,13 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!exportOpen) return
+    const handler = () => setExportOpen(false)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [exportOpen])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return transactions
@@ -151,15 +159,23 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
 
         {/* Export dropdown */}
         {isPro ? (
-          <div className="relative group">
-            <Button variant="outline" size="sm" className="gap-1.5" aria-haspopup="menu" aria-label="Export transactions">
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              aria-haspopup="menu"
+              aria-expanded={exportOpen}
+              aria-label="Export transactions"
+              onClick={(e) => { e.stopPropagation(); setExportOpen(v => !v) }}
+            >
               <Download className="w-3.5 h-3.5" aria-hidden="true" />
               Export
             </Button>
-            {/* Dropdown — visible on hover/focus-within */}
             <div
-              className="absolute right-0 top-full mt-1 w-44 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg z-10 overflow-hidden hidden group-hover:block focus-within:block"
+              className={`absolute right-0 top-full mt-1 w-44 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg z-10 overflow-hidden ${exportOpen ? 'block' : 'hidden'}`}
               role="menu"
+              onKeyDown={(e) => { if (e.key === 'Escape') setExportOpen(false) }}
             >
               <a
                 href="/api/export?format=csv"

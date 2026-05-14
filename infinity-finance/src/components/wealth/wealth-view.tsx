@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { formatCurrency, formatCompact, pct, clamp } from '@/lib/utils'
+import { formatCurrency, formatCompact, formatDate, pct, clamp } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { useFinanceStore } from '@/store/finance'
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Target } from 'lucide-react'
@@ -183,7 +183,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                 />
                 <Tooltip
                   formatter={(v) => formatCurrency(Number(v), sym)}
-                  labelFormatter={(label) => label}
+                  labelFormatter={(label) => formatDate(label)}
                   contentStyle={{ fontSize: 12 }}
                 />
               </LineChart>
@@ -231,7 +231,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                         <span className="text-xs font-semibold">{a.name}</span>
                         <span className="text-xs" style={{ color: 'var(--ios-green)' }}>{privacy ? '••••' : formatCurrency(a.value, sym)}</span>
                       </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full">
+                      <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full">
                         <div className="h-full rounded-full" style={{ width: `${pct(a.value, totalAssets)}%`, background: 'var(--ios-green)' }} />
                       </div>
                     </div>
@@ -253,7 +253,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                         <span className="text-xs font-semibold">{d.name}</span>
                         <span className="text-xs" style={{ color: 'var(--ios-red)' }}>{privacy ? '••••' : formatCurrency(d.balance, sym)}</span>
                       </div>
-                      <div className="flex gap-2 text-[10px] text-slate-400">
+                      <div className="flex gap-2 text-xs text-slate-500">
                         <span>{d.apr}% APR</span>
                         <span>·</span>
                         <span>Min {privacy ? '••••' : formatCurrency(d.min_payment, sym)}/mo</span>
@@ -283,7 +283,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{a.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[10px]">{a.type}</Badge>
+                      <Badge variant="outline" className="text-xs">{a.type}</Badge>
                       {a.ticker && <span className="text-xs text-slate-400">{a.ticker}</span>}
                     </div>
                   </div>
@@ -315,7 +315,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{d.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="destructive" className="text-[10px]">{d.type.replace('_', ' ')}</Badge>
+                      <Badge variant="destructive" className="text-xs">{d.type.replace('_', ' ')}</Badge>
                       <span className="text-xs text-slate-400">{d.apr}% APR</span>
                     </div>
                   </div>
@@ -355,21 +355,33 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <p className="font-semibold text-slate-800 dark:text-slate-100">{g.name}</p>
-                        {g.deadline && <p className="text-xs text-slate-400">By {g.deadline}</p>}
+                        {g.deadline && <p className="text-xs text-slate-500">By {formatDate(g.deadline)}</p>}
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon-sm" onClick={() => setDialog({ type: 'goal', item: g })} aria-label={`Edit ${g.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]"><Pencil className="w-3.5 h-3.5" /></Button>
                         <Button variant="ghost" size="icon-sm" onClick={() => deleteGoal(g.id)} aria-label={`Delete ${g.name}`} className="text-slate-400 hover:text-[var(--ios-red)]"><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
                     </div>
-                    <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-2">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${clamp(p, 0, 100)}%`, background: color }} />
-                    </div>
-                    <div className="flex justify-between text-xs text-slate-500">
-                      <span>{privacy ? '••••' : formatCurrency(g.current, sym)} saved</span>
-                      <span style={{ color }}>{p.toFixed(0)}%</span>
-                      <span>{privacy ? '••••' : formatCurrency(g.target, sym)} goal</span>
-                    </div>
+                    {p >= 100 ? (
+                      <div className="flex items-center gap-2 py-1">
+                        <span className="text-lg" aria-hidden="true">🎉</span>
+                        <span className="text-sm font-semibold" style={{ color: 'var(--ios-green)' }}>Goal reached!</span>
+                        <span className="text-xs text-slate-500 ml-auto">
+                          {privacy ? '••••' : formatCurrency(g.current, sym)} / {privacy ? '••••' : formatCurrency(g.target, sym)}
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full mb-2">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${clamp(p, 0, 100)}%`, background: color }} />
+                        </div>
+                        <div className="flex justify-between text-xs text-slate-500">
+                          <span>{privacy ? '••••' : formatCurrency(g.current, sym)} saved</span>
+                          <span style={{ color }}>{p.toFixed(0)}%</span>
+                          <span>{privacy ? '••••' : formatCurrency(g.target, sym)} goal</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -464,20 +476,20 @@ function AssetForm({ asset, sym, userId, onSuccess }: { asset?: Asset; sym: stri
       {error && (
         <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">{error}</div>
       )}
-      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="ISA, House, etc." required /></div>
+      <div><label htmlFor="asset-name" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input id="asset-name" value={name} onChange={e => setName(e.target.value)} placeholder="ISA, House, etc." required /></div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Type</label>
+          <label htmlFor="asset-type" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Type</label>
           <Select value={type} onValueChange={v => setType(v as typeof type)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="asset-type"><SelectValue /></SelectTrigger>
             <SelectContent>
               {['cash','stocks','crypto','property','pension','other'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Value ({sym})</label><Input type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)} placeholder="0.00" required /></div>
+        <div><label htmlFor="asset-value" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Value ({sym})</label><Input id="asset-value" type="number" step="0.01" min="0" value={value} onChange={e => setValue(e.target.value)} placeholder="0.00" required /></div>
       </div>
-      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ticker (optional)</label><Input value={ticker} onChange={e => setTicker(e.target.value)} placeholder="AAPL, ETH, etc." /></div>
+      <div><label htmlFor="asset-ticker" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ticker (optional)</label><Input id="asset-ticker" value={ticker} onChange={e => setTicker(e.target.value)} placeholder="AAPL, ETH, etc." /></div>
       <Button type="submit" className="w-full" loading={loading}>{asset ? 'Update' : 'Add Asset'}</Button>
     </form>
   )
@@ -539,17 +551,17 @@ function DebtForm({ debt, sym, userId, onSuccess }: { debt?: Debt; sym: string; 
       {error && (
         <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">{error}</div>
       )}
-      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Credit card, mortgage, etc." required /></div>
+      <div><label htmlFor="debt-name" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Name</label><Input id="debt-name" value={name} onChange={e => setName(e.target.value)} placeholder="Credit card, mortgage, etc." required /></div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Balance ({sym})</label><Input type="number" step="0.01" min="0" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0.00" required /></div>
-        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">APR (%)</label><Input type="number" step="0.01" min="0" value={apr} onChange={e => setApr(e.target.value)} placeholder="0.00" /></div>
+        <div><label htmlFor="debt-balance" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Balance ({sym})</label><Input id="debt-balance" type="number" step="0.01" min="0" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0.00" required /></div>
+        <div><label htmlFor="debt-apr" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">APR (%)</label><Input id="debt-apr" type="number" step="0.01" min="0" value={apr} onChange={e => setApr(e.target.value)} placeholder="0.00" /></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Min payment/mo ({sym})</label><Input type="number" step="0.01" min="0" value={minPayment} onChange={e => setMinPayment(e.target.value)} placeholder="0.00" /></div>
+        <div><label htmlFor="debt-min-payment" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Min payment/mo ({sym})</label><Input id="debt-min-payment" type="number" step="0.01" min="0" value={minPayment} onChange={e => setMinPayment(e.target.value)} placeholder="0.00" /></div>
         <div>
-          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Type</label>
+          <label htmlFor="debt-type" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Type</label>
           <Select value={debtType} onValueChange={v => setDebtType(v as typeof debtType)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger id="debt-type"><SelectValue /></SelectTrigger>
             <SelectContent>
               {['credit_card','loan','mortgage','student','other'].map(t => <SelectItem key={t} value={t}>{t.replace('_', ' ')}</SelectItem>)}
             </SelectContent>
@@ -613,15 +625,15 @@ function GoalForm({ goal, sym, userId, onSuccess }: { goal?: Goal; sym: string; 
         <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">{error}</div>
       )}
       <div className="flex gap-3">
-        <div className="w-16"><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Emoji</label><Input value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="🎯" className="text-center" /></div>
-        <div className="flex-1"><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Goal name</label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Emergency fund, holiday, etc." required /></div>
+        <div className="w-16"><label htmlFor="goal-emoji" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Emoji</label><Input id="goal-emoji" value={emoji} onChange={e => setEmoji(e.target.value)} placeholder="🎯" className="text-center" /></div>
+        <div className="flex-1"><label htmlFor="goal-name" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Goal name</label><Input id="goal-name" value={name} onChange={e => setName(e.target.value)} placeholder="Emergency fund, holiday, etc." required /></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Target ({sym})</label><Input type="number" step="0.01" min="0" value={target} onChange={e => setTarget(e.target.value)} placeholder="0.00" required /></div>
-        <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Saved so far ({sym})</label><Input type="number" step="0.01" min="0" value={current} onChange={e => setCurrent(e.target.value)} placeholder="0.00" /></div>
+        <div><label htmlFor="goal-target" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Target ({sym})</label><Input id="goal-target" type="number" step="0.01" min="0" value={target} onChange={e => setTarget(e.target.value)} placeholder="0.00" required /></div>
+        <div><label htmlFor="goal-current" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Saved so far ({sym})</label><Input id="goal-current" type="number" step="0.01" min="0" value={current} onChange={e => setCurrent(e.target.value)} placeholder="0.00" /></div>
       </div>
-      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Target date</label><Input type="date" value={deadline} onChange={e => setDeadline(e.target.value)} /></div>
-      <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Notes (optional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes about this goal…" rows={2} className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
+      <div><label htmlFor="goal-deadline" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Target date</label><Input id="goal-deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} /></div>
+      <div><label htmlFor="goal-notes" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Notes (optional)</label><textarea id="goal-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any notes about this goal…" rows={2} className="w-full rounded-md border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
       <Button type="submit" className="w-full" loading={loading}>{goal ? 'Update' : 'Add Goal'}</Button>
     </form>
   )

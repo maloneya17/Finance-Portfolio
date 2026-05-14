@@ -242,8 +242,8 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                   <div className="flex-1 min-w-0">
                     <p className={cn('text-sm font-semibold text-slate-800 dark:text-slate-100', paid && 'line-through')}>{bill.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="outline" className="text-[10px]">{bill.category}</Badge>
-                      <span className="text-xs text-slate-400">Due {ordinal(bill.day)}</span>
+                      <Badge variant="outline" className="text-xs">{bill.category}</Badge>
+                      <span className="text-xs text-slate-500">Due {ordinal(bill.day)}</span>
                     </div>
                   </div>
 
