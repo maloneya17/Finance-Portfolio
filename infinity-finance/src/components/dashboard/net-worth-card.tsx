@@ -73,7 +73,7 @@ export function NetWorthCard({ sym }: Props) {
                     }}
                   />
                 </div>
-                <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                <div className="flex justify-between text-xs text-slate-500 mt-1">
                   <span>Assets {assetPct.toFixed(0)}%</span>
                   <span>Debts {debtPct.toFixed(0)}%</span>
                 </div>

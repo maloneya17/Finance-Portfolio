@@ -45,7 +45,7 @@ export function BudgetOverview({ sym }: Props) {
                 </span>
                 {privacy && <span className="sr-only">Amount hidden</span>}
               </div>
-              <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${clamp(p, 0, 100)}%`, background: color }}

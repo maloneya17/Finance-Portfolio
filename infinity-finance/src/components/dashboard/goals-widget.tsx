@@ -52,19 +52,31 @@ export function GoalsWidget({ sym }: Props) {
                     </span>
                     {privacy && <span className="sr-only">Progress hidden</span>}
                   </div>
-                  <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${clamp(p, 0, 100)}%`, background: color }}
-                    />
-                  </div>
-                  <div
-                    className={cn('flex justify-between text-[10px] text-slate-400 mt-1', privacy && 'blur-[3px] select-none')}
-                    aria-hidden={privacy || undefined}
-                  >
-                    <span>{fmt(g.current)}</span>
-                    <span>{fmt(g.target)}</span>
-                  </div>
+                  {done ? (
+                    <div className="flex items-center gap-2 py-0.5">
+                      <span className="text-base" aria-hidden="true">🎉</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--ios-green)' }}>Goal reached!</span>
+                      <span className={cn('text-xs text-slate-500 ml-auto', privacy && 'blur-[3px] select-none')} aria-hidden={privacy || undefined}>
+                        {fmt(g.current)} / {fmt(g.target)}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${clamp(p, 0, 100)}%`, background: color }}
+                        />
+                      </div>
+                      <div
+                        className={cn('flex justify-between text-xs text-slate-500 mt-1', privacy && 'blur-[3px] select-none')}
+                        aria-hidden={privacy || undefined}
+                      >
+                        <span>{fmt(g.current)}</span>
+                        <span>{fmt(g.target)}</span>
+                      </div>
+                    </>
+                  )}
                 </li>
               )
             })}
