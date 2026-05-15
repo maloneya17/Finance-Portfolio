@@ -151,6 +151,7 @@ export function TransactionForm({ categories, sym, userId, editing, onSuccess }:
           <button
             key={t}
             type="button"
+            aria-pressed={type === t}
             onClick={() => setType(t)}
             className={cn(
               'flex-1 py-2 text-sm font-semibold rounded-lg transition capitalize',

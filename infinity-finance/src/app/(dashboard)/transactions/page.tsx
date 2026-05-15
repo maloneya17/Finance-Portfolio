@@ -4,9 +4,15 @@ import { TransactionsView } from '@/components/transactions/transactions-view'
 
 export const metadata = { title: 'Transactions — Infinity Finance' }
 
-export default async function TransactionsPage() {
+export default async function TransactionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   const { userId, isPro, dateFilter } = await requireAuth()
   const supabase = await createClient()
+  const params = await searchParams
+  const initialCategory = typeof params.category === 'string' ? params.category : null
 
   let txQuery = supabase.from('transactions').select('*').eq('user_id', userId).is('deleted_at', null).order('date', { ascending: false }).order('created_at', { ascending: false })
   if (dateFilter) txQuery = txQuery.gte('date', dateFilter)
@@ -24,6 +30,7 @@ export default async function TransactionsPage() {
       userId={userId}
       isPro={isPro}
       hitLimit={transactions?.length === 500}
+      initialCategory={initialCategory}
     />
   )
 }

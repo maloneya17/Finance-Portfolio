@@ -21,10 +21,12 @@ interface Props {
   userId: string
   onEdit: (tx: Transaction) => void
   isPro?: boolean
+  initialCategory?: string | null
 }
 
-export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
+export function TransactionList({ sym, userId, onEdit, isPro = false, initialCategory }: Props) {
   const [search, setSearch]   = useState('')
+  const [categoryFilter, setCategoryFilter] = useState(initialCategory ?? '')
   const [error, setError]     = useState<string | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [deletingTx, setDeletingTx] = useState<Transaction | null>(null)
@@ -53,14 +55,18 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
   }, [exportOpen])
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return transactions
+    let result = transactions
+    if (categoryFilter) {
+      result = result.filter(t => t.category.toLowerCase() === categoryFilter.toLowerCase())
+    }
+    if (!search.trim()) return result
     const q = search.toLowerCase()
-    return transactions.filter(t =>
+    return result.filter(t =>
       t.description.toLowerCase().includes(q) ||
       t.category.toLowerCase().includes(q) ||
       (t.notes ?? '').toLowerCase().includes(q),
     )
-  }, [transactions, search])
+  }, [transactions, search, categoryFilter])
 
   const income   = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
@@ -219,6 +225,21 @@ export function TransactionList({ sym, userId, onEdit, isPro = false }: Props) {
           </div>
         )}
       </div>
+
+      {/* Active category filter chip */}
+      {categoryFilter && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Filtered by category:</span>
+          <button
+            onClick={() => setCategoryFilter('')}
+            className="inline-flex items-center gap-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-3 py-1 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-950/60 transition-colors"
+            aria-label={`Remove category filter: ${categoryFilter}`}
+          >
+            {categoryFilter}
+            <span aria-hidden="true" className="text-blue-400">×</span>
+          </button>
+        </div>
+      )}
 
       {/* Error message */}
       {error && (

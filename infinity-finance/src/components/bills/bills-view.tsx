@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils'
 import { Plus, CheckCircle2, Circle, Pencil, Trash2, CalendarDays, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Props {
   bills: Bill[]
@@ -34,12 +33,18 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
   const [editing, setEditing]   = useState<Bill | null>(null)
   const [month, setMonth]       = useState(currentMonth)
   const [togglingId, setTogglingId]       = useState<string | null>(null)
-  const [confirmBillId, setConfirmBillId] = useState<string | null>(null)
   const [loadingPayments, setLoadingPayments] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; data: Bill } | null>(null)
+  const deleteTimerRef          = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router                  = useRouter()
   const supabase                = useMemo(() => createClient(), [])
   const sym                     = settings?.currency_symbol ?? '£'
   const categories              = settings?.categories ?? []
+
+  // Clean up the undo timer on unmount
+  useEffect(() => {
+    return () => { if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current) }
+  }, [])
 
   // Re-fetch payment records whenever the selected month changes
   useEffect(() => {
@@ -64,9 +69,10 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
     return () => { cancelled = true }
   }, [supabase, month, userId])
 
+  const displayedBills = bills.filter(b => b.id !== pendingDelete?.id)
   const paidIds    = new Set(Object.values(payments).filter(p => p.paid).map(p => p.bill_id))
-  const totalDue   = bills.reduce((s, b) => s + b.amount, 0)
-  const totalPaid  = bills.filter(b => paidIds.has(b.id)).reduce((s, b) => s + b.amount, 0)
+  const totalDue   = displayedBills.reduce((s, b) => s + b.amount, 0)
+  const totalPaid  = displayedBills.filter(b => paidIds.has(b.id)).reduce((s, b) => s + b.amount, 0)
   const totalUnpaid = totalDue - totalPaid
 
   async function togglePaid(bill: Bill) {
@@ -127,11 +133,40 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
     }
   }
 
-  async function confirmDeleteBill(id: string) {
+  function handleDeleteBill(bill: Bill) {
+    // Cancel any in-flight undo from a previous delete — commit it immediately
+    if (pendingDelete) {
+      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current)
+      void executeBillDelete(pendingDelete.id)
+    }
+
+    setPendingDelete({ id: bill.id, data: bill })
+    deleteTimerRef.current = setTimeout(async () => {
+      await executeBillDelete(bill.id)
+    }, 5000)
+  }
+
+  async function executeBillDelete(id: string) {
     const { error } = await supabase.from('bills').update({ is_active: false } as Partial<BillInsert>).eq('id', id)
-    if (error) { toast.error('Failed to delete bill. Please try again.'); return }
-    setBills(bills.filter(b => b.id !== id))
-    setConfirmBillId(null)
+    if (error) {
+      toast.error('Failed to delete bill. Please try again.')
+      // Restore the bill on failure
+      setPendingDelete(prev => {
+        if (prev?.id === id) {
+          setBills(current => current.some(b => b.id === id) ? current : [...current, prev.data])
+        }
+        return null
+      })
+      return
+    }
+    setBills(prev => prev.filter(b => b.id !== id))
+    setPendingDelete(prev => prev?.id === id ? null : prev)
+  }
+
+  function handleUndo() {
+    if (!pendingDelete) return
+    if (deleteTimerRef.current) { clearTimeout(deleteTimerRef.current); deleteTimerRef.current = null }
+    setPendingDelete(null)
   }
 
   return (
@@ -164,7 +199,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
       {totalDue > 0 && (
         <div className="mb-6">
           <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-            <span>{paidIds.size}/{bills.length} bills paid</span>
+            <span>{paidIds.size}/{displayedBills.length} bills paid</span>
             <span>{((totalPaid / totalDue) * 100).toFixed(0)}%</span>
           </div>
           <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -208,7 +243,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
 
       {/* Bill list */}
       <Card>
-        {bills.length === 0 ? (
+        {displayedBills.length === 0 ? (
           <EmptyState
             icon={CalendarDays}
             title="No bills yet"
@@ -217,7 +252,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
           />
         ) : (
           <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list" aria-label="Bills">
-            {bills.map(bill => {
+            {displayedBills.map(bill => {
               const paid = paidIds.has(bill.id)
               return (
                 <li
@@ -255,7 +290,7 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
                     <Button variant="ghost" size="icon-sm" onClick={() => { setEditing(bill); setOpen(true) }} aria-label={`Edit ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-blue)]">
                       <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
-                    <Button variant="ghost" size="icon-sm" onClick={() => setConfirmBillId(bill.id)} aria-label={`Delete ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-red)]">
+                    <Button variant="ghost" size="icon-sm" onClick={() => handleDeleteBill(bill)} aria-label={`Delete ${bill.name}`} className="text-slate-400 hover:text-[var(--ios-red)]">
                       <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
                   </div>
@@ -287,13 +322,16 @@ export function BillsView({ bills: initBills, initialPayments, settings, userId,
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
-        open={confirmBillId !== null}
-        title="Delete bill"
-        description="This will permanently remove the bill and cannot be undone."
-        onConfirm={() => { if (confirmBillId) confirmDeleteBill(confirmBillId) }}
-        onCancel={() => setConfirmBillId(null)}
-      />
+      {/* Undo delete toast */}
+      {pendingDelete && (
+        <div
+          role="alert"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-3 rounded-xl flex items-center gap-3 z-50 shadow-lg"
+        >
+          <span>Bill deleted.</span>
+          <button onClick={handleUndo} className="font-semibold text-blue-400 hover:text-blue-300">Undo</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -347,7 +385,7 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]">{error}</div>}
+      {error && <div className="rounded-xl bg-[rgba(255,59,48,0.08)] border border-[rgba(255,59,48,0.2)] px-4 py-3 text-sm text-[var(--ios-red)]" role="alert">{error}</div>}
       <div>
         <label htmlFor="bill-name" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Bill name</label>
         <Input id="bill-name" value={name} onChange={e => setName(e.target.value)} placeholder="Netflix, Rent, etc." required />
@@ -360,6 +398,7 @@ function BillForm({ bill, categories, sym, userId, onSuccess }: {
         <div>
           <label htmlFor="bill-day" className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Day of month</label>
           <Input id="bill-day" type="number" min="1" max="28" value={day} onChange={e => setDay(e.target.value)} required />
+          <p className="text-xs text-slate-500 mt-1">Capped at 28 for all months</p>
         </div>
       </div>
       <div>

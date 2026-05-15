@@ -20,9 +20,10 @@ interface Props {
   userId: string
   isPro?: boolean
   hitLimit?: boolean
+  initialCategory?: string | null
 }
 
-export function TransactionsView({ transactions, settings, userId, isPro, hitLimit }: Props) {
+export function TransactionsView({ transactions, settings, userId, isPro, hitLimit, initialCategory }: Props) {
   const [open, setOpen]       = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
   const [hasMore, setHasMore] = useState(hitLimit ?? false)
@@ -152,7 +153,7 @@ export function TransactionsView({ transactions, settings, userId, isPro, hitLim
         </div>
       )}
 
-      <TransactionList sym={sym} onEdit={handleEdit} userId={userId} />
+      <TransactionList sym={sym} onEdit={handleEdit} userId={userId} initialCategory={initialCategory} />
 
       {hasMore && (
         <div className="flex justify-center mt-4">

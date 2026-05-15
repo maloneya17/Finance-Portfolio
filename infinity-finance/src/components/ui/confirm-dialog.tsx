@@ -1,6 +1,6 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -19,7 +19,7 @@ export function ConfirmDialog({ open, title, description, confirmLabel = 'Delete
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
+        <DialogDescription>{description}</DialogDescription>
         <div className="flex gap-2 justify-end mt-2">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
           <Button variant="destructive" onClick={onConfirm}>{confirmLabel}</Button>

@@ -116,7 +116,10 @@ export function AppShell({ user, profile, children }: AppShellProps) {
                 <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
                 {item.label}
                 {item.href === '/insights' && !isPro && (
-                  <Crown className="w-3 h-3 ml-auto" style={{ color: 'var(--ios-orange)' }} aria-label="Pro feature" />
+                  <>
+                    <Crown className="w-3 h-3 ml-auto" style={{ color: 'var(--ios-orange)' }} aria-hidden="true" />
+                    <span className="sr-only">Pro</span>
+                  </>
                 )}
               </Link>
             )

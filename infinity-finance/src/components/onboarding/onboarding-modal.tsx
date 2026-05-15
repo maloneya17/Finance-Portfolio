@@ -99,6 +99,7 @@ export function OnboardingModal({ userId }: Props) {
                 <button
                   key={c.code}
                   onClick={() => setCurrency(c.code)}
+                  aria-pressed={currency === c.code}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm transition-colors ${
                     currency === c.code
                       ? 'border-primary bg-primary/5 font-medium'

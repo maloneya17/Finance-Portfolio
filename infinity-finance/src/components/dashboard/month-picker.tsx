@@ -26,6 +26,7 @@ export function MonthPicker() {
         className="px-3 py-1.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition min-w-[140px] text-center"
         onClick={() => setCurrentMonth(getMonthKey())}
         title={isCurrentMonth ? 'Current month' : 'Go to current month'}
+        aria-label={isCurrentMonth ? 'Current month' : 'Go to current month'}
       >
         {monthKeyToLabel(currentMonth)}
       </button>

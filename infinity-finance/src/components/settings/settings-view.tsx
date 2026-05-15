@@ -198,8 +198,10 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
         {tabs.map(t => (
           <button
             key={t.id}
+            id={`tab-${t.id}`}
             role="tab"
             aria-selected={tab === t.id}
+            aria-controls={`tab-panel-${t.id}`}
             onClick={() => handleTabChange(t.id)}
             className={cn(
               'px-4 py-2 text-xs font-semibold rounded-lg transition',
@@ -215,7 +217,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
 
       {/* General */}
       {tab === 'general' && (
-        <div className="space-y-5">
+        <div id="tab-panel-general" role="tabpanel" aria-labelledby="tab-general" tabIndex={0} className="space-y-5">
           <Card>
             <CardHeader><CardTitle className="text-base">Finance Settings</CardTitle></CardHeader>
             <CardContent className="pt-0 space-y-4">
@@ -298,7 +300,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
 
       {/* Billing */}
       {tab === 'billing' && (
-        <div className="space-y-5">
+        <div id="tab-panel-billing" role="tabpanel" aria-labelledby="tab-billing" tabIndex={0} className="space-y-5">
           {/* Current plan */}
           <Card className={isPro ? 'border-[var(--ios-blue)] border-2' : ''}>
             <CardContent className="p-6">
@@ -429,7 +431,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
 
       {/* Budgets */}
       {tab === 'budgets' && (
-        <div className="space-y-5">
+        <div id="tab-panel-budgets" role="tabpanel" aria-labelledby="tab-budgets" tabIndex={0} className="space-y-5">
           <Card>
             <CardHeader><CardTitle className="text-base">Monthly Budgets</CardTitle></CardHeader>
             <CardContent className="pt-0">
@@ -498,7 +500,7 @@ export function SettingsView({ user, profile, settings, initialBudgets = [] }: P
 
       {/* Account */}
       {tab === 'account' && (
-        <div className="space-y-4">
+        <div id="tab-panel-account" role="tabpanel" aria-labelledby="tab-account" tabIndex={0} className="space-y-4">
           <Card>
             <CardContent className="p-6">
               <h3 className="font-bold text-slate-900 dark:text-white mb-4">Account</h3>
