@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --ios-blue: #007AFF;
-  --ios-green: #34C759;
-  --ios-red: #FF3B30;
-  --ios-orange: #FF9500;
-  --ios-purple: #AF52DE;
-  --ios-teal: #5AC8FA;
+  --ios-blue: #0062cc;
+  --ios-green: #1a8a36;
+  --ios-red: #c0392b;
+  --ios-orange: #b36b00;
+  --ios-purple: #7b2fa8;
+  --ios-teal: #0077a8;
   --shadow-ios-blue: 0 4px 14px rgba(0,122,255,0.35);
   --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
 
@@ -47,12 +47,12 @@
 }
 
 @theme inline {
-  --color-ios-blue: #007AFF;
-  --color-ios-green: #34C759;
-  --color-ios-red: #FF3B30;
-  --color-ios-orange: #FF9500;
-  --color-ios-teal: #5AC8FA;
-  --color-ios-purple: #AF52DE;
+  --color-ios-blue: #0062cc;
+  --color-ios-green: #1a8a36;
+  --color-ios-red: #c0392b;
+  --color-ios-orange: #b36b00;
+  --color-ios-teal: #0077a8;
+  --color-ios-purple: #7b2fa8;
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
     "Helvetica Neue", Arial, sans-serif;
 
@@ -121,4 +121,11 @@
 .dark .shimmer {
   background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
   background-size: 200% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  [class*="animate-"] {
+    animation: none !important;
+  }
 }

@@ -201,8 +201,10 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
         {tabs.map(t => (
           <button
             key={t.id}
+            id={`tab-${t.id}`}
             role="tab"
             aria-selected={tab === t.id}
+            aria-controls={`tab-panel-${t.id}`}
             onClick={() => setTab(t.id)}
             className={cn(
               'flex-1 py-2 text-xs font-semibold rounded-lg transition',
@@ -218,7 +220,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
 
       {/* Overview */}
       {tab === 'overview' && (
-        <div className="space-y-4">
+        <div id="tab-panel-overview" role="tabpanel" aria-labelledby="tab-overview" tabIndex={0} className="space-y-4">
           {/* Asset breakdown */}
           <Card>
             <CardHeader><CardTitle className="text-base">Asset Breakdown</CardTitle></CardHeader>
@@ -232,7 +234,15 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                         <span className="text-xs" style={{ color: 'var(--ios-green)' }}>{privacy ? '••••' : formatCurrency(a.value, sym)}</span>
                       </div>
                       <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full">
-                        <div className="h-full rounded-full" style={{ width: `${pct(a.value, totalAssets)}%`, background: 'var(--ios-green)' }} />
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${pct(a.value, totalAssets)}%`, background: 'var(--ios-green)' }}
+                          role="progressbar"
+                          aria-valuenow={Math.round(pct(a.value, totalAssets))}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label="Progress"
+                        />
                       </div>
                     </div>
                   </div>
@@ -245,7 +255,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
           <Card>
             <CardHeader><CardTitle className="text-base">Debt Breakdown</CardTitle></CardHeader>
             <CardContent className="pt-0 space-y-3">
-              {debts.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">Debt free! 🎉</p> : (
+              {debts.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">Debt free! <span aria-hidden="true">🎉</span></p> : (
                 debts.map(d => (
                   <div key={d.id} className="flex items-center gap-3">
                     <div className="flex-1">
@@ -269,17 +279,18 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
 
       {/* Assets list */}
       {tab === 'assets' && (
-        <Card>
-          {assets.length === 0 ? (
-            <div className="text-center py-16 text-slate-400">
-              <div className="text-4xl mb-3">🏦</div>
-              <p className="text-sm mb-3">No assets tracked yet</p>
-              <Button variant="tint" size="sm" onClick={() => setDialog({ type: 'asset' })}>Add your first asset</Button>
-            </div>
-          ) : (
-            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list">
-              {assets.map(a => (
-                <li key={a.id} className="flex items-center gap-4 px-5 py-4 group">
+        <div id="tab-panel-assets" role="tabpanel" aria-labelledby="tab-assets" tabIndex={0}>
+          <Card>
+            {assets.length === 0 ? (
+              <div className="text-center py-16 text-slate-400">
+                <div className="text-4xl mb-3" aria-hidden="true">🏦</div>
+                <p className="text-sm mb-3">No assets tracked yet</p>
+                <Button variant="tint" size="sm" onClick={() => setDialog({ type: 'asset' })}>Add your first asset</Button>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list" aria-label="Assets">
+                {assets.map(a => (
+                  <li key={a.id} className="flex items-center gap-4 px-5 py-4 group">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{a.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -296,7 +307,8 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
               ))}
             </ul>
           )}
-        </Card>
+          </Card>
+        </div>
       )}
 
       {/* Debts list */}
@@ -304,12 +316,12 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
         <Card>
           {debts.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
-              <div className="text-4xl mb-3">🎉</div>
+              <div className="text-4xl mb-3" aria-hidden="true">🎉</div>
               <p className="text-sm">Debt free! Add a debt to track payoff progress.</p>
               <Button variant="tint" size="sm" className="mt-3" onClick={() => setDialog({ type: 'debt' })}>Add a debt</Button>
             </div>
           ) : (
-            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list">
+            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list" aria-label="Debts">
               {debts.map(d => (
                 <li key={d.id} className="flex items-center gap-4 px-5 py-4 group">
                   <div className="flex-1 min-w-0">
@@ -373,7 +385,15 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     ) : (
                       <>
                         <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full mb-2">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${clamp(p, 0, 100)}%`, background: color }} />
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{ width: `${clamp(p, 0, 100)}%`, background: color }}
+                            role="progressbar"
+                            aria-valuenow={Math.round(p)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label="Progress"
+                          />
                         </div>
                         <div className="flex justify-between text-xs text-slate-500">
                           <span>{privacy ? '••••' : formatCurrency(g.current, sym)} saved</span>

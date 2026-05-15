@@ -66,6 +66,11 @@ export function GoalsWidget({ sym }: Props) {
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${clamp(p, 0, 100)}%`, background: color }}
+                          role="progressbar"
+                          aria-valuenow={Math.round(p)}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label="Progress"
                         />
                       </div>
                       <div
