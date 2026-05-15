@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Asset, Debt, Goal, Settings } from '@/types/supabase'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -17,7 +17,6 @@ import { EmptyState } from '@/components/ui/empty-state'
 import type { AssetInsert, DebtInsert, GoalInsert } from '@/types/supabase'
 import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Props {
   assets: Asset[]
@@ -29,7 +28,7 @@ interface Props {
 
 type Tab = 'overview' | 'assets' | 'debts' | 'goals'
 
-type ConfirmState = { title: string; description: string; action: () => Promise<void> } | null
+type PendingDelete = { id: string; timer: ReturnType<typeof setTimeout> } | null
 
 export function WealthView({ assets: initAssets, debts: initDebts, goals: initGoals, settings, userId }: Props) {
   const [tab, setTab]         = useState<Tab>('overview')
@@ -38,13 +37,39 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
   const [goals, setGoals]     = useState(initGoals)
   const privacy                = useFinanceStore(s => s.privacyMode)
   const [dialog, setDialog]   = useState<{ type: 'asset' | 'debt' | 'goal'; item?: Asset | Debt | Goal } | null>(null)
-  const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [snapshots, setSnapshots] = useState<Array<{ date: string; net_worth: number }>>([])
   const supabase               = useMemo(() => createClient(), [])
   const sym                    = settings?.currency_symbol ?? '£'
 
-  const totalAssets = assets.reduce((s, a) => s + a.value, 0)
-  const totalDebts  = debts.reduce((s, d) => s + d.balance, 0)
+  // Per-entity hidden ID sets — items are hidden from display while pending delete
+  const [hiddenAssetIds, setHiddenAssetIds] = useState<Set<string>>(new Set())
+  const [hiddenDebtIds,  setHiddenDebtIds]  = useState<Set<string>>(new Set())
+  const [hiddenGoalIds,  setHiddenGoalIds]  = useState<Set<string>>(new Set())
+
+  // One pending delete slot per entity type
+  const [assetPendingDelete, setAssetPendingDelete] = useState<PendingDelete>(null)
+  const [debtPendingDelete,  setDebtPendingDelete]  = useState<PendingDelete>(null)
+  const [goalPendingDelete,  setGoalPendingDelete]  = useState<PendingDelete>(null)
+
+  const assetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debtTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const goalTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clean up all pending timers on unmount
+  useEffect(() => {
+    return () => {
+      if (assetTimerRef.current) clearTimeout(assetTimerRef.current)
+      if (debtTimerRef.current)  clearTimeout(debtTimerRef.current)
+      if (goalTimerRef.current)  clearTimeout(goalTimerRef.current)
+    }
+  }, [])
+
+  const displayedAssets = assets.filter(a => !hiddenAssetIds.has(a.id))
+  const displayedDebts  = debts.filter(d => !hiddenDebtIds.has(d.id))
+  const displayedGoals  = goals.filter(g => !hiddenGoalIds.has(g.id))
+
+  const totalAssets = displayedAssets.reduce((s, a) => s + a.value, 0)
+  const totalDebts  = displayedDebts.reduce((s, d) => s + d.balance, 0)
   const netWorth    = totalAssets - totalDebts
 
   useEffect(() => {
@@ -93,50 +118,128 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: TrendingUp },
-    { id: 'assets',   label: `Assets (${assets.length})`,  icon: TrendingUp  },
-    { id: 'debts',    label: `Debts (${debts.length})`,    icon: TrendingDown },
-    { id: 'goals',    label: `Goals (${goals.length})`,    icon: Target       },
+    { id: 'assets',   label: `Assets (${displayedAssets.length})`,  icon: TrendingUp  },
+    { id: 'debts',    label: `Debts (${displayedDebts.length})`,    icon: TrendingDown },
+    { id: 'goals',    label: `Goals (${displayedGoals.length})`,    icon: Target       },
   ]
 
   function deleteAsset(id: string) {
-    setConfirm({
-      title: 'Delete asset',
-      description: 'This will permanently remove the asset and cannot be undone.',
-      action: async () => {
-        const prev = assets
-        setAssets(a => a.filter(x => x.id !== id))
-        const { error } = await supabase.from('assets').delete().eq('id', id).eq('user_id', userId)
-        if (error) { setAssets(prev); toast.error('Failed to delete asset. Please try again.'); return }
+    // Commit any previously pending asset delete before starting a new undo window
+    if (assetPendingDelete) {
+      clearTimeout(assetPendingDelete.timer)
+      const prevId = assetPendingDelete.id
+      void supabase.from('assets').delete().eq('id', prevId).eq('user_id', userId)
+        .then(({ error }) => {
+          if (error) toast.error('Failed to delete asset.')
+          else {
+            setAssets(prev => prev.filter(a => a.id !== prevId))
+            setHiddenAssetIds(prev => { const next = new Set(prev); next.delete(prevId); return next })
+            void recordSnapshot()
+          }
+        })
+    }
+
+    setHiddenAssetIds(prev => new Set([...prev, id]))
+    const timer = setTimeout(async () => {
+      const { error } = await supabase.from('assets').delete().eq('id', id).eq('user_id', userId)
+      if (error) {
+        toast.error('Failed to delete asset. Please try again.')
+        setHiddenAssetIds(prev => { const next = new Set(prev); next.delete(id); return next })
+      } else {
+        setAssets(prev => prev.filter(a => a.id !== id))
+        setHiddenAssetIds(prev => { const next = new Set(prev); next.delete(id); return next })
         await recordSnapshot()
-      },
-    })
+      }
+      setAssetPendingDelete(null)
+    }, 5000)
+    assetTimerRef.current = timer
+    setAssetPendingDelete({ id, timer })
+  }
+
+  function undoAssetDelete() {
+    if (!assetPendingDelete) return
+    clearTimeout(assetPendingDelete.timer)
+    assetTimerRef.current = null
+    setHiddenAssetIds(prev => { const next = new Set(prev); next.delete(assetPendingDelete.id); return next })
+    setAssetPendingDelete(null)
   }
 
   function deleteDebt(id: string) {
-    setConfirm({
-      title: 'Delete debt',
-      description: 'This will permanently remove the debt entry and cannot be undone.',
-      action: async () => {
-        const prev = debts
-        setDebts(d => d.filter(x => x.id !== id))
-        const { error } = await supabase.from('debts').delete().eq('id', id).eq('user_id', userId)
-        if (error) { setDebts(prev); toast.error('Failed to delete debt. Please try again.'); return }
+    if (debtPendingDelete) {
+      clearTimeout(debtPendingDelete.timer)
+      const prevId = debtPendingDelete.id
+      void supabase.from('debts').delete().eq('id', prevId).eq('user_id', userId)
+        .then(({ error }) => {
+          if (error) toast.error('Failed to delete debt.')
+          else {
+            setDebts(prev => prev.filter(d => d.id !== prevId))
+            setHiddenDebtIds(prev => { const next = new Set(prev); next.delete(prevId); return next })
+            void recordSnapshot()
+          }
+        })
+    }
+
+    setHiddenDebtIds(prev => new Set([...prev, id]))
+    const timer = setTimeout(async () => {
+      const { error } = await supabase.from('debts').delete().eq('id', id).eq('user_id', userId)
+      if (error) {
+        toast.error('Failed to delete debt. Please try again.')
+        setHiddenDebtIds(prev => { const next = new Set(prev); next.delete(id); return next })
+      } else {
+        setDebts(prev => prev.filter(d => d.id !== id))
+        setHiddenDebtIds(prev => { const next = new Set(prev); next.delete(id); return next })
         await recordSnapshot()
-      },
-    })
+      }
+      setDebtPendingDelete(null)
+    }, 5000)
+    debtTimerRef.current = timer
+    setDebtPendingDelete({ id, timer })
+  }
+
+  function undoDebtDelete() {
+    if (!debtPendingDelete) return
+    clearTimeout(debtPendingDelete.timer)
+    debtTimerRef.current = null
+    setHiddenDebtIds(prev => { const next = new Set(prev); next.delete(debtPendingDelete.id); return next })
+    setDebtPendingDelete(null)
   }
 
   function deleteGoal(id: string) {
-    setConfirm({
-      title: 'Delete goal',
-      description: 'This will permanently remove the goal and cannot be undone.',
-      action: async () => {
-        const prev = goals
-        setGoals(g => g.filter(x => x.id !== id))
-        const { error } = await supabase.from('goals').delete().eq('id', id).eq('user_id', userId)
-        if (error) { setGoals(prev); toast.error('Failed to delete goal. Please try again.') }
-      },
-    })
+    if (goalPendingDelete) {
+      clearTimeout(goalPendingDelete.timer)
+      const prevId = goalPendingDelete.id
+      void supabase.from('goals').delete().eq('id', prevId).eq('user_id', userId)
+        .then(({ error }) => {
+          if (error) toast.error('Failed to delete goal.')
+          else {
+            setGoals(prev => prev.filter(g => g.id !== prevId))
+            setHiddenGoalIds(prev => { const next = new Set(prev); next.delete(prevId); return next })
+          }
+        })
+    }
+
+    setHiddenGoalIds(prev => new Set([...prev, id]))
+    const timer = setTimeout(async () => {
+      const { error } = await supabase.from('goals').delete().eq('id', id).eq('user_id', userId)
+      if (error) {
+        toast.error('Failed to delete goal. Please try again.')
+        setHiddenGoalIds(prev => { const next = new Set(prev); next.delete(id); return next })
+      } else {
+        setGoals(prev => prev.filter(g => g.id !== id))
+        setHiddenGoalIds(prev => { const next = new Set(prev); next.delete(id); return next })
+      }
+      setGoalPendingDelete(null)
+    }, 5000)
+    goalTimerRef.current = timer
+    setGoalPendingDelete({ id, timer })
+  }
+
+  function undoGoalDelete() {
+    if (!goalPendingDelete) return
+    clearTimeout(goalPendingDelete.timer)
+    goalTimerRef.current = null
+    setHiddenGoalIds(prev => { const next = new Set(prev); next.delete(goalPendingDelete.id); return next })
+    setGoalPendingDelete(null)
   }
 
   return (
@@ -201,10 +304,8 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
         {tabs.map(t => (
           <button
             key={t.id}
-            id={`tab-${t.id}`}
             role="tab"
             aria-selected={tab === t.id}
-            aria-controls={`tab-panel-${t.id}`}
             onClick={() => setTab(t.id)}
             className={cn(
               'flex-1 py-2 text-xs font-semibold rounded-lg transition',
@@ -220,13 +321,13 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
 
       {/* Overview */}
       {tab === 'overview' && (
-        <div id="tab-panel-overview" role="tabpanel" aria-labelledby="tab-overview" tabIndex={0} className="space-y-4">
+        <div className="space-y-4">
           {/* Asset breakdown */}
           <Card>
             <CardHeader><CardTitle className="text-base">Asset Breakdown</CardTitle></CardHeader>
             <CardContent className="pt-0 space-y-3">
-              {assets.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">No assets added yet</p> : (
-                assets.map(a => (
+              {displayedAssets.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">No assets added yet</p> : (
+                displayedAssets.map(a => (
                   <div key={a.id} className="flex items-center gap-3">
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
@@ -234,15 +335,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                         <span className="text-xs" style={{ color: 'var(--ios-green)' }}>{privacy ? '••••' : formatCurrency(a.value, sym)}</span>
                       </div>
                       <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${pct(a.value, totalAssets)}%`, background: 'var(--ios-green)' }}
-                          role="progressbar"
-                          aria-valuenow={Math.round(pct(a.value, totalAssets))}
-                          aria-valuemin={0}
-                          aria-valuemax={100}
-                          aria-label="Progress"
-                        />
+                        <div className="h-full rounded-full" style={{ width: `${pct(a.value, totalAssets)}%`, background: 'var(--ios-green)' }} />
                       </div>
                     </div>
                   </div>
@@ -255,8 +348,8 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
           <Card>
             <CardHeader><CardTitle className="text-base">Debt Breakdown</CardTitle></CardHeader>
             <CardContent className="pt-0 space-y-3">
-              {debts.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">Debt free! <span aria-hidden="true">🎉</span></p> : (
-                debts.map(d => (
+              {displayedDebts.length === 0 ? <p className="text-sm text-slate-400 text-center py-4">Debt free! 🎉</p> : (
+                displayedDebts.map(d => (
                   <div key={d.id} className="flex items-center gap-3">
                     <div className="flex-1">
                       <div className="flex justify-between mb-1">
@@ -279,18 +372,17 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
 
       {/* Assets list */}
       {tab === 'assets' && (
-        <div id="tab-panel-assets" role="tabpanel" aria-labelledby="tab-assets" tabIndex={0}>
-          <Card>
-            {assets.length === 0 ? (
-              <div className="text-center py-16 text-slate-400">
-                <div className="text-4xl mb-3" aria-hidden="true">🏦</div>
-                <p className="text-sm mb-3">No assets tracked yet</p>
-                <Button variant="tint" size="sm" onClick={() => setDialog({ type: 'asset' })}>Add your first asset</Button>
-              </div>
-            ) : (
-              <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list" aria-label="Assets">
-                {assets.map(a => (
-                  <li key={a.id} className="flex items-center gap-4 px-5 py-4 group">
+        <Card>
+          {displayedAssets.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <div className="text-4xl mb-3">🏦</div>
+              <p className="text-sm mb-3">No assets tracked yet</p>
+              <Button variant="tint" size="sm" onClick={() => setDialog({ type: 'asset' })}>Add your first asset</Button>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list">
+              {displayedAssets.map(a => (
+                <li key={a.id} className="flex items-center gap-4 px-5 py-4 group">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{a.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -307,22 +399,21 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
               ))}
             </ul>
           )}
-          </Card>
-        </div>
+        </Card>
       )}
 
       {/* Debts list */}
       {tab === 'debts' && (
         <Card>
-          {debts.length === 0 ? (
+          {displayedDebts.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
-              <div className="text-4xl mb-3" aria-hidden="true">🎉</div>
+              <div className="text-4xl mb-3">🎉</div>
               <p className="text-sm">Debt free! Add a debt to track payoff progress.</p>
               <Button variant="tint" size="sm" className="mt-3" onClick={() => setDialog({ type: 'debt' })}>Add a debt</Button>
             </div>
           ) : (
-            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list" aria-label="Debts">
-              {debts.map(d => (
+            <ul className="divide-y divide-slate-50 dark:divide-slate-800" role="list">
+              {displayedDebts.map(d => (
                 <li key={d.id} className="flex items-center gap-4 px-5 py-4 group">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{d.name}</p>
@@ -349,14 +440,14 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
       {/* Goals list */}
       {tab === 'goals' && (
         <div className="space-y-4">
-          {goals.length === 0 ? (
+          {displayedGoals.length === 0 ? (
             <EmptyState
               icon={Target}
               title="No goals yet"
               description="Set a savings goal to start working towards your financial future."
               action={<Button variant="tint" size="sm" onClick={() => setDialog({ type: 'goal' })}>Add first goal</Button>}
             />
-          ) : goals.map(g => {
+          ) : displayedGoals.map(g => {
             const p = pct(g.current, g.target)
             const color = p >= 100 ? 'var(--ios-green)' : p > 50 ? 'var(--ios-blue)' : 'var(--ios-orange)'
             return (
@@ -385,15 +476,7 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
                     ) : (
                       <>
                         <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full mb-2">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${clamp(p, 0, 100)}%`, background: color }}
-                            role="progressbar"
-                            aria-valuenow={Math.round(p)}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-label="Progress"
-                          />
+                          <div className="h-full rounded-full transition-all" style={{ width: `${clamp(p, 0, 100)}%`, background: color }} />
                         </div>
                         <div className="flex justify-between text-xs text-slate-500">
                           <span>{privacy ? '••••' : formatCurrency(g.current, sym)} saved</span>
@@ -435,13 +518,34 @@ export function WealthView({ assets: initAssets, debts: initDebts, goals: initGo
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
-        open={!!confirm}
-        title={confirm?.title ?? ''}
-        description={confirm?.description ?? ''}
-        onConfirm={async () => { await confirm?.action(); setConfirm(null) }}
-        onCancel={() => setConfirm(null)}
-      />
+      {/* Undo delete toasts — one banner per entity type, stacked if multiple fire */}
+      {assetPendingDelete && (
+        <div
+          role="alert"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-3 rounded-xl flex items-center gap-3 z-50 shadow-lg"
+        >
+          <span>Asset deleted.</span>
+          <button onClick={undoAssetDelete} className="font-semibold text-blue-400 hover:text-blue-300">Undo</button>
+        </div>
+      )}
+      {debtPendingDelete && !assetPendingDelete && (
+        <div
+          role="alert"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-3 rounded-xl flex items-center gap-3 z-50 shadow-lg"
+        >
+          <span>Debt deleted.</span>
+          <button onClick={undoDebtDelete} className="font-semibold text-blue-400 hover:text-blue-300">Undo</button>
+        </div>
+      )}
+      {goalPendingDelete && !assetPendingDelete && !debtPendingDelete && (
+        <div
+          role="alert"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-3 rounded-xl flex items-center gap-3 z-50 shadow-lg"
+        >
+          <span>Goal deleted.</span>
+          <button onClick={undoGoalDelete} className="font-semibold text-blue-400 hover:text-blue-300">Undo</button>
+        </div>
+      )}
     </div>
   )
 }
